@@ -20,7 +20,7 @@ import type { FormEvent } from "react";
 import { createRoot } from "react-dom/client";
 import { useAgent } from "agents/react";
 import type { RoutedAgentEntry } from "agents/routing";
-import { MAX_TEXT } from "./shared";
+import { MATCH_CLOSE, MATCH_OPEN, MAX_TEXT } from "./shared";
 import "./styles.css";
 
 const USER_KEY = "next-routing-user";
@@ -40,13 +40,48 @@ type ChatMessage = {
   at: number;
 };
 
+/** A chat entry plus the message that matched the search. */
+type ChatSearchHit = ChatEntry & { snippet: string; seq: number };
+
 /** The hub's RpcTarget, as seen from the browser. */
 type HubApi = {
   createChat(): Promise<string>;
   listChats(): Promise<ChatEntry[]>;
-  searchChats(query: string): Promise<ChatEntry[]>;
+  searchChats(query: string): Promise<ChatSearchHit[]>;
   deleteChat(chatId: string): Promise<boolean>;
+  reindexChat(chatId: string): Promise<number>;
 };
+
+/**
+ * Render a snippet from the hub, bolding the matched terms.
+ *
+ * The hub wraps hits in control characters rather than markup, so this
+ * splits on them and builds elements — message text is never parsed as
+ * HTML on its way into the sidebar.
+ */
+function Snippet({ text }: { text: string }) {
+  const parts = text.split(MATCH_OPEN).flatMap((chunk, index) => {
+    if (index === 0) return [{ hit: false, text: chunk }];
+    const [hit, ...rest] = chunk.split(MATCH_CLOSE);
+    return [
+      { hit: true, text: hit ?? "" },
+      { hit: false, text: rest.join(MATCH_CLOSE) }
+    ];
+  });
+  return (
+    <>
+      {parts.map((part, index) =>
+        part.hit ? (
+          <mark key={index} className="bg-kumo-brand/20 text-inherit">
+            {part.text}
+          </mark>
+        ) : (
+          <span key={index}>{part.text}</span>
+        )
+      )}
+    </>
+  );
+}
 
 /**
  * Wire for the hub connection. The WebSockets capability speaks the Agent
@@ -198,7 +233,10 @@ function App() {
     transport: HUB_TRANSPORT
   });
   const user = hub.stub as HubApi;
-  const [chats, setChats] = useState<ChatEntry[]>([]);
+  // Listing and searching return the same rows; a search row also carries
+  // the message that matched, which is what the sidebar shows instead of
+  // the last message.
+  const [chats, setChats] = useState<(ChatEntry | ChatSearchHit)[]>([]);
   const [query, setQuery] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -247,7 +285,7 @@ function App() {
             <Input
               value={query}
               onChange={(event) => setQuery(event.currentTarget.value)}
-              placeholder="Search all chats…"
+              placeholder="Search every message…"
               className="flex-1"
             />
             <Button
@@ -263,7 +301,7 @@ function App() {
               <div className="p-4">
                 <Text size="sm" variant="secondary">
                   {query
-                    ? "No chats match — the search ran over the index only."
+                    ? "No messages match — the hub searched every message it has indexed, without waking a single chat."
                     : "No chats yet. Each one you create is its own Durable Object."}
                 </Text>
               </div>
@@ -285,7 +323,11 @@ function App() {
                     </div>
                     <div className="truncate">
                       <Text size="xs" variant="secondary">
-                        {chat.metadata?.lastMessage ?? "No messages yet"}
+                        {"snippet" in chat ? (
+                          <Snippet text={chat.snippet} />
+                        ) : (
+                          (chat.metadata?.lastMessage ?? "No messages yet")
+                        )}
                       </Text>
                     </div>
                   </div>

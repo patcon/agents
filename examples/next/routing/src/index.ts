@@ -7,9 +7,15 @@ import {
   type WSMessage
 } from "agents";
 import { Lifecycle } from "agents/lifecycle";
-import { RoutedAgents } from "agents/routing";
+import { RoutedAgents, type RoutedAgentEntry } from "agents/routing";
 import { WebSockets } from "agents/websockets";
-import { MAX_QUERY, MAX_TEXT } from "./shared";
+import {
+  MATCH_CLOSE,
+  MATCH_OPEN,
+  MAX_QUERY,
+  MAX_TEXT,
+  SEARCH_LIMIT
+} from "./shared";
 
 /**
  * The recommended shape for "many chats per user": one top-level
@@ -51,6 +57,24 @@ type ChatMessage = {
   at: number;
 };
 
+/** A message as it travels to the hub's index: the chat's row, plus its ordinal. */
+type IndexedMessage = ChatMessage & { seq: number };
+
+/**
+ * One chat in a search result: the catalog entry the sidebar already
+ * renders, plus the best-matching message from that chat.
+ */
+type ChatSearchHit = RoutedAgentEntry<ChatMeta> & {
+  /**
+   * The matching text with hit terms wrapped in `MATCH_OPEN`/`MATCH_CLOSE`.
+   * Sentinels rather than HTML: the browser splits on them and styles the
+   * pieces, so a message can never inject markup into the sidebar.
+   */
+  snippet: string;
+  /** The matching message's ordinal, for deep-linking into the chat. */
+  seq: number;
+};
+
 /** Recorded once by the owning hub right after the entry is created. */
 type ChatOwner = {
   userId: string;
@@ -79,6 +103,34 @@ function assertChatId(value: unknown): string {
   return value;
 }
 
+/**
+ * Turn a raw search box into an FTS5 `MATCH` expression.
+ *
+ * FTS5 match syntax is a query language — bare user input can mean `NOT`,
+ * `OR`, a column filter, or a syntax error that throws mid-query. Keeping
+ * only letters and digits and re-quoting each token means whatever is
+ * typed is read as literal terms joined by an implicit AND. The last
+ * token gets a prefix `*` so the sidebar narrows while you are still
+ * typing the word.
+ */
+function toMatchQuery(query: string): string | null {
+  const tokens = query.toLowerCase().match(/[\p{L}\p{N}]+/gu);
+  if (!tokens?.length) return null;
+  return tokens
+    .map((token, index) =>
+      index === tokens.length - 1 ? `"${token}"*` : `"${token}"`
+    )
+    .join(" ");
+}
+
+/**
+ * Strip the highlight sentinels from text on the way into the index, so
+ * a message can never forge a highlight in another chat's snippet.
+ */
+function stripSentinels(text: string): string {
+  return text.replaceAll(MATCH_OPEN, "").replaceAll(MATCH_CLOSE, "");
+}
+
 /** One Durable Object per conversation, reached only through its owner. */
 export class ChatAgent extends Agent<Env> {
   onStart(): void {
@@ -102,8 +154,9 @@ export class ChatAgent extends Agent<Env> {
     // is reachable from a browser, where the declared types mean nothing.
     const validRole = assertRole(role);
     const validText = assertText(text, MAX_TEXT, "text");
+    const at = Date.now();
     const [{ id: seq }] = this.sql<{ id: number }>`
-      INSERT INTO messages (role, text, at) VALUES (${validRole}, ${validText}, ${Date.now()})
+      INSERT INTO messages (role, text, at) VALUES (${validRole}, ${validText}, ${at})
       RETURNING id
     `;
 
@@ -111,6 +164,10 @@ export class ChatAgent extends Agent<Env> {
     // wake this DO. The owner's copy is derived data: a failed push
     // leaves it stale until the next message, and a push for a deleted
     // chat is refused, so nothing can resurrect a deleted entry.
+    //
+    // The message itself rides along so the hub can index its text. That
+    // is what makes search cover every message rather than just the
+    // latest one, and it costs no extra round-trip.
     const owner = await this.ctx.storage.get<ChatOwner>("owner");
     const [first] = this.sql<{ text: string }>`
       SELECT text FROM messages WHERE role = 'user' ORDER BY id ASC LIMIT 1
@@ -118,17 +175,34 @@ export class ChatAgent extends Agent<Env> {
     if (owner) {
       try {
         const hub = this.env.UserHub.getByName(owner.userId);
-        await hub.recordChatActivity(owner.chatId, {
-          title: first ? first.text.slice(0, 80) : null,
-          lastMessage: text.slice(0, 120),
-          seq
-        });
+        await hub.recordChatActivity(
+          owner.chatId,
+          {
+            title: first ? first.text.slice(0, 80) : null,
+            lastMessage: text.slice(0, 120),
+            seq
+          },
+          { role: validRole, text: validText, at, seq }
+        );
       } catch (error) {
+        // The chat keeps the message either way; the hub's index is
+        // derived. `reindexChat` repairs whatever a failed push dropped.
         console.warn("[ChatAgent] owner update failed", error);
       }
     }
 
     return seq;
+  }
+
+  /**
+   * Every message with its ordinal, for the hub to rebuild its slice of
+   * the index. Not `@callable()`: this is a hub-to-chat repair path over
+   * a Durable Object stub, not browser surface.
+   */
+  exportMessages(): IndexedMessage[] {
+    return this.sql<IndexedMessage>`
+      SELECT id AS seq, role, text, at FROM messages ORDER BY id ASC
+    `;
   }
 
   @callable()
@@ -210,6 +284,10 @@ class HubCallables extends RpcTarget {
   deleteChat(chatId: string): Promise<boolean> {
     return this.#hub.deleteChat(assertChatId(chatId));
   }
+
+  reindexChat(chatId: string): Promise<number> {
+    return this.#hub.reindexChat(assertChatId(chatId));
+  }
 }
 
 /**
@@ -234,6 +312,37 @@ export class UserHub extends DurableObject<Env> {
   readonly lifecycle = Lifecycle.install(this)
     .use(this.chats)
     .use(this.webSockets);
+
+  /**
+   * The hub's own tables, alongside the catalog `RoutedAgents` manages.
+   * Lifecycle calls this once per instance start, inside
+   * `blockConcurrencyWhile`, before any request is dispatched.
+   *
+   * `message_index` is the durable copy, keyed by the pushing chat's own
+   * ordinal so a replayed push is a no-op. `message_fts` is the FTS5
+   * index over the same rows, sharing their `rowid`. Two tables rather
+   * than one because FTS5 has no `PRIMARY KEY` to make the insert
+   * idempotent, and idempotency is what makes repair trivial.
+   */
+  onStart(): void {
+    const sql = this.ctx.storage.sql;
+    sql.exec(`
+      CREATE TABLE IF NOT EXISTS message_index (
+        chat_id TEXT NOT NULL,
+        seq INTEGER NOT NULL,
+        role TEXT NOT NULL,
+        text TEXT NOT NULL,
+        at INTEGER NOT NULL,
+        PRIMARY KEY (chat_id, seq)
+      )
+    `);
+    sql.exec(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS message_fts USING fts5(
+        text,
+        chat_id UNINDEXED
+      )
+    `);
+  }
 
   async createChat(): Promise<string> {
     const { id } = await this.chats.create({
@@ -268,16 +377,55 @@ export class UserHub extends DurableObject<Env> {
    * before either writes, and the fence would compare against a value
    * that's already stale by the time the later one applies.
    */
-  recordChatActivity(chatId: string, meta: ChatMeta): Promise<boolean> {
+  recordChatActivity(
+    chatId: string,
+    meta: ChatMeta,
+    message?: IndexedMessage
+  ): Promise<boolean> {
     return this.ctx.blockConcurrencyWhile(async () => {
       const current = (await this.chats.list()).find(
         (entry) => entry.id === chatId
       );
-      if (!current || (current.metadata?.seq ?? 0) >= meta.seq) {
-        return false;
-      }
+      // A deleted chat is refused outright — nothing indexed, nothing
+      // written — so delayed activity cannot resurrect it.
+      if (!current) return false;
+
+      // Indexing is deliberately outside the fence. The fence exists so
+      // a stale *snapshot* cannot overwrite a fresher one, but an
+      // out-of-order message is still a real message and belongs in the
+      // index. The insert is keyed on (chat_id, seq), so ordering does
+      // not matter and a replayed push is a no-op.
+      if (message) this.#indexMessage(chatId, message);
+
+      if ((current.metadata?.seq ?? 0) >= meta.seq) return false;
       return this.chats.setMetadata(chatId, meta);
     });
+  }
+
+  /** Idempotent on `(chat_id, seq)`: safe to call again for any message. */
+  #indexMessage(chatId: string, message: IndexedMessage): void {
+    const sql = this.ctx.storage.sql;
+    const text = stripSentinels(message.text);
+    const [inserted] = [
+      ...sql.exec<{ rowid: number }>(
+        `INSERT OR IGNORE INTO message_index (chat_id, seq, role, text, at)
+         VALUES (?, ?, ?, ?, ?)
+         RETURNING rowid`,
+        chatId,
+        message.seq,
+        message.role,
+        text,
+        message.at
+      )
+    ];
+    // No row back means this message was already indexed.
+    if (!inserted) return;
+    sql.exec(
+      `INSERT INTO message_fts (rowid, text, chat_id) VALUES (?, ?, ?)`,
+      inserted.rowid,
+      text,
+      chatId
+    );
   }
 
   /** Most recent activity first; reads only this DO. */
@@ -285,25 +433,127 @@ export class UserHub extends DurableObject<Env> {
     return this.chats.list();
   }
 
-  /** Cross-chat search over the pushed metadata; no chat wakes up. */
-  async searchChats(query: string) {
-    const needle = query.toLowerCase();
-    return (await this.chats.list()).filter(({ metadata }) =>
-      [metadata?.title, metadata?.lastMessage].some((value) =>
-        value?.toLowerCase().includes(needle)
+  /**
+   * Full-text search over every message this user has ever sent, still
+   * reading only this Durable Object — no chat wakes up.
+   *
+   * FTS5 ranks with `bm25`, where lower is better. A chat can match on
+   * many messages; only its best one is returned, so the sidebar stays
+   * one row per chat. Entries deleted since a message was indexed are
+   * dropped by the join against the live catalog.
+   */
+  async searchChats(query: string): Promise<ChatSearchHit[]> {
+    const match = toMatchQuery(query);
+    if (!match) return [];
+
+    const rows = [
+      ...this.ctx.storage.sql.exec<{
+        chat_id: string;
+        rowid: number;
+        snippet: string;
+        score: number;
+      }>(
+        `SELECT chat_id, rowid,
+                snippet(message_fts, 0, ?, ?, '…', 12) AS snippet,
+                bm25(message_fts) AS score
+         FROM message_fts
+         WHERE message_fts MATCH ?
+         ORDER BY score
+         LIMIT ?`,
+        MATCH_OPEN,
+        MATCH_CLOSE,
+        match,
+        // Over-fetch: many rows can collapse onto one chat.
+        SEARCH_LIMIT * 20
       )
+    ];
+
+    const best = new Map<string, { rowid: number; snippet: string }>();
+    for (const row of rows) {
+      // Rows arrive best-first, so the first sighting of a chat wins.
+      if (!best.has(row.chat_id)) {
+        best.set(row.chat_id, { rowid: row.rowid, snippet: row.snippet });
+      }
+    }
+
+    const entries = new Map(
+      (await this.chats.list()).map((entry) => [entry.id, entry])
     );
+    const hits: ChatSearchHit[] = [];
+    for (const [chatId, hit] of best) {
+      const entry = entries.get(chatId);
+      if (!entry) continue;
+      const [row] = [
+        ...this.ctx.storage.sql.exec<{ seq: number }>(
+          `SELECT seq FROM message_index WHERE rowid = ?`,
+          hit.rowid
+        )
+      ];
+      hits.push({ ...entry, snippet: hit.snippet, seq: row?.seq ?? 0 });
+      if (hits.length === SEARCH_LIMIT) break;
+    }
+    return hits;
   }
 
-  /** Destroys the chat's own storage and removes it from the catalog. */
-  deleteChat(chatId: string): Promise<boolean> {
-    return this.chats.delete(chatId);
+  /**
+   * Destroys the chat's own storage, removes it from the catalog, and
+   * drops its messages from the index. `chats.delete()` knows nothing
+   * about this hub's tables, so forgetting the second half here would
+   * leave a deleted conversation searchable.
+   */
+  async deleteChat(chatId: string): Promise<boolean> {
+    const deleted = await this.chats.delete(chatId);
+    if (deleted) this.#forgetChat(chatId);
+    return deleted;
+  }
+
+  #forgetChat(chatId: string): void {
+    const sql = this.ctx.storage.sql;
+    sql.exec(
+      `DELETE FROM message_fts
+       WHERE rowid IN (SELECT rowid FROM message_index WHERE chat_id = ?)`,
+      chatId
+    );
+    sql.exec(`DELETE FROM message_index WHERE chat_id = ?`, chatId);
+  }
+
+  /**
+   * Rebuild one chat's slice of the index from the chat itself, which is
+   * the source of truth. This is the repair path for a push that failed:
+   * the chat kept the message, the hub never saw it, and search would
+   * miss it until the next message arrived.
+   *
+   * This is the one operation here that wakes a chat, which is why it is
+   * an explicit repair call and not something search does on its own.
+   * Returns the number of messages indexed.
+   */
+  async reindexChat(chatId: string): Promise<number> {
+    const chat = await this.chats.get(chatId);
+    if (!chat) return 0;
+    const messages = await chat.exportMessages();
+    return this.ctx.blockConcurrencyWhile(async () => {
+      // Still present after the round-trip? A delete may have landed
+      // while the chat was answering.
+      const entries = await this.chats.list();
+      if (!entries.some((entry) => entry.id === chatId)) return 0;
+      // Drop first: this repairs a partial index and also clears rows
+      // for messages the chat no longer has.
+      this.#forgetChat(chatId);
+      for (const message of messages) this.#indexMessage(chatId, message);
+      return messages.length;
+    });
   }
 
   /** Plain HTTP view of the catalog, for curl. */
   async onRequest(): Promise<Response> {
+    const [counts] = [
+      ...this.ctx.storage.sql.exec<{ indexed: number }>(
+        `SELECT COUNT(*) AS indexed FROM message_index`
+      )
+    ];
     return Response.json({
       user: this.lifecycle.name,
+      indexedMessages: counts?.indexed ?? 0,
       chats: await this.chats.list()
     });
   }
