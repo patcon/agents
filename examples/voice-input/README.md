@@ -6,9 +6,15 @@ Captures microphone audio, streams it to an Agent Durable Object for real-time s
 
 ## Run it
 
+From this directory, build the `agents` workspace package once, then start the example:
+
 ```bash
-npm install && npm start
+pnpm install
+(cd ../../packages/agents && pnpm build)
+pnpm start
 ```
+
+("Failed to resolve entry for package agents" / "agents/voice ... could not be resolved" means `agents` needs (re)building.)
 
 No API keys needed — uses Workers AI (bound via `wrangler.jsonc`).
 
