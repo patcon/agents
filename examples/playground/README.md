@@ -124,6 +124,27 @@ See [testing.md](./testing.md) for a comprehensive guide on manually testing eve
 
 Each demo has its own Durable Object agent. The full list of agents and workflows is defined in `wrangler.jsonc`.
 
+## AI Models
+
+The AI and voice demos pick their model in `src/model.ts`. By default they use the
+Workers AI binding (`@cf/moonshotai/kimi-k2.7-code`), so no API key is needed.
+
+To run them through [OpenRouter](https://openrouter.ai) instead, set
+`OPENROUTER_API_KEY` — `src/model.ts` then builds the model with
+[`@openrouter/ai-sdk-provider`](https://openrouter.ai/docs/community/vercel-ai-sdk)
+and ignores the Workers AI binding:
+
+```
+OPENROUTER_API_KEY=sk-or-v1-...
+```
+
+The model is `openrouter/free`, OpenRouter's free-models router, which picks a
+currently-free model for each request; change the slug in `src/model.ts` to use
+a different one. Free models are rate limited, so expect occasional `429`s.
+
+`OPENROUTER_API_KEY` is listed in `secrets.required` in `wrangler.jsonc` —
+without that entry it would not be loaded from `.env` at all.
+
 ## Environment Variables
 
 For the email demos, set `EMAIL_SECRET` for HMAC-signed replies:
@@ -133,10 +154,11 @@ For the email demos, set `EMAIL_SECRET` for HMAC-signed replies:
 wrangler secret put EMAIL_SECRET
 ```
 
-For local development, add it to a `.env` file:
+For local development, add it to a `.env` file (see `.env.example`):
 
 ```
 EMAIL_SECRET=your-secret-for-email-signing
+OPENROUTER_API_KEY=sk-or-v1-...  # optional, see AI Models above
 ```
 
 ## Email Routing Setup
