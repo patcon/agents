@@ -18,6 +18,32 @@ pnpm start
 
 No API keys needed — uses Workers AI (bound via `wrangler.jsonc`).
 
+## Running with a local-only model
+
+For fully offline dev (no Cloudflare account, no network calls), swap in
+[`LocalWhisperfileSTT`](./src/local-whisper-stt.ts), which sends audio to a
+[whisperfile](https://huggingface.co/Mozilla/whisperfile) server running on
+your machine instead of Workers AI. Quality and latency are both noticeably
+worse than the hosted Nova 3 model — this is meant for quick local dev, not
+production.
+
+```bash
+pnpm stt:setup    # one-time: downloads whisper-tiny.en.llamafile (~90MB)
+pnpm stt:server   # leave running in its own terminal
+pnpm start:whisper
+```
+
+`start:whisper` sets two env vars:
+
+- `VITE_STT_PROVIDER=local`, which `src/server.ts` reads to pick
+  `LocalWhisperfileSTT` over `WorkersAINova3STT`.
+- `CLOUDFLARE_VITE_FORCE_LOCAL=true`, which tells `@cloudflare/vite-plugin`
+  to skip connecting to Cloudflare for the `AI` binding (configured as
+  `remote: true` in `wrangler.jsonc`) instead of trying and failing while
+  offline. Safe here since this mode never calls `env.AI`.
+
+No code changes needed to switch back — just run `pnpm start` instead.
+
 ## How it works
 
 ### Server (`src/server.ts`)
