@@ -146,3 +146,6 @@ vite.config.ts.timestamp-*
 
 .wrangler
 .DS_Store
+
+# Local whisperfile STT server binary/model (see scripts/setup-local-whisper.sh)
+.whisperfile/
