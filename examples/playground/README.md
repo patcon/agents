@@ -4,13 +4,15 @@ An interactive demo application showcasing the major feature areas of the Cloudf
 
 ## Getting Started
 
-```bash
-# Install dependencies
-npm install
+From this directory, build the workspace packages this example depends on once, then start the dev server:
 
-# Start the development server
-npm start
+```bash
+pnpm install
+(cd ../.. && pnpm build)
+pnpm start
 ```
+
+("Failed to resolve entry for package `@cloudflare/ai-chat`" / "`@cloudflare/codemode` ... could not be resolved" means those packages need (re)building. To build just what the playground needs, run `pnpm build` in `packages/agents`, `packages/ai-chat`, and `packages/codemode` instead of the whole monorepo.)
 
 Visit http://localhost:5173 to explore the playground.
 
