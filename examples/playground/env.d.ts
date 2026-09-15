@@ -4,6 +4,7 @@ interface __BaseEnv_Env {
   LOADER: WorkerLoader;
   AI: Ai;
   EMAIL_SECRET: string;
+  OPENROUTER_API_KEY: string;
   StateAgent: DurableObjectNamespace<import("./src/server").StateAgent>;
   CallableAgent: DurableObjectNamespace<import("./src/server").CallableAgent>;
   StreamingAgent: DurableObjectNamespace<import("./src/server").StreamingAgent>;
@@ -112,6 +113,6 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 };
 declare namespace NodeJS {
   interface ProcessEnv extends StringifyValues<
-    Pick<Cloudflare.Env, "EMAIL_SECRET">
+    Pick<Cloudflare.Env, "EMAIL_SECRET" | "OPENROUTER_API_KEY">
   > {}
 }

@@ -1,4 +1,4 @@
-import { createWorkersAI } from "workers-ai-provider";
+import { getModel } from "../../model";
 import { AIChatAgent } from "@cloudflare/ai-chat";
 import {
   streamText,
@@ -13,12 +13,9 @@ export class ChatAgent extends AIChatAgent<Env> {
   maxPersistedMessages = 200;
 
   async onChatMessage() {
-    const workersai = createWorkersAI({ binding: this.env.AI });
 
     const result = streamText({
-      model: workersai("@cf/moonshotai/kimi-k2.7-code", {
-        sessionAffinity: this.sessionAffinity
-      }),
+      model: getModel(this.env, { sessionAffinity: this.sessionAffinity }),
       instructions:
         "You are a helpful assistant running on Cloudflare Workers. " +
         "You can check the weather and get the user's timezone.",

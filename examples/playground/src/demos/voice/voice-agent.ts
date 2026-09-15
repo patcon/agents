@@ -6,7 +6,7 @@ import {
   type VoiceTurnContext
 } from "agents/voice";
 import { streamText } from "ai";
-import { createWorkersAI } from "workers-ai-provider";
+import { getModel } from "../../model";
 
 const VoiceAgent = withVoice(Agent);
 
@@ -15,12 +15,9 @@ export class PlaygroundVoiceAgent extends VoiceAgent<Env> {
   tts = new WorkersAITTS(this.env.AI);
 
   async onTurn(transcript: string, context: VoiceTurnContext) {
-    const ai = createWorkersAI({ binding: this.env.AI });
 
     const result = streamText({
-      model: ai("@cf/moonshotai/kimi-k2.7-code" as Parameters<typeof ai>[0], {
-        sessionAffinity: this.sessionAffinity
-      }),
+      model: getModel(this.env, { sessionAffinity: this.sessionAffinity }),
       instructions:
         "You are a friendly voice assistant in a demo playground. Keep responses concise — 1-2 sentences. Be warm and helpful.",
       messages: [

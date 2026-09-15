@@ -1,4 +1,4 @@
-import { createWorkersAI } from "workers-ai-provider";
+import { getModel } from "../../model";
 import { AIChatAgent } from "@cloudflare/ai-chat";
 import {
   streamText,
@@ -60,7 +60,6 @@ export class CodemodeAgent extends AIChatAgent<Env> {
   maxPersistedMessages = 200;
 
   async onChatMessage() {
-    const workersai = createWorkersAI({ binding: this.env.AI });
 
     const executor = new DynamicWorkerExecutor({
       loader: this.env.LOADER
@@ -69,9 +68,7 @@ export class CodemodeAgent extends AIChatAgent<Env> {
     const codemode = createCodeTool({ tools: pmTools, executor });
 
     const result = streamText({
-      model: workersai("@cf/moonshotai/kimi-k2.7-code", {
-        sessionAffinity: this.sessionAffinity
-      }),
+      model: getModel(this.env, { sessionAffinity: this.sessionAffinity }),
       instructions:
         "You are a helpful assistant with access to a codemode tool. " +
         "When asked to perform operations, use the codemode tool to write JavaScript code " +
