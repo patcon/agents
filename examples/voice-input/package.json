@@ -6,6 +6,7 @@
   "version": "0.0.0",
   "scripts": {
     "start": "vite dev",
+    "start:whisper": "VITE_STT_PROVIDER=local CLOUDFLARE_VITE_FORCE_LOCAL=true vite dev",
     "deploy": "vite build && wrangler deploy",
     "types": "wrangler types env.d.ts --include-runtime false"
   },
