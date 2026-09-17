@@ -142,6 +142,16 @@ The model is `openrouter/free`, OpenRouter's free-models router, which picks a
 currently-free model for each request; change the slug in `src/model.ts` to use
 a different one. Free models are rate limited, so expect occasional `429`s.
 
+The voice demo's text-to-speech follows the same toggle (`getTTS` in
+`src/model.ts`), calling OpenRouter's
+[speech endpoint](https://openrouter.ai/docs/guides/overview/multimodal/tts)
+with `deepgram/flux-tts:free`. That endpoint has no free-models router —
+`openrouter/free` is chat-only — so the TTS model is named explicitly. Set
+`USE_OPENROUTER_TTS=false` to keep speech on Workers AI while the LLM still
+runs on OpenRouter.
+Speech-to-text still runs on Workers AI: the voice pipeline needs a continuous
+streaming transcriber, and OpenRouter only offers batch transcription.
+
 `OPENROUTER_API_KEY` is listed in `secrets.required` in `wrangler.jsonc` —
 without that entry it would not be loaded from `.env` at all.
 
