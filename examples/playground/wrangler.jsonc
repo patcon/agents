@@ -123,7 +123,7 @@
     }
   ],
   "secrets": {
-    "required": ["EMAIL_SECRET", "OPENROUTER_API_KEY"]
+    "required": ["EMAIL_SECRET", "OPENROUTER_API_KEY", "USE_OPENROUTER_TTS"]
   },
   "worker_loaders": [{ "binding": "LOADER" }],
   "observability": {

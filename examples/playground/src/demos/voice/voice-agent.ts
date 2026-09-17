@@ -2,17 +2,16 @@ import { Agent, type Connection } from "agents";
 import {
   withVoice,
   WorkersAIFluxSTT,
-  WorkersAITTS,
   type VoiceTurnContext
 } from "agents/voice";
 import { streamText } from "ai";
-import { getModel } from "../../model";
+import { getModel, getTTS } from "../../model";
 
 const VoiceAgent = withVoice(Agent);
 
 export class PlaygroundVoiceAgent extends VoiceAgent<Env> {
   transcriber = new WorkersAIFluxSTT(this.env.AI);
-  tts = new WorkersAITTS(this.env.AI);
+  tts = getTTS(this.env);
 
   async onTurn(transcript: string, context: VoiceTurnContext) {
 
