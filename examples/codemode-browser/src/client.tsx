@@ -1,5 +1,4 @@
 import { createRoot } from "react-dom/client";
-import { useAgent } from "agents/react";
 import { useAgentChat, type AITool } from "@cloudflare/ai-chat/react";
 import {
   IframeSandboxExecutor,
@@ -27,8 +26,9 @@ import {
   SunIcon
 } from "@phosphor-icons/react";
 import { appStore } from "./store";
-import { emptyWorkspace, type Workspace } from "./schemas";
+import { emptyWorkspace } from "./schemas";
 import { browserTools } from "./tools";
+import { useWorkspaceAgent } from "./use-workspace-agent";
 import { ToolCard, type ToolPart } from "./tool-card";
 import { SidePanel, type FormHandlers } from "./side-panel";
 import "./styles.css";
@@ -59,28 +59,7 @@ function App() {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // The workspace is persisted as the agent's state: the server's copy
-  // hydrates the store on connect (and on changes from other tabs), and
-  // local changes are pushed back. Tracking the last server snapshot keeps
-  // a hydration from being echoed straight back.
-  const serverState = useRef<Workspace | null>(null);
-  const agent = useAgent<Workspace>({
-    agent: "browser-codemode",
-    onStateUpdate: (state, source) => {
-      if (source !== "server") return;
-      serverState.current = state;
-      appStore.set(() => state);
-    }
-  });
-
-  useEffect(
-    () =>
-      appStore.subscribe(() => {
-        const state = appStore.get();
-        if (state !== serverState.current) agent.setState(state);
-      }),
-    [agent]
-  );
+  const agent = useWorkspaceAgent("browser-codemode");
 
   const codemodeTool = useMemo(
     () =>
