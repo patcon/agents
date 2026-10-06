@@ -3,11 +3,8 @@ import { useAgent } from "agents/react";
 import { useAgentChat, type AITool } from "@cloudflare/ai-chat/react";
 import {
   IframeSandboxExecutor,
-  createBrowserCodeTool,
-  type JsonSchemaExecutableToolDescriptor,
-  type JsonSchemaExecutableToolDescriptors
+  createBrowserCodeTool
 } from "@cloudflare/codemode/browser";
-import type { z } from "zod";
 import { isToolUIPart } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
@@ -23,261 +20,18 @@ import {
 } from "@cloudflare/kumo";
 import {
   BrainIcon,
-  CheckCircleIcon,
-  CircleNotchIcon,
-  CodeIcon,
   LightningIcon,
   PaperPlaneRightIcon,
-  TerminalIcon,
   TrashIcon,
-  WarningCircleIcon,
   MoonIcon,
   SunIcon
 } from "@phosphor-icons/react";
 import { appStore } from "./store";
-import * as workspace from "./workspace";
-import {
-  emptyWorkspace,
-  parseArgs,
-  toolArgs,
-  toolInputSchema,
-  type ToolName,
-  type Workspace
-} from "./schemas";
+import { emptyWorkspace, type Workspace } from "./schemas";
+import { browserTools } from "./tools";
+import { ToolCard, type ToolPart } from "./tool-card";
 import { SidePanel, type FormHandlers } from "./side-panel";
 import "./styles.css";
-
-type ToolPart = {
-  type: string;
-  state?: string;
-  errorText?: string;
-  input?: { code?: string; [key: string]: unknown };
-  output?: { code?: string; result?: unknown; logs?: string[] };
-};
-
-/**
- * Build a browser tool from its zod schema: the model sees the generated
- * JSON Schema, arguments are validated before `run`, and thrown errors come
- * back to the model as `{ error }` so it can correct itself.
- */
-function defineTool<Name extends ToolName>(
-  name: Name,
-  description: string,
-  run: (args: z.output<(typeof toolArgs)[Name]>) => unknown
-): JsonSchemaExecutableToolDescriptor {
-  return {
-    description,
-    inputSchema: toolInputSchema(
-      name
-    ) as JsonSchemaExecutableToolDescriptor["inputSchema"],
-    execute: async (input) => {
-      try {
-        const args = parseArgs(toolArgs[name], input);
-        return await run(args as z.output<(typeof toolArgs)[Name]>);
-      } catch (error) {
-        return { error: (error as Error).message };
-      }
-    }
-  };
-}
-
-const browserTools: JsonSchemaExecutableToolDescriptors = {
-  getPageInfo: defineTool(
-    "getPageInfo",
-    "Get information about the current browser page",
-    () => ({ title: document.title, url: location.href })
-  ),
-  getState: defineTool(
-    "getState",
-    "Get all projects and tasks, including edits the user made by hand in the side panel. Call this before modifying existing data.",
-    () => {
-      const { projects, tasks } = appStore.get();
-      return { projects, tasks };
-    }
-  ),
-  createProject: defineTool(
-    "createProject",
-    "Create a project (shown live in the user's side panel)",
-    workspace.createProject
-  ),
-  listProjects: defineTool(
-    "listProjects",
-    "List projects",
-    () => appStore.get().projects
-  ),
-  createTask: defineTool(
-    "createTask",
-    "Create a task in a project",
-    workspace.createTask
-  ),
-  listTasks: defineTool(
-    "listTasks",
-    "List tasks, optionally by project",
-    ({ projectId }) => workspace.listTasks(projectId)
-  ),
-  updateTask: defineTool(
-    "updateTask",
-    "Update a task's title or done status",
-    workspace.updateTask
-  ),
-  deleteTask: defineTool(
-    "deleteTask",
-    "Delete a task. The user is asked to confirm; returns an error if they decline.",
-    ({ id }) => {
-      const task = appStore.get().tasks.find((t) => t.id === id);
-      // Tools run in the main page, so they can pause for the user.
-      if (task && !window.confirm(`Delete task "${task.title}"?`)) {
-        throw new Error("User declined to delete the task");
-      }
-      workspace.deleteTask(id);
-      return { deleted: id };
-    }
-  ),
-  showView: defineTool(
-    "showView",
-    "Display a view in the user's side panel, replacing any previous view. " +
-      "Prefer binding forms to an action: on submit the page calls that tool directly with { ...action.args, ...fieldValues }, " +
-      "so field names must be the tool's parameter names (e.g. 'title', not 'taskTitle'). " +
-      "The form stays open for more entries, without involving you. " +
-      "E.g. to let the user add tasks: { action: { tool: 'createTask', args: { projectId: 1 } }, fields: [{ name: 'title', label: 'Task' }] }. " +
-      "Set notifyAgent only if you need to react to each submission. " +
-      "A form without an action always sends its values to you as a chat message.",
-    (spec) => {
-      workspace.showView(spec);
-      return { shown: spec.component };
-    }
-  ),
-  clearView: defineTool(
-    "clearView",
-    "Remove the view from the user's side panel",
-    () => {
-      workspace.clearView();
-      return { cleared: true };
-    }
-  )
-};
-
-function extractFunctionCalls(code?: string): string[] {
-  if (!code) return [];
-  return [
-    ...new Set(
-      code.match(/codemode\.(\w+)/g)?.map((m) => m.replace("codemode.", "")) ??
-        []
-    )
-  ];
-}
-
-function ToolCard({ part }: { part: ToolPart }) {
-  const [expanded, setExpanded] = useState(true);
-  const calls = extractFunctionCalls(part.output?.code ?? part.input?.code);
-  const hasError = part.state === "output-error" || !!part.errorText;
-  const isDone = part.state === "output-available";
-  const isRunning = !isDone && !hasError;
-
-  return (
-    <Surface
-      className={`rounded-xl ring ${hasError ? "ring-2 ring-red-500/30" : "ring-kumo-line"} overflow-hidden`}
-    >
-      <button
-        type="button"
-        className="w-full flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-kumo-elevated transition-colors"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <LightningIcon size={14} className="text-orange-500" />
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <Text size="xs" bold>
-            Browser iframe codemode
-          </Text>
-          {calls.length > 0 && (
-            <>
-              <span className="text-kumo-inactive">&middot;</span>
-              <span className="font-mono text-xs text-kumo-secondary truncate">
-                {calls.join(", ")}
-              </span>
-            </>
-          )}
-        </div>
-        {isDone && <CheckCircleIcon size={14} className="text-green-500" />}
-        {hasError && <WarningCircleIcon size={14} className="text-red-500" />}
-        {isRunning && (
-          <CircleNotchIcon
-            size={14}
-            className="text-kumo-inactive animate-spin"
-          />
-        )}
-      </button>
-
-      {expanded && (
-        <div className="px-3 pb-3 border-t border-kumo-line space-y-2 pt-2">
-          {part.output?.code && (
-            <div>
-              <div className="flex items-center gap-1 mb-1">
-                <CodeIcon size={10} className="text-kumo-inactive" />
-                <Text size="xs" variant="secondary" bold>
-                  Code
-                </Text>
-              </div>
-              <pre className="font-mono text-xs text-kumo-subtle bg-kumo-elevated rounded p-2 overflow-x-auto whitespace-pre-wrap wrap-break-word">
-                {part.output.code}
-              </pre>
-            </div>
-          )}
-          {!part.output?.code && part.input?.code && (
-            <div>
-              <div className="flex items-center gap-1 mb-1">
-                <CodeIcon size={10} className="text-kumo-inactive" />
-                <Text size="xs" variant="secondary" bold>
-                  Code
-                </Text>
-              </div>
-              <pre className="font-mono text-xs text-kumo-subtle bg-kumo-elevated rounded p-2 overflow-x-auto whitespace-pre-wrap wrap-break-word">
-                {part.input.code}
-              </pre>
-            </div>
-          )}
-          {!part.output?.code && !part.input?.code && part.input && (
-            <div>
-              <Text size="xs" variant="secondary" bold>
-                Input
-              </Text>
-              <pre className="font-mono text-xs text-kumo-subtle bg-kumo-elevated rounded p-2 overflow-x-auto whitespace-pre-wrap mt-1">
-                {JSON.stringify(part.input, null, 2)}
-              </pre>
-            </div>
-          )}
-          {part.output?.result !== undefined && (
-            <div>
-              <Text size="xs" variant="secondary" bold>
-                Result
-              </Text>
-              <pre className="font-mono text-xs text-kumo-subtle bg-green-500/5 border border-green-500/20 rounded p-2 overflow-x-auto whitespace-pre-wrap mt-1">
-                {JSON.stringify(part.output.result, null, 2)}
-              </pre>
-            </div>
-          )}
-          {part.output?.logs?.length ? (
-            <div>
-              <div className="flex items-center gap-1 mb-1">
-                <TerminalIcon size={10} className="text-kumo-inactive" />
-                <Text size="xs" variant="secondary" bold>
-                  Console
-                </Text>
-              </div>
-              <pre className="font-mono text-xs text-kumo-subtle bg-kumo-elevated rounded p-2 overflow-x-auto whitespace-pre-wrap">
-                {part.output.logs.join("\n")}
-              </pre>
-            </div>
-          ) : null}
-          {hasError && (
-            <div className="text-red-500 text-xs">
-              {part.errorText ?? "Tool execution failed"}
-            </div>
-          )}
-        </div>
-      )}
-    </Surface>
-  );
-}
 
 function ModeToggle() {
   const [mode, setMode] = useState(
