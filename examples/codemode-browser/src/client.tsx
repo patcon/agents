@@ -32,10 +32,9 @@ import {
   MoonIcon,
   SunIcon
 } from "@phosphor-icons/react";
+import { appStore, nextId, parseViewSpec } from "./store";
+import { SidePanel } from "./side-panel";
 import "./styles.css";
-
-type Project = { id: number; name: string };
-type Task = { id: number; projectId: number; title: string; done: boolean };
 
 type ToolPart = {
   type: string;
@@ -45,19 +44,23 @@ type ToolPart = {
   output?: { code?: string; result?: unknown; logs?: string[] };
 };
 
-const store = {
-  projects: [] as Project[],
-  tasks: [] as Task[]
-};
-
 const browserTools: JsonSchemaExecutableToolDescriptors = {
   getPageInfo: {
     description: "Get information about the current browser page",
     inputSchema: { type: "object", properties: {}, required: [] },
     execute: async () => ({ title: document.title, url: location.href })
   },
+  getState: {
+    description:
+      "Get all projects and tasks, including edits the user made by hand in the side panel. Call this before modifying existing data.",
+    inputSchema: { type: "object", properties: {}, required: [] },
+    execute: async () => {
+      const { projects, tasks } = appStore.get();
+      return { projects, tasks };
+    }
+  },
   createProject: {
-    description: "Create a project in browser memory",
+    description: "Create a project (shown live in the user's side panel)",
     inputSchema: {
       type: "object",
       properties: { name: { type: "string", description: "Project name" } },
@@ -65,20 +68,20 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
     },
     execute: async (args) => {
       const project = {
-        id: store.projects.length + 1,
+        id: nextId(appStore.get().projects),
         name: String(args.name)
       };
-      store.projects.push(project);
+      appStore.set((s) => ({ ...s, projects: [...s.projects, project] }));
       return project;
     }
   },
   listProjects: {
-    description: "List browser-memory projects",
+    description: "List projects",
     inputSchema: { type: "object", properties: {}, required: [] },
-    execute: async () => store.projects
+    execute: async () => appStore.get().projects
   },
   createTask: {
-    description: "Create a task in browser memory",
+    description: "Create a task in a project",
     inputSchema: {
       type: "object",
       properties: {
@@ -88,33 +91,38 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
       required: ["projectId", "title"]
     },
     execute: async (args) => {
+      const projectId = Number(args.projectId);
+      if (!appStore.get().projects.some((p) => p.id === projectId)) {
+        return { error: "Project not found" };
+      }
       const task = {
-        id: store.tasks.length + 1,
-        projectId: Number(args.projectId),
+        id: nextId(appStore.get().tasks),
+        projectId,
         title: String(args.title),
         done: false
       };
-      store.tasks.push(task);
+      appStore.set((s) => ({ ...s, tasks: [...s.tasks, task] }));
       return task;
     }
   },
   listTasks: {
-    description: "List browser-memory tasks, optionally by project",
+    description: "List tasks, optionally by project",
     inputSchema: {
       type: "object",
       properties: { projectId: { type: "number", description: "Project ID" } },
       required: []
     },
     execute: async (args) => {
+      const { tasks } = appStore.get();
       const projectId =
         args.projectId == null ? undefined : Number(args.projectId);
       return projectId == null
-        ? store.tasks
-        : store.tasks.filter((task) => task.projectId === projectId);
+        ? tasks
+        : tasks.filter((task) => task.projectId === projectId);
     }
   },
   updateTask: {
-    description: "Update a browser-memory task",
+    description: "Update a task's title or done status",
     inputSchema: {
       type: "object",
       properties: {
@@ -125,11 +133,83 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
       required: ["id"]
     },
     execute: async (args) => {
-      const task = store.tasks.find((item) => item.id === Number(args.id));
+      const id = Number(args.id);
+      const task = appStore.get().tasks.find((item) => item.id === id);
       if (!task) return { error: "Task not found" };
-      if (args.title != null) task.title = String(args.title);
-      if (args.done != null) task.done = Boolean(args.done);
-      return task;
+      const updated = {
+        ...task,
+        ...(args.title != null && { title: String(args.title) }),
+        ...(args.done != null && { done: Boolean(args.done) })
+      };
+      appStore.set((s) => ({
+        ...s,
+        tasks: s.tasks.map((t) => (t.id === id ? updated : t))
+      }));
+      return updated;
+    }
+  },
+  deleteTask: {
+    description:
+      "Delete a task. The user is asked to confirm; returns an error if they decline.",
+    inputSchema: {
+      type: "object",
+      properties: { id: { type: "number", description: "Task ID" } },
+      required: ["id"]
+    },
+    execute: async (args) => {
+      const id = Number(args.id);
+      const task = appStore.get().tasks.find((item) => item.id === id);
+      if (!task) return { error: "Task not found" };
+      // Tools run in the main page, so they can pause for the user.
+      if (!window.confirm(`Delete task "${task.title}"?`)) {
+        return { error: "User declined to delete the task" };
+      }
+      appStore.set((s) => ({
+        ...s,
+        tasks: s.tasks.filter((t) => t.id !== id)
+      }));
+      return { deleted: id };
+    }
+  },
+  showView: {
+    description:
+      "Display a view in the user's side panel, replacing any previous view. " +
+      "Components and their props: " +
+      "taskList { projectId?: number, title?: string } (live task checklist); " +
+      "projectSummary { projectId: number } (progress bar + tasks); " +
+      "table { title?: string, columns: string[], rows: any[][] }; " +
+      "form { title?: string, fields: { name: string, label?: string, type?: 'text' | 'number' | 'checkbox' }[], submitLabel?: string } " +
+      "(the user's submitted values arrive as their next chat message).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        component: {
+          type: "string",
+          enum: ["taskList", "projectSummary", "table", "form"]
+        },
+        props: { type: "object", description: "Props for the component" }
+      },
+      required: ["component", "props"]
+    },
+    execute: async (args) => {
+      try {
+        const spec = parseViewSpec(args.component, args.props);
+        appStore.set((s) => ({
+          ...s,
+          view: { ...spec, id: (s.view?.id ?? 0) + 1 }
+        }));
+        return { shown: spec.component };
+      } catch (error) {
+        return { error: (error as Error).message };
+      }
+    }
+  },
+  clearView: {
+    description: "Remove the view from the user's side panel",
+    inputSchema: { type: "object", properties: {}, required: [] },
+    execute: async () => {
+      appStore.set((s) => ({ ...s, view: null }));
+      return { cleared: true };
     }
   }
 };
@@ -325,6 +405,21 @@ function App() {
     sendMessage({ role: "user", parts: [{ type: "text", text }] });
   }, [input, isStreaming, sendMessage]);
 
+  const submitForm = useCallback(
+    (title: string, values: Record<string, unknown>) => {
+      sendMessage({
+        role: "user",
+        parts: [
+          {
+            type: "text",
+            text: `Submitted "${title}" form: ${JSON.stringify(values)}`
+          }
+        ]
+      });
+    },
+    [sendMessage]
+  );
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -360,114 +455,127 @@ function App() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-5 py-6 space-y-5">
-          {messages.length === 0 && (
-            <Empty
-              icon={<LightningIcon size={32} />}
-              title="Try browser codemode"
-              description="Ask: Create a project named Alpha, add two tasks, then list everything."
-            />
-          )}
+      <div className="flex-1 flex min-h-0">
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-3xl mx-auto px-5 py-6 space-y-5">
+              {messages.length === 0 && (
+                <Empty
+                  icon={<LightningIcon size={32} />}
+                  title="Try browser codemode"
+                  description="Ask: Create a project named Alpha, add two tasks, then list everything."
+                />
+              )}
 
-          {messages.map((message) => {
-            const isUser = message.role === "user";
-            return (
-              <div
-                key={message.id}
-                className={isUser ? "flex justify-end" : "space-y-2"}
-              >
-                {message.parts.map((part, idx) => {
-                  if (part.type === "text") {
-                    return (
-                      <Surface
-                        key={idx}
-                        className={`max-w-[80%] rounded-2xl ${isUser ? "rounded-br-md bg-kumo-contrast text-kumo-inverse" : "rounded-bl-md ring ring-kumo-line"}`}
-                      >
-                        <Streamdown
-                          className={`sd-theme px-4 py-2.5 text-sm leading-relaxed ${isUser ? "**:text-kumo-inverse" : ""}`}
-                          plugins={{ code }}
-                          controls={false}
-                          isAnimating={isStreaming && !isUser}
-                        >
-                          {part.text}
-                        </Streamdown>
-                      </Surface>
-                    );
-                  }
-                  if (part.type === "reasoning") {
-                    if (!(part.text.length > 0 || part.state === "streaming"))
+              {messages.map((message) => {
+                const isUser = message.role === "user";
+                return (
+                  <div
+                    key={message.id}
+                    className={isUser ? "flex justify-end" : "space-y-2"}
+                  >
+                    {message.parts.map((part, idx) => {
+                      if (part.type === "text") {
+                        return (
+                          <Surface
+                            key={idx}
+                            className={`max-w-[80%] rounded-2xl ${isUser ? "rounded-br-md bg-kumo-contrast text-kumo-inverse" : "rounded-bl-md ring ring-kumo-line"}`}
+                          >
+                            <Streamdown
+                              className={`sd-theme px-4 py-2.5 text-sm leading-relaxed ${isUser ? "**:text-kumo-inverse" : ""}`}
+                              plugins={{ code }}
+                              controls={false}
+                              isAnimating={isStreaming && !isUser}
+                            >
+                              {part.text}
+                            </Streamdown>
+                          </Surface>
+                        );
+                      }
+                      if (part.type === "reasoning") {
+                        if (
+                          !(part.text.length > 0 || part.state === "streaming")
+                        )
+                          return null;
+                        return (
+                          <Surface
+                            key={idx}
+                            className="max-w-[80%] rounded-xl ring ring-kumo-line opacity-70 px-4 py-2.5"
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <BrainIcon
+                                size={14}
+                                className="text-kumo-inactive"
+                              />
+                              <Text size="xs" variant="secondary" bold>
+                                Thinking
+                              </Text>
+                            </div>
+                            <div className="whitespace-pre-wrap text-xs text-kumo-subtle italic">
+                              {part.text}
+                            </div>
+                          </Surface>
+                        );
+                      }
+                      if (isToolUIPart(part)) {
+                        return (
+                          <ToolCard
+                            key={idx}
+                            part={part as unknown as ToolPart}
+                          />
+                        );
+                      }
                       return null;
-                    return (
-                      <Surface
-                        key={idx}
-                        className="max-w-[80%] rounded-xl ring ring-kumo-line opacity-70 px-4 py-2.5"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <BrainIcon size={14} className="text-kumo-inactive" />
-                          <Text size="xs" variant="secondary" bold>
-                            Thinking
-                          </Text>
-                        </div>
-                        <div className="whitespace-pre-wrap text-xs text-kumo-subtle italic">
-                          {part.text}
-                        </div>
-                      </Surface>
-                    );
-                  }
-                  if (isToolUIPart(part)) {
-                    return (
-                      <ToolCard key={idx} part={part as unknown as ToolPart} />
-                    );
-                  }
-                  return null;
-                })}
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      <div className="border-t border-kumo-line bg-kumo-base">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            send();
-          }}
-          className="max-w-3xl mx-auto px-5 py-4"
-        >
-          <div className="flex items-end gap-3 rounded-xl border border-kumo-line bg-kumo-base p-3 shadow-sm focus-within:ring-2 focus-within:ring-kumo-ring focus-within:border-transparent transition-shadow">
-            <InputArea
-              value={input}
-              onValueChange={setInput}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  send();
-                }
-              }}
-              placeholder="Ask codemode to use browser tools..."
-              disabled={isStreaming}
-              rows={2}
-              className="flex-1 !ring-0 focus:!ring-0 !shadow-none !bg-transparent !outline-none"
-            />
-            <Button
-              type="submit"
-              variant="primary"
-              shape="square"
-              size="sm"
-              icon={<PaperPlaneRightIcon size={18} />}
-              disabled={!input.trim() || isStreaming}
-              loading={isStreaming}
-              aria-label="Send"
-              className="mb-0.5"
-            />
+                    })}
+                  </div>
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </div>
           </div>
-        </form>
-        <div className="flex justify-center pb-3">
-          <PoweredByCloudflare href="https://developers.cloudflare.com/agents/" />
+
+          <div className="border-t border-kumo-line bg-kumo-base">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                send();
+              }}
+              className="max-w-3xl mx-auto px-5 py-4"
+            >
+              <div className="flex items-end gap-3 rounded-xl border border-kumo-line bg-kumo-base p-3 shadow-sm focus-within:ring-2 focus-within:ring-kumo-ring focus-within:border-transparent transition-shadow">
+                <InputArea
+                  value={input}
+                  onValueChange={setInput}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      send();
+                    }
+                  }}
+                  placeholder="Ask codemode to use browser tools..."
+                  disabled={isStreaming}
+                  rows={2}
+                  className="flex-1 !ring-0 focus:!ring-0 !shadow-none !bg-transparent !outline-none"
+                />
+                <Button
+                  type="submit"
+                  variant="primary"
+                  shape="square"
+                  size="sm"
+                  icon={<PaperPlaneRightIcon size={18} />}
+                  disabled={!input.trim() || isStreaming}
+                  loading={isStreaming}
+                  aria-label="Send"
+                  className="mb-0.5"
+                />
+              </div>
+            </form>
+            <div className="flex justify-center pb-3">
+              <PoweredByCloudflare href="https://developers.cloudflare.com/agents/" />
+            </div>
+          </div>
         </div>
+        <SidePanel disabled={isStreaming} onFormSubmit={submitForm} />
       </div>
     </div>
   );
