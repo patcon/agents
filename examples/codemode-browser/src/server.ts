@@ -2,16 +2,14 @@ import { routeAgentRequest } from "agents";
 import { AIChatAgent, createToolsFromClientSchemas } from "@cloudflare/ai-chat";
 import { convertToModelMessages, streamText, isStepCount } from "ai";
 import { createWorkersAI } from "workers-ai-provider";
+import { emptyWorkspace, type Workspace } from "./schemas";
 
 /**
  * The browser owns the workspace (projects, tasks, side-panel view); the
- * agent only stores it so it survives reloads and syncs across tabs. Its
- * shape is defined client-side in `store.ts`.
+ * agent only stores it as state so it survives reloads and syncs across tabs.
  */
-type WorkspaceState = { projects: unknown[]; tasks: unknown[]; view: unknown };
-
-export class BrowserCodemode extends AIChatAgent<Env, WorkspaceState> {
-  initialState: WorkspaceState = { projects: [], tasks: [], view: null };
+export class BrowserCodemode extends AIChatAgent<Env, Workspace> {
+  initialState = emptyWorkspace;
 
   async onChatMessage(
     _onFinish?: unknown,
