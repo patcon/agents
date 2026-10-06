@@ -32,7 +32,14 @@ import {
   MoonIcon,
   SunIcon
 } from "@phosphor-icons/react";
-import { appStore, nextId, parseViewSpec, type ViewSpec } from "./store";
+import {
+  appStore,
+  emptyState,
+  nextId,
+  parseViewSpec,
+  type AppState,
+  type ViewSpec
+} from "./store";
 import { SidePanel, type FormHandlers } from "./side-panel";
 import "./styles.css";
 
@@ -416,7 +423,28 @@ function App() {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const agent = useAgent({ agent: "browser-codemode" });
+  // The workspace is persisted as the agent's state: the server's copy
+  // hydrates the store on connect (and on changes from other tabs), and
+  // local changes are pushed back. Tracking the last server snapshot keeps
+  // a hydration from being echoed straight back.
+  const serverState = useRef<AppState | null>(null);
+  const agent = useAgent<AppState>({
+    agent: "browser-codemode",
+    onStateUpdate: (state, source) => {
+      if (source !== "server") return;
+      serverState.current = state;
+      appStore.set(() => state);
+    }
+  });
+
+  useEffect(
+    () =>
+      appStore.subscribe(() => {
+        const state = appStore.get();
+        if (state !== serverState.current) agent.setState(state);
+      }),
+    [agent]
+  );
 
   const codemodeTool = useMemo(
     () =>
@@ -503,7 +531,10 @@ function App() {
             <Button
               variant="secondary"
               icon={<TrashIcon size={16} />}
-              onClick={clearHistory}
+              onClick={() => {
+                clearHistory();
+                appStore.set(() => emptyState);
+              }}
               disabled={messages.length === 0}
             >
               Clear

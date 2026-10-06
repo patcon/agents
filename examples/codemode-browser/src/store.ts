@@ -51,7 +51,9 @@ export type AppState = {
   view: (ViewSpec & { id: number }) | null;
 };
 
-let state: AppState = { projects: [], tasks: [], view: null };
+export const emptyState: AppState = { projects: [], tasks: [], view: null };
+
+let state: AppState = emptyState;
 const listeners = new Set<() => void>();
 
 /**
