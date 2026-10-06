@@ -132,30 +132,72 @@ function TableView({
   );
 }
 
+export type FormHandlers = {
+  runAction: (tool: string, args: Record<string, unknown>) => Promise<unknown>;
+  sendToAgent: (title: string, values: Record<string, unknown>) => void;
+};
+
+type FormProps = Extract<ViewSpec, { component: "form" }>["props"];
+
+function emptyValues(fields: FormProps["fields"]) {
+  return Object.fromEntries(
+    fields.map((f) => [f.name, f.type === "checkbox" ? false : ""])
+  );
+}
+
 function FormView({
   title,
   fields,
   submitLabel,
-  disabled,
-  onSubmit
-}: Extract<ViewSpec, { component: "form" }>["props"] & {
-  disabled: boolean;
-  onSubmit: (title: string, values: Record<string, unknown>) => void;
-}) {
+  action,
+  notifyAgent,
+  isStreaming,
+  handlers
+}: FormProps & { isStreaming: boolean; handlers: FormHandlers }) {
   const [values, setValues] = useState<Record<string, unknown>>(() =>
-    Object.fromEntries(
-      fields.map((f) => [f.name, f.type === "checkbox" ? false : ""])
-    )
+    emptyValues(fields)
   );
-  const [submitted, setSubmitted] = useState(false);
+  const [status, setStatus] = useState<
+    | { kind: "idle" }
+    | { kind: "saved"; count: number }
+    | { kind: "sent" }
+    | { kind: "error"; message: string }
+  >({ kind: "idle" });
+
+  // Only forms that message the agent need to wait for the current turn.
+  const talksToAgent = !action || notifyAgent;
+  const disabled = (talksToAgent && isStreaming) || status.kind === "sent";
+
+  async function submit() {
+    const formTitle = title ?? "form";
+    if (!action) {
+      handlers.sendToAgent(formTitle, values);
+      setStatus({ kind: "sent" });
+      return;
+    }
+    const result = await handlers.runAction(action.tool, {
+      ...action.args,
+      ...values
+    });
+    if (typeof result === "object" && result !== null && "error" in result) {
+      setStatus({ kind: "error", message: String(result.error) });
+      return;
+    }
+    // Stay open for the next entry.
+    setValues(emptyValues(fields));
+    setStatus((s) => ({
+      kind: "saved",
+      count: s.kind === "saved" ? s.count + 1 : 1
+    }));
+    if (notifyAgent) handlers.sendToAgent(formTitle, values);
+  }
 
   return (
     <form
       className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault();
-        setSubmitted(true);
-        onSubmit(title ?? "form", values);
+        void submit();
       }}
     >
       {title && <SectionTitle>{title}</SectionTitle>}
@@ -195,26 +237,38 @@ function FormView({
           )}
         </label>
       ))}
-      <Button
-        type="submit"
-        variant="primary"
-        size="sm"
-        disabled={disabled || submitted}
-      >
-        {submitted ? "Submitted" : (submitLabel ?? "Submit")}
-      </Button>
+      <div className="flex items-center gap-3">
+        <Button type="submit" variant="primary" size="sm" disabled={disabled}>
+          {status.kind === "sent" ? "Sent to agent" : (submitLabel ?? "Submit")}
+        </Button>
+        {status.kind === "saved" && (
+          <Text size="xs" variant="secondary">
+            Saved{status.count > 1 ? ` (${status.count})` : ""}
+          </Text>
+        )}
+        {status.kind === "error" && (
+          <span className="text-xs text-red-500">{status.message}</span>
+        )}
+      </div>
+      <Text size="xs" variant="secondary">
+        {action
+          ? notifyAgent
+            ? `Runs ${action.tool} and tells the agent.`
+            : `Runs ${action.tool} directly. The agent isn't messaged.`
+          : "Sends your answers to the agent."}
+      </Text>
     </form>
   );
 }
 
 function ViewRenderer({
   view,
-  disabled,
-  onFormSubmit
+  isStreaming,
+  formHandlers
 }: {
   view: ViewSpec;
-  disabled: boolean;
-  onFormSubmit: (title: string, values: Record<string, unknown>) => void;
+  isStreaming: boolean;
+  formHandlers: FormHandlers;
 }) {
   switch (view.component) {
     case "taskList":
@@ -225,17 +279,21 @@ function ViewRenderer({
       return <TableView {...view.props} />;
     case "form":
       return (
-        <FormView {...view.props} disabled={disabled} onSubmit={onFormSubmit} />
+        <FormView
+          {...view.props}
+          isStreaming={isStreaming}
+          handlers={formHandlers}
+        />
       );
   }
 }
 
 export function SidePanel({
-  disabled,
-  onFormSubmit
+  isStreaming,
+  formHandlers
 }: {
-  disabled: boolean;
-  onFormSubmit: (title: string, values: Record<string, unknown>) => void;
+  isStreaming: boolean;
+  formHandlers: FormHandlers;
 }) {
   const { projects, tasks, view } = useAppState();
 
@@ -269,8 +327,8 @@ export function SidePanel({
             <ViewRenderer
               key={view.id}
               view={view}
-              disabled={disabled}
-              onFormSubmit={onFormSubmit}
+              isStreaming={isStreaming}
+              formHandlers={formHandlers}
             />
           ) : (
             <Text size="xs" variant="secondary">

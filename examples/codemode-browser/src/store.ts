@@ -15,6 +15,14 @@ export type FormField = {
 };
 
 /**
+ * Tools a form may be bound to. A bound form runs the tool directly in the
+ * page on submit — no chat message, no model turn.
+ */
+export const FORM_ACTION_TOOLS = ["createProject", "createTask", "updateTask"];
+
+export type FormAction = { tool: string; args?: Record<string, unknown> };
+
+/**
  * Declarative views the model can ask the side panel to render. The model
  * only ever produces data matching one of these shapes — the components that
  * render them are ours, so generated code never touches the page's DOM.
@@ -28,7 +36,13 @@ export type ViewSpec =
     }
   | {
       component: "form";
-      props: { title?: string; fields: FormField[]; submitLabel?: string };
+      props: {
+        title?: string;
+        fields: FormField[];
+        submitLabel?: string;
+        action?: FormAction;
+        notifyAgent: boolean;
+      };
     };
 
 export type AppState = {
@@ -78,6 +92,19 @@ function optionalString(value: unknown, name: string): string | undefined {
   if (value == null) return undefined;
   if (typeof value !== "string") throw new Error(`${name} must be a string`);
   return value;
+}
+
+function parseFormAction(action: unknown): FormAction | undefined {
+  if (action == null) return undefined;
+  if (!isRecord(action) || !FORM_ACTION_TOOLS.includes(String(action.tool))) {
+    throw new Error(
+      `action.tool must be one of: ${FORM_ACTION_TOOLS.join(", ")}`
+    );
+  }
+  if (action.args != null && !isRecord(action.args)) {
+    throw new Error("action.args must be an object");
+  }
+  return { tool: String(action.tool), args: action.args ?? undefined };
 }
 
 /** Validate model-provided view input before it reaches the renderer. */
@@ -149,7 +176,9 @@ export function parseViewSpec(component: unknown, props: unknown): ViewSpec {
         props: {
           title: optionalString(props.title, "title"),
           fields: parsed,
-          submitLabel: optionalString(props.submitLabel, "submitLabel")
+          submitLabel: optionalString(props.submitLabel, "submitLabel"),
+          action: parseFormAction(props.action),
+          notifyAgent: props.notifyAgent === true
         }
       };
     }

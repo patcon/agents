@@ -32,8 +32,8 @@ import {
   MoonIcon,
   SunIcon
 } from "@phosphor-icons/react";
-import { appStore, nextId, parseViewSpec } from "./store";
-import { SidePanel } from "./side-panel";
+import { appStore, nextId, parseViewSpec, type ViewSpec } from "./store";
+import { SidePanel, type FormHandlers } from "./side-panel";
 import "./styles.css";
 
 type ToolPart = {
@@ -43,6 +43,12 @@ type ToolPart = {
   input?: { code?: string; [key: string]: unknown };
   output?: { code?: string; result?: unknown; logs?: string[] };
 };
+
+/** Trimmed non-empty string, or undefined for missing/blank input. */
+function text(value: unknown) {
+  if (typeof value !== "string" && typeof value !== "number") return undefined;
+  return String(value).trim() || undefined;
+}
 
 const browserTools: JsonSchemaExecutableToolDescriptors = {
   getPageInfo: {
@@ -67,10 +73,9 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
       required: ["name"]
     },
     execute: async (args) => {
-      const project = {
-        id: nextId(appStore.get().projects),
-        name: String(args.name)
-      };
+      const name = text(args.name);
+      if (!name) return { error: "name is required" };
+      const project = { id: nextId(appStore.get().projects), name };
       appStore.set((s) => ({ ...s, projects: [...s.projects, project] }));
       return project;
     }
@@ -95,10 +100,12 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
       if (!appStore.get().projects.some((p) => p.id === projectId)) {
         return { error: "Project not found" };
       }
+      const title = text(args.title);
+      if (!title) return { error: "title is required" };
       const task = {
         id: nextId(appStore.get().tasks),
         projectId,
-        title: String(args.title),
+        title,
         done: false
       };
       appStore.set((s) => ({ ...s, tasks: [...s.tasks, task] }));
@@ -136,9 +143,13 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
       const id = Number(args.id);
       const task = appStore.get().tasks.find((item) => item.id === id);
       if (!task) return { error: "Task not found" };
+      const title = text(args.title);
+      if (args.title != null && !title) {
+        return { error: "title cannot be empty" };
+      }
       const updated = {
         ...task,
-        ...(args.title != null && { title: String(args.title) }),
+        ...(title && { title }),
         ...(args.done != null && { done: Boolean(args.done) })
       };
       appStore.set((s) => ({
@@ -178,8 +189,13 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
       "taskList { projectId?: number, title?: string } (live task checklist); " +
       "projectSummary { projectId: number } (progress bar + tasks); " +
       "table { title?: string, columns: string[], rows: any[][] }; " +
-      "form { title?: string, fields: { name: string, label?: string, type?: 'text' | 'number' | 'checkbox' }[], submitLabel?: string } " +
-      "(the user's submitted values arrive as their next chat message).",
+      "form { title?: string, fields: { name: string, label?: string, type?: 'text' | 'number' | 'checkbox' }[], submitLabel?: string, action?: { tool: 'createProject' | 'createTask' | 'updateTask', args?: object }, notifyAgent?: boolean }. " +
+      "Prefer binding forms to an action: on submit the page calls that tool directly with { ...action.args, ...fieldValues }, " +
+      "so field names must be the tool's parameter names (e.g. 'title', not 'taskTitle'). " +
+      "The form stays open for more entries, without involving you. " +
+      "E.g. to let the user add tasks: { action: { tool: 'createTask', args: { projectId: 1 } }, fields: [{ name: 'title', label: 'Task' }] }. " +
+      "Set notifyAgent: true only if you need to react to each submission; it also sends the values as a chat message. " +
+      "A form without an action always sends its values to you as a chat message.",
     inputSchema: {
       type: "object",
       properties: {
@@ -194,6 +210,9 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
     execute: async (args) => {
       try {
         const spec = parseViewSpec(args.component, args.props);
+        if (spec.component === "form" && spec.props.action) {
+          checkFormMatchesTool(spec.props);
+        }
         appStore.set((s) => ({
           ...s,
           view: { ...spec, id: (s.view?.id ?? 0) + 1 }
@@ -213,6 +232,41 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
     }
   }
 };
+
+/**
+ * A bound form submits { ...action.args, ...fieldValues } to the tool, so
+ * field names must be the tool's parameter names. Catch mismatches when the
+ * form is shown (where the model can fix them) rather than on submit.
+ */
+function checkFormMatchesTool(
+  props: Extract<ViewSpec, { component: "form" }>["props"]
+) {
+  const { tool, args = {} } = props.action!;
+  const schema = browserTools[tool].inputSchema as {
+    properties?: Record<string, unknown>;
+    required?: string[];
+  };
+  const params = Object.keys(schema.properties ?? {});
+  const unknown = props.fields
+    .map((f) => f.name)
+    .filter((name) => !params.includes(name));
+  if (unknown.length) {
+    throw new Error(
+      `form field names must be ${tool} parameters (${params.join(", ")}); ` +
+        `unknown: ${unknown.join(", ")}`
+    );
+  }
+  const provided = new Set([
+    ...Object.keys(args),
+    ...props.fields.map((f) => f.name)
+  ]);
+  const missing = (schema.required ?? []).filter((p) => !provided.has(p));
+  if (missing.length) {
+    throw new Error(
+      `${tool} requires ${missing.join(", ")}; add them as fields or action.args`
+    );
+  }
+}
 
 function extractFunctionCalls(code?: string): string[] {
   if (!code) return [];
@@ -405,18 +459,21 @@ function App() {
     sendMessage({ role: "user", parts: [{ type: "text", text }] });
   }, [input, isStreaming, sendMessage]);
 
-  const submitForm = useCallback(
-    (title: string, values: Record<string, unknown>) => {
-      sendMessage({
-        role: "user",
-        parts: [
-          {
-            type: "text",
-            text: `Submitted "${title}" form: ${JSON.stringify(values)}`
-          }
-        ]
-      });
-    },
+  const formHandlers = useMemo<FormHandlers>(
+    () => ({
+      // Runs a bound tool directly in the page — the model is not involved.
+      runAction: (tool, args) => browserTools[tool].execute(args),
+      sendToAgent: (title, values) =>
+        sendMessage({
+          role: "user",
+          parts: [
+            {
+              type: "text",
+              text: `Submitted "${title}" form: ${JSON.stringify(values)}`
+            }
+          ]
+        })
+    }),
     [sendMessage]
   );
 
@@ -575,7 +632,7 @@ function App() {
             </div>
           </div>
         </div>
-        <SidePanel disabled={isStreaming} onFormSubmit={submitForm} />
+        <SidePanel isStreaming={isStreaming} formHandlers={formHandlers} />
       </div>
     </div>
   );
