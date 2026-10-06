@@ -37,7 +37,8 @@ server management.
 | `src/client/tools.ts`                   | the `codemode.*` tools: thin, validated wrappers around the actions                             |
 | `src/client/store.ts`                   | the external store shared by the tools and React                                                |
 | `src/client/use-workspace-agent.ts`     | connects to the agent and persists the workspace as its state                                   |
-| `src/client/components/views.tsx`       | components for agent-rendered views                                                             |
+| `src/client/components/views/`          | one component per agent-rendered view, plus the `viewComponents` registry in `index.tsx`        |
+| `src/client/components/task-row.tsx`    | a task checkbox, shared by the panel and views                                                  |
 | `src/client/components/side-panel.tsx`  | the workspace side panel                                                                        |
 | `src/client/components/tool-card.tsx`   | renders a codemode tool call in the chat                                                        |
 | `src/client/components/mode-toggle.tsx` | light/dark theme toggle                                                                         |
