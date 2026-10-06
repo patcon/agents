@@ -30,7 +30,8 @@ import { emptyWorkspace } from "./schemas";
 import { browserTools } from "./tools";
 import { useWorkspaceAgent } from "./use-workspace-agent";
 import { ToolCard, type ToolPart } from "./tool-card";
-import { SidePanel, type FormHandlers } from "./side-panel";
+import { SidePanel } from "./side-panel";
+import type { FormHandlers } from "./views";
 import "./styles.css";
 
 function ModeToggle() {
