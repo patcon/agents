@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button, Surface, Text } from "@cloudflare/kumo";
 import { SidebarIcon, XIcon } from "@phosphor-icons/react";
-import { appStore, useAppState, type Task, type ViewSpec } from "./store";
+import { appStore, useWorkspace } from "./store";
+import type { FormProps, Task, ViewSpec } from "./schemas";
 
 function toggleTask(id: number) {
   appStore.set((s) => ({
@@ -43,7 +44,7 @@ function TaskListView({
   projectId?: number;
   title?: string;
 }) {
-  const { projects, tasks } = useAppState();
+  const { projects, tasks } = useWorkspace();
   const project = projects.find((p) => p.id === projectId);
   const visible =
     projectId == null ? tasks : tasks.filter((t) => t.projectId === projectId);
@@ -62,7 +63,7 @@ function TaskListView({
 }
 
 function ProjectSummaryView({ projectId }: { projectId: number }) {
-  const { projects, tasks } = useAppState();
+  const { projects, tasks } = useWorkspace();
   const project = projects.find((p) => p.id === projectId);
   if (!project) {
     return (
@@ -137,8 +138,6 @@ export type FormHandlers = {
   sendToAgent: (title: string, values: Record<string, unknown>) => void;
 };
 
-type FormProps = Extract<ViewSpec, { component: "form" }>["props"];
-
 function emptyValues(fields: FormProps["fields"]) {
   return Object.fromEntries(
     fields.map((f) => [f.name, f.type === "checkbox" ? false : ""])
@@ -212,12 +211,12 @@ function FormView({
                   setValues((v) => ({ ...v, [field.name]: e.target.checked }))
                 }
               />
-              {field.label}
+              {field.label ?? field.name}
             </span>
           ) : (
             <>
               <span className="block text-xs text-kumo-secondary mb-1">
-                {field.label}
+                {field.label ?? field.name}
               </span>
               <input
                 type={field.type}
@@ -295,7 +294,7 @@ export function SidePanel({
   isStreaming: boolean;
   formHandlers: FormHandlers;
 }) {
-  const { projects, tasks, view } = useAppState();
+  const { projects, tasks, view } = useWorkspace();
 
   return (
     <aside className="hidden md:flex w-80 lg:w-96 shrink-0 flex-col border-l border-kumo-line bg-kumo-base overflow-y-auto">

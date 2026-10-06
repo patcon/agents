@@ -4,8 +4,10 @@ import { useAgentChat, type AITool } from "@cloudflare/ai-chat/react";
 import {
   IframeSandboxExecutor,
   createBrowserCodeTool,
+  type JsonSchemaExecutableToolDescriptor,
   type JsonSchemaExecutableToolDescriptors
 } from "@cloudflare/codemode/browser";
+import type { z } from "zod";
 import { isToolUIPart } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
@@ -32,14 +34,15 @@ import {
   MoonIcon,
   SunIcon
 } from "@phosphor-icons/react";
+import { appStore } from "./store";
 import {
-  appStore,
-  emptyState,
-  nextId,
-  parseViewSpec,
-  type AppState,
-  type ViewSpec
-} from "./store";
+  emptyWorkspace,
+  parseArgs,
+  toolArgs,
+  toolInputSchema,
+  type ToolName,
+  type Workspace
+} from "./schemas";
 import { SidePanel, type FormHandlers } from "./side-panel";
 import "./styles.css";
 
@@ -51,64 +54,71 @@ type ToolPart = {
   output?: { code?: string; result?: unknown; logs?: string[] };
 };
 
-/** Trimmed non-empty string, or undefined for missing/blank input. */
-function text(value: unknown) {
-  if (typeof value !== "string" && typeof value !== "number") return undefined;
-  return String(value).trim() || undefined;
+function nextId(items: { id: number }[]) {
+  return items.reduce((max, item) => Math.max(max, item.id), 0) + 1;
+}
+
+/**
+ * Build a browser tool from its zod schema: the model sees the generated
+ * JSON Schema, arguments are validated before `run`, and thrown errors come
+ * back to the model as `{ error }` so it can correct itself.
+ */
+function defineTool<Name extends ToolName>(
+  name: Name,
+  description: string,
+  run: (args: z.output<(typeof toolArgs)[Name]>) => unknown
+): JsonSchemaExecutableToolDescriptor {
+  return {
+    description,
+    inputSchema: toolInputSchema(
+      name
+    ) as JsonSchemaExecutableToolDescriptor["inputSchema"],
+    execute: async (input) => {
+      try {
+        const args = parseArgs(toolArgs[name], input);
+        return await run(args as z.output<(typeof toolArgs)[Name]>);
+      } catch (error) {
+        return { error: (error as Error).message };
+      }
+    }
+  };
 }
 
 const browserTools: JsonSchemaExecutableToolDescriptors = {
-  getPageInfo: {
-    description: "Get information about the current browser page",
-    inputSchema: { type: "object", properties: {}, required: [] },
-    execute: async () => ({ title: document.title, url: location.href })
-  },
-  getState: {
-    description:
-      "Get all projects and tasks, including edits the user made by hand in the side panel. Call this before modifying existing data.",
-    inputSchema: { type: "object", properties: {}, required: [] },
-    execute: async () => {
+  getPageInfo: defineTool(
+    "getPageInfo",
+    "Get information about the current browser page",
+    () => ({ title: document.title, url: location.href })
+  ),
+  getState: defineTool(
+    "getState",
+    "Get all projects and tasks, including edits the user made by hand in the side panel. Call this before modifying existing data.",
+    () => {
       const { projects, tasks } = appStore.get();
       return { projects, tasks };
     }
-  },
-  createProject: {
-    description: "Create a project (shown live in the user's side panel)",
-    inputSchema: {
-      type: "object",
-      properties: { name: { type: "string", description: "Project name" } },
-      required: ["name"]
-    },
-    execute: async (args) => {
-      const name = text(args.name);
-      if (!name) return { error: "name is required" };
+  ),
+  createProject: defineTool(
+    "createProject",
+    "Create a project (shown live in the user's side panel)",
+    ({ name }) => {
       const project = { id: nextId(appStore.get().projects), name };
       appStore.set((s) => ({ ...s, projects: [...s.projects, project] }));
       return project;
     }
-  },
-  listProjects: {
-    description: "List projects",
-    inputSchema: { type: "object", properties: {}, required: [] },
-    execute: async () => appStore.get().projects
-  },
-  createTask: {
-    description: "Create a task in a project",
-    inputSchema: {
-      type: "object",
-      properties: {
-        projectId: { type: "number", description: "Project ID" },
-        title: { type: "string", description: "Task title" }
-      },
-      required: ["projectId", "title"]
-    },
-    execute: async (args) => {
-      const projectId = Number(args.projectId);
+  ),
+  listProjects: defineTool(
+    "listProjects",
+    "List projects",
+    () => appStore.get().projects
+  ),
+  createTask: defineTool(
+    "createTask",
+    "Create a task in a project",
+    ({ projectId, title }) => {
       if (!appStore.get().projects.some((p) => p.id === projectId)) {
-        return { error: "Project not found" };
+        throw new Error("Project not found");
       }
-      const title = text(args.title);
-      if (!title) return { error: "title is required" };
       const task = {
         id: nextId(appStore.get().tasks),
         projectId,
@@ -118,46 +128,27 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
       appStore.set((s) => ({ ...s, tasks: [...s.tasks, task] }));
       return task;
     }
-  },
-  listTasks: {
-    description: "List tasks, optionally by project",
-    inputSchema: {
-      type: "object",
-      properties: { projectId: { type: "number", description: "Project ID" } },
-      required: []
-    },
-    execute: async (args) => {
+  ),
+  listTasks: defineTool(
+    "listTasks",
+    "List tasks, optionally by project",
+    ({ projectId }) => {
       const { tasks } = appStore.get();
-      const projectId =
-        args.projectId == null ? undefined : Number(args.projectId);
       return projectId == null
         ? tasks
         : tasks.filter((task) => task.projectId === projectId);
     }
-  },
-  updateTask: {
-    description: "Update a task's title or done status",
-    inputSchema: {
-      type: "object",
-      properties: {
-        id: { type: "number", description: "Task ID" },
-        title: { type: "string", description: "New title" },
-        done: { type: "boolean", description: "Whether the task is done" }
-      },
-      required: ["id"]
-    },
-    execute: async (args) => {
-      const id = Number(args.id);
+  ),
+  updateTask: defineTool(
+    "updateTask",
+    "Update a task's title or done status",
+    ({ id, title, done }) => {
       const task = appStore.get().tasks.find((item) => item.id === id);
-      if (!task) return { error: "Task not found" };
-      const title = text(args.title);
-      if (args.title != null && !title) {
-        return { error: "title cannot be empty" };
-      }
+      if (!task) throw new Error("Task not found");
       const updated = {
         ...task,
-        ...(title && { title }),
-        ...(args.done != null && { done: Boolean(args.done) })
+        ...(title !== undefined && { title }),
+        ...(done !== undefined && { done })
       };
       appStore.set((s) => ({
         ...s,
@@ -165,22 +156,16 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
       }));
       return updated;
     }
-  },
-  deleteTask: {
-    description:
-      "Delete a task. The user is asked to confirm; returns an error if they decline.",
-    inputSchema: {
-      type: "object",
-      properties: { id: { type: "number", description: "Task ID" } },
-      required: ["id"]
-    },
-    execute: async (args) => {
-      const id = Number(args.id);
+  ),
+  deleteTask: defineTool(
+    "deleteTask",
+    "Delete a task. The user is asked to confirm; returns an error if they decline.",
+    ({ id }) => {
       const task = appStore.get().tasks.find((item) => item.id === id);
-      if (!task) return { error: "Task not found" };
+      if (!task) throw new Error("Task not found");
       // Tools run in the main page, so they can pause for the user.
       if (!window.confirm(`Delete task "${task.title}"?`)) {
-        return { error: "User declined to delete the task" };
+        throw new Error("User declined to delete the task");
       }
       appStore.set((s) => ({
         ...s,
@@ -188,92 +173,33 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
       }));
       return { deleted: id };
     }
-  },
-  showView: {
-    description:
-      "Display a view in the user's side panel, replacing any previous view. " +
-      "Components and their props: " +
-      "taskList { projectId?: number, title?: string } (live task checklist); " +
-      "projectSummary { projectId: number } (progress bar + tasks); " +
-      "table { title?: string, columns: string[], rows: any[][] }; " +
-      "form { title?: string, fields: { name: string, label?: string, type?: 'text' | 'number' | 'checkbox' }[], submitLabel?: string, action?: { tool: 'createProject' | 'createTask' | 'updateTask', args?: object }, notifyAgent?: boolean }. " +
+  ),
+  showView: defineTool(
+    "showView",
+    "Display a view in the user's side panel, replacing any previous view. " +
       "Prefer binding forms to an action: on submit the page calls that tool directly with { ...action.args, ...fieldValues }, " +
       "so field names must be the tool's parameter names (e.g. 'title', not 'taskTitle'). " +
       "The form stays open for more entries, without involving you. " +
       "E.g. to let the user add tasks: { action: { tool: 'createTask', args: { projectId: 1 } }, fields: [{ name: 'title', label: 'Task' }] }. " +
-      "Set notifyAgent: true only if you need to react to each submission; it also sends the values as a chat message. " +
+      "Set notifyAgent only if you need to react to each submission. " +
       "A form without an action always sends its values to you as a chat message.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        component: {
-          type: "string",
-          enum: ["taskList", "projectSummary", "table", "form"]
-        },
-        props: { type: "object", description: "Props for the component" }
-      },
-      required: ["component", "props"]
-    },
-    execute: async (args) => {
-      try {
-        const spec = parseViewSpec(args.component, args.props);
-        if (spec.component === "form" && spec.props.action) {
-          checkFormMatchesTool(spec.props);
-        }
-        appStore.set((s) => ({
-          ...s,
-          view: { ...spec, id: (s.view?.id ?? 0) + 1 }
-        }));
-        return { shown: spec.component };
-      } catch (error) {
-        return { error: (error as Error).message };
-      }
+    (spec) => {
+      appStore.set((s) => ({
+        ...s,
+        view: { ...spec, id: (s.view?.id ?? 0) + 1 }
+      }));
+      return { shown: spec.component };
     }
-  },
-  clearView: {
-    description: "Remove the view from the user's side panel",
-    inputSchema: { type: "object", properties: {}, required: [] },
-    execute: async () => {
+  ),
+  clearView: defineTool(
+    "clearView",
+    "Remove the view from the user's side panel",
+    () => {
       appStore.set((s) => ({ ...s, view: null }));
       return { cleared: true };
     }
-  }
+  )
 };
-
-/**
- * A bound form submits { ...action.args, ...fieldValues } to the tool, so
- * field names must be the tool's parameter names. Catch mismatches when the
- * form is shown (where the model can fix them) rather than on submit.
- */
-function checkFormMatchesTool(
-  props: Extract<ViewSpec, { component: "form" }>["props"]
-) {
-  const { tool, args = {} } = props.action!;
-  const schema = browserTools[tool].inputSchema as {
-    properties?: Record<string, unknown>;
-    required?: string[];
-  };
-  const params = Object.keys(schema.properties ?? {});
-  const unknown = props.fields
-    .map((f) => f.name)
-    .filter((name) => !params.includes(name));
-  if (unknown.length) {
-    throw new Error(
-      `form field names must be ${tool} parameters (${params.join(", ")}); ` +
-        `unknown: ${unknown.join(", ")}`
-    );
-  }
-  const provided = new Set([
-    ...Object.keys(args),
-    ...props.fields.map((f) => f.name)
-  ]);
-  const missing = (schema.required ?? []).filter((p) => !provided.has(p));
-  if (missing.length) {
-    throw new Error(
-      `${tool} requires ${missing.join(", ")}; add them as fields or action.args`
-    );
-  }
-}
 
 function extractFunctionCalls(code?: string): string[] {
   if (!code) return [];
@@ -427,8 +353,8 @@ function App() {
   // hydrates the store on connect (and on changes from other tabs), and
   // local changes are pushed back. Tracking the last server snapshot keeps
   // a hydration from being echoed straight back.
-  const serverState = useRef<AppState | null>(null);
-  const agent = useAgent<AppState>({
+  const serverState = useRef<Workspace | null>(null);
+  const agent = useAgent<Workspace>({
     agent: "browser-codemode",
     onStateUpdate: (state, source) => {
       if (source !== "server") return;
@@ -533,7 +459,7 @@ function App() {
               icon={<TrashIcon size={16} />}
               onClick={() => {
                 clearHistory();
-                appStore.set(() => emptyState);
+                appStore.set(() => emptyWorkspace);
               }}
               disabled={messages.length === 0}
             >
