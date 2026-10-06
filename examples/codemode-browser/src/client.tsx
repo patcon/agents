@@ -35,6 +35,7 @@ import {
   SunIcon
 } from "@phosphor-icons/react";
 import { appStore } from "./store";
+import * as workspace from "./workspace";
 import {
   emptyWorkspace,
   parseArgs,
@@ -53,10 +54,6 @@ type ToolPart = {
   input?: { code?: string; [key: string]: unknown };
   output?: { code?: string; result?: unknown; logs?: string[] };
 };
-
-function nextId(items: { id: number }[]) {
-  return items.reduce((max, item) => Math.max(max, item.id), 0) + 1;
-}
 
 /**
  * Build a browser tool from its zod schema: the model sees the generated
@@ -101,11 +98,7 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
   createProject: defineTool(
     "createProject",
     "Create a project (shown live in the user's side panel)",
-    ({ name }) => {
-      const project = { id: nextId(appStore.get().projects), name };
-      appStore.set((s) => ({ ...s, projects: [...s.projects, project] }));
-      return project;
-    }
+    workspace.createProject
   ),
   listProjects: defineTool(
     "listProjects",
@@ -115,62 +108,28 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
   createTask: defineTool(
     "createTask",
     "Create a task in a project",
-    ({ projectId, title }) => {
-      if (!appStore.get().projects.some((p) => p.id === projectId)) {
-        throw new Error("Project not found");
-      }
-      const task = {
-        id: nextId(appStore.get().tasks),
-        projectId,
-        title,
-        done: false
-      };
-      appStore.set((s) => ({ ...s, tasks: [...s.tasks, task] }));
-      return task;
-    }
+    workspace.createTask
   ),
   listTasks: defineTool(
     "listTasks",
     "List tasks, optionally by project",
-    ({ projectId }) => {
-      const { tasks } = appStore.get();
-      return projectId == null
-        ? tasks
-        : tasks.filter((task) => task.projectId === projectId);
-    }
+    ({ projectId }) => workspace.listTasks(projectId)
   ),
   updateTask: defineTool(
     "updateTask",
     "Update a task's title or done status",
-    ({ id, title, done }) => {
-      const task = appStore.get().tasks.find((item) => item.id === id);
-      if (!task) throw new Error("Task not found");
-      const updated = {
-        ...task,
-        ...(title !== undefined && { title }),
-        ...(done !== undefined && { done })
-      };
-      appStore.set((s) => ({
-        ...s,
-        tasks: s.tasks.map((t) => (t.id === id ? updated : t))
-      }));
-      return updated;
-    }
+    workspace.updateTask
   ),
   deleteTask: defineTool(
     "deleteTask",
     "Delete a task. The user is asked to confirm; returns an error if they decline.",
     ({ id }) => {
-      const task = appStore.get().tasks.find((item) => item.id === id);
-      if (!task) throw new Error("Task not found");
+      const task = appStore.get().tasks.find((t) => t.id === id);
       // Tools run in the main page, so they can pause for the user.
-      if (!window.confirm(`Delete task "${task.title}"?`)) {
+      if (task && !window.confirm(`Delete task "${task.title}"?`)) {
         throw new Error("User declined to delete the task");
       }
-      appStore.set((s) => ({
-        ...s,
-        tasks: s.tasks.filter((t) => t.id !== id)
-      }));
+      workspace.deleteTask(id);
       return { deleted: id };
     }
   ),
@@ -184,10 +143,7 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
       "Set notifyAgent only if you need to react to each submission. " +
       "A form without an action always sends its values to you as a chat message.",
     (spec) => {
-      appStore.set((s) => ({
-        ...s,
-        view: { ...spec, id: (s.view?.id ?? 0) + 1 }
-      }));
+      workspace.showView(spec);
       return { shown: spec.component };
     }
   ),
@@ -195,7 +151,7 @@ const browserTools: JsonSchemaExecutableToolDescriptors = {
     "clearView",
     "Remove the view from the user's side panel",
     () => {
-      appStore.set((s) => ({ ...s, view: null }));
+      workspace.clearView();
       return { cleared: true };
     }
   )

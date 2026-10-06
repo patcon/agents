@@ -1,15 +1,9 @@
 import { useState } from "react";
 import { Button, Surface, Text } from "@cloudflare/kumo";
 import { SidebarIcon, XIcon } from "@phosphor-icons/react";
-import { appStore, useWorkspace } from "./store";
+import { useWorkspace } from "./store";
+import { clearView, toggleTask } from "./workspace";
 import type { FormProps, Task, ViewSpec } from "./schemas";
-
-function toggleTask(id: number) {
-  appStore.set((s) => ({
-    ...s,
-    tasks: s.tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
-  }));
-}
 
 function TaskRow({ task }: { task: Task }) {
   return (
@@ -318,7 +312,7 @@ export function SidePanel({
                 size="sm"
                 aria-label="Dismiss view"
                 icon={<XIcon size={12} />}
-                onClick={() => appStore.set((s) => ({ ...s, view: null }))}
+                onClick={clearView}
               />
             )}
           </div>
