@@ -1,7 +1,7 @@
 import { Button, Surface, Text } from "@cloudflare/kumo";
 import { SidebarIcon, XIcon } from "@phosphor-icons/react";
-import { useWorkspace } from "./store";
-import { clearView } from "./workspace";
+import { useWorkspace } from "../store";
+import { clearView } from "../workspace";
 import { TaskRow, ViewRenderer, type FormHandlers } from "./views";
 
 export function SidePanel({

@@ -21,40 +21,17 @@ import {
   BrainIcon,
   LightningIcon,
   PaperPlaneRightIcon,
-  TrashIcon,
-  MoonIcon,
-  SunIcon
+  TrashIcon
 } from "@phosphor-icons/react";
 import { appStore, useWorkspace } from "./store";
 import { emptyWorkspace } from "../shared/schemas";
 import { browserTools } from "./tools";
 import { useWorkspaceAgent } from "./use-workspace-agent";
-import { ToolCard, type ToolPart } from "./tool-card";
-import { SidePanel } from "./side-panel";
-import type { FormHandlers } from "./views";
+import { ToolCard, type ToolPart } from "./components/tool-card";
+import { ModeToggle } from "./components/mode-toggle";
+import { SidePanel } from "./components/side-panel";
+import type { FormHandlers } from "./components/views";
 import "./styles.css";
-
-function ModeToggle() {
-  const [mode, setMode] = useState(
-    () => localStorage.getItem("theme") || "light"
-  );
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-mode", mode);
-    document.documentElement.style.colorScheme = mode;
-    localStorage.setItem("theme", mode);
-  }, [mode]);
-
-  return (
-    <Button
-      variant="ghost"
-      shape="square"
-      aria-label="Toggle theme"
-      onClick={() => setMode((m) => (m === "light" ? "dark" : "light"))}
-      icon={mode === "light" ? <MoonIcon size={16} /> : <SunIcon size={16} />}
-    />
-  );
-}
 
 function App() {
   const [input, setInput] = useState("");

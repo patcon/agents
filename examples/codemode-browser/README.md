@@ -30,17 +30,18 @@ server management.
 - forms bound to a tool: submitting runs the tool directly in the page, with no
   chat message or model turn
 
-| File                                | Role                                                                                            |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `src/shared/schemas.ts`             | zod schemas: types, argument validation, and the JSON Schema the model sees as TypeScript types |
-| `src/client/workspace.ts`           | the actions that change projects, tasks and the view                                            |
-| `src/client/tools.ts`               | the `codemode.*` tools: thin, validated wrappers around the actions                             |
-| `src/client/store.ts`               | the external store shared by the tools and React                                                |
-| `src/client/use-workspace-agent.ts` | connects to the agent and persists the workspace as its state                                   |
-| `src/client/views.tsx`              | components for agent-rendered views                                                             |
-| `src/client/side-panel.tsx`         | the workspace side panel                                                                        |
-| `src/client/tool-card.tsx`          | renders a codemode tool call in the chat                                                        |
-| `src/client/index.tsx`              | app wiring                                                                                      |
+| File                                    | Role                                                                                            |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `src/shared/schemas.ts`                 | zod schemas: types, argument validation, and the JSON Schema the model sees as TypeScript types |
+| `src/client/workspace.ts`               | the actions that change projects, tasks and the view                                            |
+| `src/client/tools.ts`                   | the `codemode.*` tools: thin, validated wrappers around the actions                             |
+| `src/client/store.ts`                   | the external store shared by the tools and React                                                |
+| `src/client/use-workspace-agent.ts`     | connects to the agent and persists the workspace as its state                                   |
+| `src/client/components/views.tsx`       | components for agent-rendered views                                                             |
+| `src/client/components/side-panel.tsx`  | the workspace side panel                                                                        |
+| `src/client/components/tool-card.tsx`   | renders a codemode tool call in the chat                                                        |
+| `src/client/components/mode-toggle.tsx` | light/dark theme toggle                                                                         |
+| `src/client/index.tsx`                  | app wiring                                                                                      |
 
 ## Running
 
