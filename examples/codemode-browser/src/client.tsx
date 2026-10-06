@@ -25,7 +25,7 @@ import {
   MoonIcon,
   SunIcon
 } from "@phosphor-icons/react";
-import { appStore } from "./store";
+import { appStore, useWorkspace } from "./store";
 import { emptyWorkspace } from "./schemas";
 import { browserTools } from "./tools";
 import { useWorkspaceAgent } from "./use-workspace-agent";
@@ -95,6 +95,11 @@ function App() {
   });
 
   const isStreaming = status === "streaming";
+  const workspace = useWorkspace();
+  const canClear =
+    messages.length > 0 ||
+    workspace.projects.length > 0 ||
+    workspace.view !== null;
 
   const send = useCallback(() => {
     const text = input.trim();
@@ -151,7 +156,7 @@ function App() {
                 clearHistory();
                 appStore.set(() => emptyWorkspace);
               }}
-              disabled={messages.length === 0}
+              disabled={!canClear}
             >
               Clear
             </Button>

@@ -15,13 +15,32 @@ server management.
 - `AIChatAgent` with `createToolsFromClientSchemas()`
 - no server-side code executor — the server only streams model responses and
   advertises client-provided tool schemas
+- the workspace (projects, tasks, side-panel view) stored as agent state, so it
+  survives reloads and syncs across tabs
 
-**Client (`src/client.tsx`):**
+**Client:**
 
 - `createBrowserCodeTool()` from `@cloudflare/codemode/browser`
 - `IframeSandboxExecutor` for sandboxed browser execution
 - `useAgentChat({ tools, onToolCall })` to execute the client-side codemode tool
-- browser-memory project/task tools and a `getPageInfo` browser-only tool
+- browser tools that change a live workspace shown in a side panel; edits you
+  make by hand there are visible to the agent
+- agent-rendered views: the model describes a view as data (task list, project
+  summary, table, form) and the page renders it with its own components
+- forms bound to a tool: submitting runs the tool directly in the page, with no
+  chat message or model turn
+
+| File                         | Role                                                                                            |
+| ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| `src/schemas.ts`             | zod schemas: types, argument validation, and the JSON Schema the model sees as TypeScript types |
+| `src/workspace.ts`           | the actions that change projects, tasks and the view                                            |
+| `src/tools.ts`               | the `codemode.*` tools: thin, validated wrappers around the actions                             |
+| `src/store.ts`               | the external store shared by the tools and React                                                |
+| `src/use-workspace-agent.ts` | connects to the agent and persists the workspace as its state                                   |
+| `src/views.tsx`              | components for agent-rendered views                                                             |
+| `src/side-panel.tsx`         | the workspace side panel                                                                        |
+| `src/tool-card.tsx`          | renders a codemode tool call in the chat                                                        |
+| `src/client.tsx`             | app wiring                                                                                      |
 
 ## Running
 
@@ -40,6 +59,10 @@ For security details and current browser iframe limitations, see
 
 ## Try it
 
-- "Create a project called Alpha, add two tasks, then list all projects and tasks"
+- "Create a project called Alpha with three tasks, then show a project summary"
+- "Show me a form to add tasks to Alpha" — then add a few; the agent isn't
+  messaged for each one
+- Tick a task off in the side panel, then ask "What's done so far?"
+- Reload the page: the workspace comes back. **Clear** resets the chat and the
+  workspace.
 - "What is the current page title?"
-- "Use codemode to create a project and then update the first task to done"
