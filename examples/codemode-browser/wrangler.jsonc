@@ -1,6 +1,6 @@
 {
   "name": "codemode-browser-demo",
-  "main": "src/server.ts",
+  "main": "src/server/index.ts",
   "compatibility_date": "2026-06-11",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {

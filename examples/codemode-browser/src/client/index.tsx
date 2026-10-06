@@ -26,7 +26,7 @@ import {
   SunIcon
 } from "@phosphor-icons/react";
 import { appStore, useWorkspace } from "./store";
-import { emptyWorkspace } from "./schemas";
+import { emptyWorkspace } from "../shared/schemas";
 import { browserTools } from "./tools";
 import { useWorkspaceAgent } from "./use-workspace-agent";
 import { ToolCard, type ToolPart } from "./tool-card";

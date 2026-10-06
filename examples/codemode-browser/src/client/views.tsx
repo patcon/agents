@@ -4,7 +4,7 @@
  */
 import { useState, type ReactNode } from "react";
 import { Button, Text } from "@cloudflare/kumo";
-import type { Task, ViewSpec } from "./schemas";
+import type { Task, ViewSpec } from "../shared/schemas";
 import { useWorkspace } from "./store";
 import { toggleTask } from "./workspace";
 

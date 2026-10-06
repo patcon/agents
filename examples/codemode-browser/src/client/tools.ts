@@ -8,7 +8,12 @@ import type {
   JsonSchemaExecutableToolDescriptors
 } from "@cloudflare/codemode/browser";
 import type { z } from "zod";
-import { parseArgs, toolArgs, toolInputSchema, type ToolName } from "./schemas";
+import {
+  parseArgs,
+  toolArgs,
+  toolInputSchema,
+  type ToolName
+} from "../shared/schemas";
 import { appStore } from "./store";
 import * as workspace from "./workspace";
 

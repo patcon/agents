@@ -1,6 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useAgent } from "agents/react";
-import { emptyWorkspace, workspaceSchema, type Workspace } from "./schemas";
+import {
+  emptyWorkspace,
+  workspaceSchema,
+  type Workspace
+} from "../shared/schemas";
 import { appStore } from "./store";
 
 /**

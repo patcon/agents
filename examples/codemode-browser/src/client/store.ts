@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { emptyWorkspace, type Workspace } from "./schemas";
+import { emptyWorkspace, type Workspace } from "../shared/schemas";
 
 let state: Workspace = emptyWorkspace;
 const listeners = new Set<() => void>();

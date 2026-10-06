@@ -2,7 +2,7 @@ import { routeAgentRequest } from "agents";
 import { AIChatAgent, createToolsFromClientSchemas } from "@cloudflare/ai-chat";
 import { convertToModelMessages, streamText, isStepCount } from "ai";
 import { createWorkersAI } from "workers-ai-provider";
-import { emptyWorkspace, type Workspace } from "./schemas";
+import { emptyWorkspace, type Workspace } from "../shared/schemas";
 
 /**
  * The browser owns the workspace (projects, tasks, side-panel view); the

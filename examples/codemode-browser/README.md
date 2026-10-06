@@ -10,7 +10,7 @@ server management.
 
 ## What it demonstrates
 
-**Server (`src/server.ts`):**
+**Server (`src/server/`):**
 
 - `AIChatAgent` with `createToolsFromClientSchemas()`
 - no server-side code executor — the server only streams model responses and
@@ -18,7 +18,7 @@ server management.
 - the workspace (projects, tasks, side-panel view) stored as agent state, so it
   survives reloads and syncs across tabs
 
-**Client:**
+**Client (`src/client/`), sharing `src/shared/schemas.ts` with the server:**
 
 - `createBrowserCodeTool()` from `@cloudflare/codemode/browser`
 - `IframeSandboxExecutor` for sandboxed browser execution
@@ -30,17 +30,17 @@ server management.
 - forms bound to a tool: submitting runs the tool directly in the page, with no
   chat message or model turn
 
-| File                         | Role                                                                                            |
-| ---------------------------- | ----------------------------------------------------------------------------------------------- |
-| `src/schemas.ts`             | zod schemas: types, argument validation, and the JSON Schema the model sees as TypeScript types |
-| `src/workspace.ts`           | the actions that change projects, tasks and the view                                            |
-| `src/tools.ts`               | the `codemode.*` tools: thin, validated wrappers around the actions                             |
-| `src/store.ts`               | the external store shared by the tools and React                                                |
-| `src/use-workspace-agent.ts` | connects to the agent and persists the workspace as its state                                   |
-| `src/views.tsx`              | components for agent-rendered views                                                             |
-| `src/side-panel.tsx`         | the workspace side panel                                                                        |
-| `src/tool-card.tsx`          | renders a codemode tool call in the chat                                                        |
-| `src/client.tsx`             | app wiring                                                                                      |
+| File                                | Role                                                                                            |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `src/shared/schemas.ts`             | zod schemas: types, argument validation, and the JSON Schema the model sees as TypeScript types |
+| `src/client/workspace.ts`           | the actions that change projects, tasks and the view                                            |
+| `src/client/tools.ts`               | the `codemode.*` tools: thin, validated wrappers around the actions                             |
+| `src/client/store.ts`               | the external store shared by the tools and React                                                |
+| `src/client/use-workspace-agent.ts` | connects to the agent and persists the workspace as its state                                   |
+| `src/client/views.tsx`              | components for agent-rendered views                                                             |
+| `src/client/side-panel.tsx`         | the workspace side panel                                                                        |
+| `src/client/tool-card.tsx`          | renders a codemode tool call in the chat                                                        |
+| `src/client/index.tsx`              | app wiring                                                                                      |
 
 ## Running
 

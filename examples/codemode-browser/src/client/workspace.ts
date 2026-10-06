@@ -5,7 +5,7 @@
  * on a broken rule; argument shapes are already validated by `schemas.ts`.
  */
 import { appStore } from "./store";
-import type { Project, Task, ViewSpec } from "./schemas";
+import type { Project, Task, ViewSpec } from "../shared/schemas";
 
 function nextId(items: { id: number }[]) {
   return items.reduce((max, item) => Math.max(max, item.id), 0) + 1;
