@@ -24,6 +24,7 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   BugIcon,
+  CheckIcon,
   CheckCircleIcon,
   FlagCheckeredIcon,
   InfoIcon,
@@ -31,7 +32,6 @@ import {
   MoonIcon,
   PauseIcon,
   PlayIcon,
-  SkipForwardIcon,
   SunIcon,
   TextAlignLeftIcon,
   WarningIcon,
@@ -403,10 +403,8 @@ function QuestionStage({
 
   const hasNext = activeIndex < questions.length - 1;
   const stackDepth = Math.min(pendingAhead, 2);
-  // Next becomes Submit once the draft would change the answer.
-  const changed =
-    isAnswerable(question, value) &&
-    !sameAnswer(entry.answer, { value, skipped: false });
+  // An unanswered question is skipped on the way past; an answered one isn't.
+  const skips = !entry.answer;
 
   return (
     <div className="relative">
@@ -457,24 +455,29 @@ function QuestionStage({
           </Button>
           <div className="flex items-center gap-2 ml-auto">
             <Button
-              variant="secondary"
-              onClick={() => submit(true)}
-              disabled={disabled || saving || entry.answer?.skipped}
-              icon={<SkipForwardIcon size={16} />}
+              variant="primary"
+              onClick={() => submit(false)}
+              disabled={
+                disabled ||
+                saving ||
+                !isAnswerable(question, value) ||
+                sameAnswer(entry.answer, { value, skipped: false })
+              }
+              icon={<CheckIcon size={16} />}
             >
-              Skip
+              {entry.answer && !entry.answer.skipped ? "Update" : "Submit"}
             </Button>
             <Button
               variant="secondary"
-              onClick={changed ? () => submit(false) : onNext}
-              disabled={changed ? disabled || saving : !hasNext}
+              onClick={skips ? () => submit(true) : onNext}
+              disabled={skips ? disabled || saving : !hasNext}
               aria-label={
-                (changed ? "Submit" : "Next") +
+                (skips ? "Skip" : "Next") +
                 (pendingAhead > 0 ? `, ${pendingAhead} new` : "")
               }
             >
               <span className="relative flex items-center gap-1.5">
-                {changed ? "Submit" : "Next"}
+                {skips ? "Skip" : "Next"}
                 <ArrowRightIcon size={16} />
                 {pendingAhead > 0 && (
                   <span className="absolute -top-3.5 -right-4 min-w-5 h-5 px-1 rounded-full bg-kumo-danger text-white text-[11px] font-semibold flex items-center justify-center animate-pulse">
