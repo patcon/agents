@@ -11,14 +11,15 @@ It needs no Workers AI binding. It only opens an outbound WebSocket with `fetch`
 
 ## Layout
 
-| File            | What's in it                                 |
-| --------------- | -------------------------------------------- |
-| `src/index.ts`  | The public exports                           |
-| `src/live.ts`   | `GeminiLiveSTT`, a streaming `Transcriber`   |
-| `src/batch.ts`  | `GeminiBatchSTT`, for a finished recording   |
-| `src/vertex.ts` | What both share: options, host, access token |
+| File                     | What's in it                                             |
+| ------------------------ | -------------------------------------------------------- |
+| `src/index.ts`           | The public exports                                       |
+| `src/live.ts`            | `GeminiLiveSTT`, a streaming `Transcriber`               |
+| `src/batch.ts`           | `GeminiBatchSTT`, for a finished recording               |
+| `src/vertex.ts`          | What both share: options, host, access token             |
+| `src/service-account.ts` | `serviceAccountToken`, tokens from a service account key |
 
-Tests are split the same way, in `tests/live.test.ts` and `tests/batch.test.ts`.
+Tests are split the same way, in `tests/live.test.ts`, `tests/batch.test.ts` and `tests/service-account.test.ts`.
 
 ## Usage
 
@@ -38,6 +39,19 @@ export class MyAgent extends InputAgent<Env> {
 ```
 
 It works with `withVoice` too, for a full voice agent, alongside any TTS provider.
+
+### Tokens that last
+
+A token from `gcloud auth print-access-token` lasts an hour. For a deployed Worker, pass `serviceAccountToken` a service account's JSON key instead. It signs a JWT with WebCrypto, exchanges it at Google's token endpoint, and reuses the token until 5 minutes before it expires. The cache is per isolate, so every session shares one token. The account needs a role that can call Vertex AI, such as `roles/aiplatform.user`.
+
+```typescript
+import { GeminiLiveSTT, serviceAccountToken } from "@dembrane/voice-gemini";
+
+transcriber = new GeminiLiveSTT({
+  accessToken: serviceAccountToken(this.env.GOOGLE_SERVICE_ACCOUNT_KEY),
+  project: this.env.GOOGLE_CLOUD_PROJECT
+});
+```
 
 ### Batch
 
@@ -85,7 +99,6 @@ pnpm test
 
 To match the other providers, and to be upstreamed:
 
-- **Tokens that outlast an hour.** A function can now fetch a fresh token for each session, but nothing ships one. A helper that signs a service account JWT with WebCrypto and exchanges it for a token, cached until it expires, would make it work in production.
 - **Gemini Developer API.** Accept an `apiKey` and connect to `generativelanguage.googleapis.com` instead of Vertex, if the transcribe model is served there. An API key doesn't expire.
 - **Long sessions, checked live.** Resumption is tested against a mock socket. On 1 October 2026, `gemini-3.5-transcribe-live-preview` accepted `contextWindowCompression` and `sessionResumption` in its setup, but no session has run past Vertex's limits yet.
 - **Stopping mid-sentence.** `close()` sends `realtimeInput.audioStreamEnd`, but any transcript Gemini sends back is dropped, so words spoken just before stopping are lost. No provider waits for one, because `TranscriberSession.close()` can't: it returns `void`, and the pipeline forgets the session straight away. This needs an SDK change upstream, such as `close()` returning a promise.

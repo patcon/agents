@@ -20,3 +20,4 @@ export {
   type TranscriptSegment
 } from "./batch";
 export { resolveAccessToken, vertexHost, type VertexOptions } from "./vertex";
+export { serviceAccountToken, type ServiceAccountKey } from "./service-account";
