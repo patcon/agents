@@ -11,7 +11,7 @@ import {
   createUIMessageStreamResponse,
   type UIMessage
 } from "ai";
-import { generateJson } from "./gemini";
+import { generateJson, googleAccessToken } from "./gemini";
 import { GeminiLiveSTT } from "@dembrane/voice-gemini";
 import {
   AGENT_QUESTION_AT,
@@ -81,14 +81,8 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
   initialState = EMPTY_USAGE;
 
   createTranscriber(_connection: Connection): Transcriber {
-    for (const name of [
-      "GOOGLE_CLOUD_PROJECT",
-      "GOOGLE_ACCESS_TOKEN"
-    ] as const) {
-      if (!this.env[name]?.trim()) throw new Error(`${name} isn't set`);
-    }
     const stt = new GeminiLiveSTT({
-      accessToken: this.env.GOOGLE_ACCESS_TOKEN,
+      accessToken: googleAccessToken(this.env),
       project: this.env.GOOGLE_CLOUD_PROJECT,
       location: "global",
       model: this.env.STT_MODEL

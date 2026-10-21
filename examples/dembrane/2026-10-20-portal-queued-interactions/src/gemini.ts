@@ -1,6 +1,29 @@
-import { vertexHost } from "@dembrane/voice-gemini";
+import {
+  resolveAccessToken,
+  serviceAccountToken,
+  vertexHost,
+  type VertexOptions
+} from "@dembrane/voice-gemini";
 
 export type TokenUsage = { inputTokens: number; outputTokens: number };
+
+/**
+ * Vertex AI credentials: tokens from the service account key if it's set,
+ * reused until they're about to expire, or else the fixed access token,
+ * which lasts an hour. Throws if the project or both of those are unset.
+ */
+export function googleAccessToken(env: Env): VertexOptions["accessToken"] {
+  if (!env.GOOGLE_CLOUD_PROJECT?.trim()) {
+    throw new Error("GOOGLE_CLOUD_PROJECT isn't set");
+  }
+  if (env.GOOGLE_SERVICE_ACCOUNT_KEY?.trim()) {
+    return serviceAccountToken(env.GOOGLE_SERVICE_ACCOUNT_KEY);
+  }
+  if (env.GOOGLE_ACCESS_TOKEN?.trim()) return env.GOOGLE_ACCESS_TOKEN;
+  throw new Error(
+    "Neither GOOGLE_SERVICE_ACCOUNT_KEY nor GOOGLE_ACCESS_TOKEN is set"
+  );
+}
 
 /**
  * Asks a Gemini model on Vertex AI for an answer that fits a JSON schema, and
@@ -11,15 +34,16 @@ export async function generateJson(
   env: Env,
   request: { system: string; prompt: string; schema: object }
 ): Promise<{ json: unknown; usage: TokenUsage }> {
-  for (const name of ["GOOGLE_CLOUD_PROJECT", "GOOGLE_ACCESS_TOKEN"] as const) {
-    if (!env[name]?.trim()) throw new Error(`${name} isn't set`);
-  }
+  const accessToken = await resolveAccessToken(
+    googleAccessToken(env),
+    "Gemini"
+  );
   const location = "global";
   const url = `https://${vertexHost(location)}/v1beta1/projects/${env.GOOGLE_CLOUD_PROJECT}/locations/${location}/publishers/google/models/${env.AGENT_MODEL}:generateContent`;
   const res = await fetch(url, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${env.GOOGLE_ACCESS_TOKEN}`,
+      Authorization: `Bearer ${accessToken}`,
       "content-type": "application/json"
     },
     body: JSON.stringify({

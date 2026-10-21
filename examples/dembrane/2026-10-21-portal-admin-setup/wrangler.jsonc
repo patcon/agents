@@ -2,8 +2,11 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "2026-10-21-portal-admin-setup",
   // Transcription and the agent's question both come from Gemini on Vertex AI.
-  // In local dev the secrets come from .env (see .env.example);
-  // `pnpm google-token` refreshes the token, which lasts an hour.
+  // In local dev the secrets come from .env (see .env.example).
+  // GOOGLE_SERVICE_ACCOUNT_KEY, when set, is traded for access tokens as they
+  // expire (`pnpm google-key <key.json>` puts one in .env). Otherwise
+  // GOOGLE_ACCESS_TOKEN is used as is; `pnpm google-token` refreshes it, and it
+  // lasts an hour. Leave whichever you don't use empty.
   // BASIC_AUTH_PASSWORD puts the app behind a password
   // (see @dembrane/examples-shared/basic-auth). It has to be listed here for
   // local dev to load it from .env, which also makes deploys refuse to go out
@@ -11,6 +14,7 @@
   "secrets": {
     "required": [
       "GOOGLE_CLOUD_PROJECT",
+      "GOOGLE_SERVICE_ACCOUNT_KEY",
       "GOOGLE_ACCESS_TOKEN",
       "BASIC_AUTH_PASSWORD"
     ]
