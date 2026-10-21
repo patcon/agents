@@ -1,0 +1,15 @@
+{
+  "name": "@dembrane/examples-landing",
+  "description": "A page linking to every deployed Dembrane example",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "node scripts/build.mjs && wrangler dev",
+    "deploy": "node scripts/build.mjs && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.145.0"
+  }
+}
