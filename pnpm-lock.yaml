@@ -1224,22 +1224,7 @@ importers:
         specifier: ^4.145.0
         version: 4.145.0(@cloudflare/workers-types@5.20261014.1)(@types/node@26.0.1)
 
-  examples/dembrane/landing:
-    devDependencies:
-      wrangler:
-        specifier: ^4.145.0
-        version: 4.145.0(@cloudflare/workers-types@5.20261014.1)(@types/node@26.0.1)
-
-  examples/dembrane/shared:
-    devDependencies:
-      '@cloudflare/workers-types':
-        specifier: ^5.20261014.1
-        version: 5.20261014.1
-      typescript:
-        specifier: ^6.0.3
-        version: 6.0.3
-
-  examples/dembrane/voice-questionnaire:
+  examples/dembrane/2026-10-20-portal-queued-interactions:
     dependencies:
       '@ai-sdk/react':
         specifier: ^4.0.0
@@ -1305,6 +1290,21 @@ importers:
       yaml:
         specifier: ^2.9.0
         version: 2.9.0
+
+  examples/dembrane/landing:
+    devDependencies:
+      wrangler:
+        specifier: ^4.145.0
+        version: 4.145.0(@cloudflare/workers-types@5.20261014.1)(@types/node@26.0.1)
+
+  examples/dembrane/shared:
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^5.20261014.1
+        version: 5.20261014.1
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
 
   examples/deploy-churn:
     dependencies:
@@ -14892,6 +14892,7 @@ snapshots:
     transitivePeerDependencies:
       - zod
 
+
   '@ai-sdk/tui@1.0.119(zod@4.5.4)':
     dependencies:
       ai: 7.0.118(zod@4.5.4)
@@ -26175,6 +26176,7 @@ snapshots:
       dequal: 2.0.3
       react: 19.2.7
       use-sync-external-store: 1.6.0(react@19.2.7)
+
 
   swrv@1.2.0(vue@3.5.40(typescript@6.0.3)):
     dependencies:

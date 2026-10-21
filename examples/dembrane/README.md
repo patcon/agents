@@ -2,12 +2,12 @@
 
 Prototypes built on Cloudflare Agents, each deployed as its own Worker. The landing page at https://dembrane-prototypes.patcon.workers.dev links to all of them.
 
-| Folder                                       | What it is                                                                  |
-| -------------------------------------------- | --------------------------------------------------------------------------- |
-| [`voice-questionnaire`](voice-questionnaire) | A voice session that collects a transcript while questions arrive           |
-| [`landing`](landing)                         | The landing page, built from the other folders' titles and descriptions     |
-| [`shared`](shared)                           | Code the prototypes share, used as TypeScript source (e.g. `withBasicAuth`) |
-| [`scripts`](scripts)                         | Helpers for the deploy workflow                                             |
+| Folder                                                                           | What it is                                                                  |
+| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| [`2026-10-20-portal-queued-interactions`](2026-10-20-portal-queued-interactions) | A voice session that collects a transcript while questions arrive           |
+| [`landing`](landing)                                                             | The landing page, built from the other folders' titles and descriptions     |
+| [`shared`](shared)                                                               | Code the prototypes share, used as TypeScript source (e.g. `withBasicAuth`) |
+| [`scripts`](scripts)                                                             | Helpers for the deploy workflow                                             |
 
 ## Deploying
 

@@ -1,5 +1,5 @@
 {
-  "name": "@cloudflare/agents-voice-questionnaire-example",
+  "name": "@dembrane/2026-10-20-portal-queued-interactions",
   "description": "Continuous voice transcript plus scheduled, host and agent questions, stored as an append-only UIMessage log",
   "private": true,
   "type": "module",

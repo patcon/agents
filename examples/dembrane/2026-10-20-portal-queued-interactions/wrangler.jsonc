@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "voice-questionnaire-example",
+  "name": "2026-10-20-portal-queued-interactions",
   // Transcription and the agent's question both come from Gemini on Vertex AI.
   // In local dev the secrets come from .env (see .env.example);
   // `pnpm google-token` refreshes the token, which lasts an hour.
