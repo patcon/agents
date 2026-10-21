@@ -12,6 +12,10 @@ We want a number we can set thresholds on: how strongly does the evidence we hav
 
 ## The proposal
 
+### Only for quantitative answers
+
+Jev is meant for quantitative evidence: answers that come from a fixed set of options, or a number. That's radio, checkbox and number questions. It shouldn't be used on freeform text answers, where "does the evidence support this answer" has no clear shape for a probability. Text answers keep Gemini's proposal without an assessment.
+
 ### `assessCertainty()`, called by code or the agent
 
 Jev doesn't call tools. It answers questions about the state it's given. So the tool is a server function that the agent or plain code calls, and that function calls Jev:
@@ -64,7 +68,8 @@ The model for this is TypeSafe's [citation check cookbook](https://docs.typesafe
 | Every type | `relation`: a Choice with `supports`, `contradicts` and `says_nothing`: "How does `evidence` relate to `candidate_answer` as an answer to `question`?" |
 | radio | `pick`: a Choice over the question's own options, to see how close the alternatives are. `stated`: a Noul, "Does `evidence` state an answer to `question` at all?" The docs say a "none of the above" option doesn't work well in a Choice. |
 | checkbox | One Noul per option: "Does `evidence` indicate that `<option>` applies?" A Choice can only pick one. |
-| text, number | `relation` only |
+| number | `relation` only |
+| text | Not assessed |
 
 ### Which evidence supports it
 
@@ -109,6 +114,7 @@ An assessment is stale once utterances newer than `seenUpTo` exist, and is run a
 - **Language.** The docs say Jev is mainly trained on English and is less accurate in other languages. Much of Dembrane's audio is Dutch. We need to test on real Dutch transcripts before trusting any threshold. Translating the evidence to English first is a fallback.
 - **How much transcript.** The most recent N utterances may miss something said early on. Choosing relevant utterances first (TypeSafe's reranking cookbook) is an option if N turns out too small.
 - **Thresholds.** 0.8 comes from the cookbook, not from our data. We'd collect assessments alongside what people actually accepted, and set thresholds from that.
+- **Freeform answers.** Once we have numbers from the quantitative types, we could experiment with Jev on text answers, for instance with the `relation` Choice alone, and see whether its confidences mean anything there.
 - **Assessing the person's own answers.** Flagging an answer the transcript contradicts could be useful or could feel like being second-guessed. Maybe only for the host.
 
 ## The decision
@@ -116,7 +122,7 @@ An assessment is stale once utterances newer than `seenUpTo` exist, and is run a
 Not decided yet. A first slice would be:
 
 - the evidence sources for the transcript and other answers;
-- `assessCertainty()` with the `relation` Choice for every type, over `fetch`;
+- `assessCertainty()` with the `relation` Choice for every type except text, over `fetch`;
 - the `assessment` entry and the log drawer showing its probabilities;
 - a run on every proposal.
 
