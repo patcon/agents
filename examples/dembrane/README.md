@@ -6,7 +6,7 @@ Prototypes built on Cloudflare Agents, each deployed as its own Worker. The land
 | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | [`2026-10-21-portal-admin-setup`](2026-10-21-portal-admin-setup)                 | A copy of `2026-10-20-portal-queued-interactions` to build on               |
 | [`2026-10-20-portal-queued-interactions`](2026-10-20-portal-queued-interactions) | A voice session that collects a transcript while questions arrive           |
-| [`design`](design)                                                               | RFCs for features the prototypes share or build towards                     |
+| [`design`](design)                                                               | RFCs not yet built in any prototype                                          |
 | [`landing`](landing)                                                             | The landing page, built from the other folders' titles and descriptions     |
 | [`packages/shared`](packages/shared)                                             | Code the prototypes share, used as TypeScript source (e.g. `withBasicAuth`) |
 | [`packages/voice-gemini`](packages/voice-gemini)                                 | Gemini speech-to-text on Vertex AI (`@dembrane/voice-gemini`)               |
@@ -25,3 +25,7 @@ The workflow needs the repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE
 3. Run `pnpm install` from the repo root, and add any new secrets to the repository.
 
 It shows up on the landing page with its next deploy.
+
+## RFCs
+
+RFCs that haven't been built yet live in [`design`](design), so any prototype can pick them up. When a prototype implements one, move the RFC into that prototype's own `design` folder and set its status to `implemented`.
