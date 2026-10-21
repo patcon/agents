@@ -35,16 +35,27 @@ for (const entry of await readdir(examplesDir, { withFileTypes: true })) {
   const pkg = JSON.parse((await read(join(dir, "package.json"))) ?? "{}");
   const html = await read(join(dir, "index.html"));
   examples.push({
+    // Folders named like 2026-10-20-some-prototype show that date
+    date: entry.name.match(/^\d{4}-\d{2}-\d{2}/)?.[0],
     title: html?.match(/<title>([^<]*)<\/title>/)?.[1] ?? entry.name,
     description: pkg.description ?? "",
     url: `https://${worker}.${subdomain ?? "<subdomain>"}.workers.dev`
   });
 }
-examples.sort((a, b) => a.title.localeCompare(b.title));
+// Newest first, then anything undated by title
+examples.sort(
+  (a, b) =>
+    (b.date ?? "").localeCompare(a.date ?? "") || a.title.localeCompare(b.title)
+);
 
 const items = examples
   .map(
-    (e) => `      <li>
+    (e) => `      <li>${
+      e.date
+        ? `
+        <time datetime="${e.date}">${e.date}</time>`
+        : ""
+    }
         <a href="${escape(e.url)}">${escape(e.title)}</a>
         <p>${escape(e.description)}</p>
       </li>`
@@ -98,6 +109,12 @@ const page = `<!doctype html>
       li {
         padding: 1rem 0;
         border-top: 1px solid var(--border);
+      }
+      time {
+        display: block;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-variant-numeric: tabular-nums;
       }
       a {
         color: var(--link);
