@@ -157,6 +157,24 @@ export function foldLog(messages: readonly LogMessage[]): LogView {
   return view;
 }
 
+/**
+ * Whether `next` would say the same as the current answer. Checkbox order and
+ * surrounding whitespace don't count as a change.
+ */
+export function sameAnswer(current: Answer | undefined, next: Answer) {
+  if (!current) return false;
+  if (current.skipped || next.skipped) return current.skipped === next.skipped;
+  const normalize = (value: AnswerValue) =>
+    JSON.stringify(
+      Array.isArray(value)
+        ? [...value].sort()
+        : typeof value === "string"
+          ? value.trim()
+          : value
+    );
+  return normalize(current.value) === normalize(next.value);
+}
+
 export function formatAnswer(answer: Answer | undefined): string {
   if (!answer) return "(unanswered)";
   if (answer.skipped) return "(skipped)";

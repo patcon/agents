@@ -13,6 +13,7 @@ import {
   SCHEDULE,
   foldLog,
   formatAnswer,
+  sameAnswer,
   textOf,
   type AnswerValue,
   type LogMessage,
@@ -153,12 +154,17 @@ export class ConversationAgent extends VoiceChatAgent<Env> {
     await this.#appendStatus("finished");
   }
 
-  /** Answering again is a revision: a new entry with the same subjectId. */
+  /**
+   * Answering again is a revision: a new entry with the same subjectId. An
+   * answer that says the same as the current one isn't appended.
+   */
   @callable()
   async answer(questionId: string, value: AnswerValue, skipped = false) {
-    if (!this.#view().questions.some((q) => q.question.id === questionId)) {
-      throw new Error(`Unknown question ${questionId}`);
-    }
+    const entry = this.#view().questions.find(
+      (q) => q.question.id === questionId
+    );
+    if (!entry) throw new Error(`Unknown question ${questionId}`);
+    if (sameAnswer(entry.answer, { value, skipped })) return;
     await this.#append({
       id: newId("msg"),
       role: "user",

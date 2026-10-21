@@ -43,6 +43,7 @@ import {
   SCHEDULE,
   foldLog,
   formatAnswer,
+  sameAnswer,
   type AnswerValue,
   type LogMessage,
   type Question,
@@ -455,7 +456,7 @@ function QuestionStage({
             <Button
               variant="secondary"
               onClick={() => submit(true)}
-              disabled={disabled || saving}
+              disabled={disabled || saving || entry.answer?.skipped}
               icon={<SkipForwardIcon size={16} />}
             >
               Skip
@@ -463,7 +464,12 @@ function QuestionStage({
             <Button
               variant="primary"
               onClick={() => submit(false)}
-              disabled={disabled || saving || !isAnswerable(question, value)}
+              disabled={
+                disabled ||
+                saving ||
+                !isAnswerable(question, value) ||
+                sameAnswer(entry.answer, { value, skipped: false })
+              }
               icon={<CheckIcon size={16} />}
             >
               {entry.answer && !entry.answer.skipped ? "Update" : "Submit"}
