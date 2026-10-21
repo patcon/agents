@@ -1241,6 +1241,9 @@ importers:
 
   examples/dembrane/voice-questionnaire:
     dependencies:
+      '@ai-sdk/react':
+        specifier: ^4.0.0
+        version: 4.0.19(react@19.2.7)(zod@4.5.4)
       '@cloudflare/ai-chat':
         specifier: '*'
         version: link:../../../packages/ai-chat
