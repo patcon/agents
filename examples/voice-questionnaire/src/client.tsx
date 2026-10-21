@@ -365,7 +365,8 @@ function QuestionStage({
   disabled,
   onBack,
   onNext,
-  onAnswer
+  onAnswer,
+  onEdited
 }: {
   questions: QuestionView[];
   activeIndex: number;
@@ -374,6 +375,8 @@ function QuestionStage({
   onBack: () => void;
   onNext: () => void;
   onAnswer: (value: AnswerValue, skipped: boolean) => Promise<void>;
+  /** Whether there's an unsaved edit, whenever that changes. */
+  onEdited: (edited: boolean) => void;
 }) {
   const entry = questions[activeIndex];
   const question = entry.question;
@@ -405,6 +408,7 @@ function QuestionStage({
   const edited =
     question.id in drafts &&
     !sameAnswer({ value: saved, skipped: false }, { value, skipped: false });
+  useEffect(() => onEdited(edited), [edited, onEdited]);
   // Skip records a skip on an unanswered question, and drops an unsaved edit
   // on an answered one. Otherwise it's just Next.
   const skips = !entry.answer || edited;
@@ -736,15 +740,32 @@ function App() {
     .slice(activeIndex + 1)
     .filter((q) => !seen.has(q.question.id)).length;
 
+  // Set once the last question is answered: the next one to arrive is shown
+  // as soon as it does, unless there's an unsaved edit on screen, which holds
+  // it until the edit is saved or dropped. Moving anywhere else clears it.
+  const [waitingAtEnd, setWaitingAtEnd] = useState(false);
+  const [edited, setEdited] = useState(false);
+
   const goTo = (index: number) => {
     const target = questions[index];
     if (target) setActiveId(target.question.id);
+    setWaitingAtEnd(false);
   };
+
+  useEffect(() => {
+    const next = questions[activeIndex + 1];
+    if (waitingAtEnd && next && !edited) {
+      setActiveId(next.question.id);
+      setWaitingAtEnd(false);
+    }
+  }, [waitingAtEnd, edited, questions, activeIndex]);
 
   const answer = async (value: AnswerValue, skipped: boolean) => {
     if (!current) return;
     await agent.call("answer", [current, value, skipped]);
-    goTo(activeIndex + 1);
+    // A question that arrived meanwhile is picked up by the effect above.
+    if (activeIndex < questions.length - 1) goTo(activeIndex + 1);
+    else setWaitingAtEnd(true);
   };
 
   // Recording controls.
@@ -867,6 +888,7 @@ function App() {
             onBack={() => goTo(activeIndex - 1)}
             onNext={() => goTo(activeIndex + 1)}
             onAnswer={answer}
+            onEdited={setEdited}
           />
         ) : (
           <Surface className="rounded-xl ring ring-dashed ring-kumo-line p-8 flex flex-col items-center text-center gap-2">
