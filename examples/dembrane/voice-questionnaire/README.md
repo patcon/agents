@@ -53,5 +53,5 @@ await this.saveMessages((messages) => [...messages, triggerEntry]);
 
 ## Related
 
-- [`voice-input`](../voice-input) — `withVoiceInput` on its own
-- [`structured-input`](../structured-input) — questions as client-side tools in a chat
+- [`voice-input`](../../voice-input) — `withVoiceInput` on its own
+- [`structured-input`](../../structured-input) — questions as client-side tools in a chat

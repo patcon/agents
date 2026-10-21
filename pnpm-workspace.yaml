@@ -5,6 +5,8 @@ packages:
   - "examples/next/*"
   - "!examples/next/harnesses"
   - "examples/next/harnesses/*"
+  - "!examples/dembrane"
+  - "examples/dembrane/*"
   - "packages/*"
   - "voice-providers/*"
   - "guides/*"
