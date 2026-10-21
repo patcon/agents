@@ -62,12 +62,6 @@ function getSessionId() {
   return id;
 }
 
-function startNewSession() {
-  const url = new URL(window.location.href);
-  url.searchParams.delete("session");
-  window.location.href = url.toString();
-}
-
 // --- Small shared components ---
 
 function ModeToggle() {
@@ -120,13 +114,11 @@ function Drawer({
   open,
   onClose,
   title,
-  actions,
   children
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
-  actions?: ReactNode;
   children: ReactNode;
 }) {
   useEffect(() => {
@@ -160,16 +152,13 @@ function Drawer({
           <Text size="sm" bold>
             {title}
           </Text>
-          <div className="flex items-center gap-1">
-            {actions}
-            <Button
-              variant="ghost"
-              shape="square"
-              aria-label="Close"
-              onClick={onClose}
-              icon={<XIcon size={16} />}
-            />
-          </div>
+          <Button
+            variant="ghost"
+            shape="square"
+            aria-label="Close"
+            onClick={onClose}
+            icon={<XIcon size={16} />}
+          />
         </header>
         <div className="flex-1 overflow-y-auto p-4">{children}</div>
       </aside>
@@ -910,30 +899,28 @@ function App() {
         open={drawer === "debug"}
         onClose={closeDrawer}
         title={`Message log · ${messages.length}`}
-        actions={
-          <>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => agent.call("askAgentNow")}
-              disabled={finished || view.status === "idle"}
-            >
-              Ask agent
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => agent.call("pushHostQuestion")}
-              disabled={finished || view.status === "idle"}
-            >
-              Host question
-            </Button>
-            <Button variant="ghost" size="sm" onClick={startNewSession}>
-              New session
-            </Button>
-          </>
-        }
       >
+        <div className="flex flex-wrap items-center gap-2 pb-3 mb-3 border-b border-kumo-line">
+          <span className="text-xs text-kumo-subtle mr-auto">
+            Simulate interaction
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => agent.call("pushHostQuestion")}
+            disabled={finished || view.status === "idle"}
+          >
+            From host
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => agent.call("askAgentNow")}
+            disabled={finished || view.status === "idle"}
+          >
+            From agent
+          </Button>
+        </div>
         <DebugLog messages={messages} />
       </Drawer>
     </div>

@@ -22,7 +22,7 @@ import {
   type SessionStatus
 } from "./shared";
 
-/** Questions the host can push on demand (the "Simulate host question" button). */
+/** Questions the host can push on demand (the log drawer's "From host" button). */
 const HOST_QUESTIONS: Omit<Question, "id" | "source">[] = [
   {
     type: "radio",
@@ -193,7 +193,7 @@ export class ConversationAgent extends VoiceChatAgent<Env> {
     });
   }
 
-  /** On-demand agent question (the "Ask agent now" button). */
+  /** On-demand agent question (the log drawer's "From agent" button). */
   @callable()
   async askAgentNow() {
     await this.askAgentQuestion();
