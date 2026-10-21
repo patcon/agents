@@ -1,5 +1,6 @@
 import { callable, routeAgentRequest, type Connection } from "agents";
 import { AIChatAgent, type OnChatMessageOptions } from "@cloudflare/ai-chat";
+import { withBasicAuth } from "@dembrane/examples-shared/basic-auth";
 import {
   withVoiceInput,
   type Transcriber,
@@ -382,11 +383,8 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
   }
 }
 
-export default {
+export default withBasicAuth({
   async fetch(request: Request, env: Env) {
-    return (
-      (await routeAgentRequest(request, env)) ||
-      new Response("Not found", { status: 404 })
-    );
+    return (await routeAgentRequest(request, env)) || env.ASSETS.fetch(request);
   }
-} satisfies ExportedHandler<Env>;
+} satisfies ExportedHandler<Env>);

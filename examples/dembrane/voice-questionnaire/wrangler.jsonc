@@ -4,7 +4,17 @@
   // Transcription and the agent's question both come from Gemini on Vertex AI.
   // In local dev the secrets come from .env (see .env.example);
   // `pnpm google-token` refreshes the token, which lasts an hour.
-  "secrets": { "required": ["GOOGLE_CLOUD_PROJECT", "GOOGLE_ACCESS_TOKEN"] },
+  // BASIC_AUTH_PASSWORD puts the app behind a password
+  // (see @dembrane/examples-shared/basic-auth). It has to be listed here for
+  // local dev to load it from .env, which also makes deploys refuse to go out
+  // without one. Leave it empty in .env to keep local dev open.
+  "secrets": {
+    "required": [
+      "GOOGLE_CLOUD_PROJECT",
+      "GOOGLE_ACCESS_TOKEN",
+      "BASIC_AUTH_PASSWORD"
+    ]
+  },
   "vars": {
     "STT_MODEL": "gemini-3.5-transcribe-live-preview",
     "AGENT_MODEL": "gemini-3.8-flash"
@@ -12,8 +22,9 @@
   "compatibility_date": "2026-06-11",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/agents/*"]
+    "run_worker_first": true
   },
   "durable_objects": {
     "bindings": [

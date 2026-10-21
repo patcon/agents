@@ -1,0 +1,14 @@
+{
+  "name": "@dembrane/examples-shared",
+  "description": "Code shared between the Dembrane examples, consumed as TypeScript source",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "exports": {
+    "./basic-auth": "./src/basic-auth.ts"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261014.1",
+    "typescript": "^6.0.3"
+  }
+}
