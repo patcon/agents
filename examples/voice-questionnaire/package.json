@@ -8,7 +8,8 @@
     "start": "vite dev",
     "deploy": "vite build && wrangler deploy",
     "types": "wrangler types env.d.ts --include-runtime false",
-    "google-token": "node scripts/google-token.mjs"
+    "google-token": "node scripts/google-token.mjs",
+    "update-prices": "node scripts/update-prices.mjs"
   },
   "dependencies": {
     "@cloudflare/ai-chat": "*",
@@ -30,6 +31,7 @@
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
     "vite": "^8.1.0",
-    "wrangler": "^4.145.0"
+    "wrangler": "^4.145.0",
+    "yaml": "^2.9.0"
   }
 }

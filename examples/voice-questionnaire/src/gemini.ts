@@ -1,14 +1,16 @@
 import { vertexHost } from "./voice-gemini/vertex";
 
+export type TokenUsage = { inputTokens: number; outputTokens: number };
+
 /**
  * Asks a Gemini model on Vertex AI for an answer that fits a JSON schema, and
- * returns it parsed. Throws on any failure, with Vertex's own words where it
- * gave some.
+ * returns it parsed, with the tokens it used. Throws on any failure, with
+ * Vertex's own words where it gave some.
  */
 export async function generateJson(
   env: Env,
   request: { system: string; prompt: string; schema: object }
-): Promise<unknown> {
+): Promise<{ json: unknown; usage: TokenUsage }> {
   for (const name of ["GOOGLE_CLOUD_PROJECT", "GOOGLE_ACCESS_TOKEN"] as const) {
     if (!env[name]?.trim()) throw new Error(`${name} isn't set`);
   }
@@ -34,10 +36,24 @@ export async function generateJson(
   }
   const body = (await res.json()) as {
     candidates?: { content?: { parts?: { text?: string }[] } }[];
+    usageMetadata?: {
+      promptTokenCount?: number;
+      candidatesTokenCount?: number;
+      thoughtsTokenCount?: number;
+    };
   };
   const text = body.candidates?.[0]?.content?.parts
     ?.map((p) => p.text ?? "")
     .join("");
   if (!text) throw new Error("Gemini answered with no text");
-  return JSON.parse(text);
+  const meta = body.usageMetadata;
+  return {
+    json: JSON.parse(text),
+    // Thinking is billed as output.
+    usage: {
+      inputTokens: meta?.promptTokenCount ?? 0,
+      outputTokens:
+        (meta?.candidatesTokenCount ?? 0) + (meta?.thoughtsTokenCount ?? 0)
+    }
+  };
 }

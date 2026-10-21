@@ -1,6 +1,10 @@
 import { callable, routeAgentRequest, type Connection } from "agents";
 import { AIChatAgent, type OnChatMessageOptions } from "@cloudflare/ai-chat";
-import { withVoiceInput, type Transcriber } from "agents/voice";
+import {
+  withVoiceInput,
+  type Transcriber,
+  type TranscriberSessionOptions
+} from "agents/voice";
 import {
   createUIMessageStream,
   createUIMessageStreamResponse,
@@ -10,6 +14,7 @@ import { generateJson } from "./gemini";
 import { GeminiLiveSTT } from "./voice-gemini/live";
 import {
   AGENT_QUESTION_AT,
+  EMPTY_USAGE,
   SCHEDULE,
   foldLog,
   formatAnswer,
@@ -19,7 +24,8 @@ import {
   type LogMessage,
   type LogView,
   type Question,
-  type SessionStatus
+  type SessionStatus,
+  type Usage
 } from "./shared";
 
 /** Questions the host can push on demand (the log drawer's "From host" button). */
@@ -58,6 +64,11 @@ const newId = (prefix: string) => `${prefix}_${crypto.randomUUID()}`;
 
 const VoiceChatAgent = withVoiceInput(AIChatAgent);
 
+/** 16 kHz mono s16le, as the voice client streams it. */
+const AUDIO_BYTES_PER_SECOND = 32_000;
+/** How often streamed audio is added to the usage tally while recording. */
+const USAGE_FLUSH_MS = 5_000;
+
 /**
  * One conversation, one Durable Object.
  *
@@ -65,7 +76,9 @@ const VoiceChatAgent = withVoiceInput(AIChatAgent);
  * agent triggers) is appended to `this.messages` as a new UIMessage. Nothing
  * is edited in place; `foldLog()` turns the log into current state.
  */
-export class ConversationAgent extends VoiceChatAgent<Env> {
+export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
+  initialState = EMPTY_USAGE;
+
   createTranscriber(_connection: Connection): Transcriber {
     for (const name of [
       "GOOGLE_CLOUD_PROJECT",
@@ -73,12 +86,65 @@ export class ConversationAgent extends VoiceChatAgent<Env> {
     ] as const) {
       if (!this.env[name]?.trim()) throw new Error(`${name} isn't set`);
     }
-    return new GeminiLiveSTT({
+    const stt = new GeminiLiveSTT({
       accessToken: this.env.GOOGLE_ACCESS_TOKEN,
       project: this.env.GOOGLE_CLOUD_PROJECT,
       location: "global",
       model: this.env.STT_MODEL
     });
+    return { createSession: (options) => this.#countUsage(stt, options) };
+  }
+
+  // --- Usage ---
+
+  #addUsage(add: Partial<Omit<Usage, "sttModel" | "agentModel">>) {
+    const next: Usage = {
+      ...this.state,
+      sttModel: this.env.STT_MODEL,
+      agentModel: this.env.AGENT_MODEL
+    };
+    for (const [key, value] of Object.entries(add) as [
+      keyof typeof add,
+      number
+    ][]) {
+      next[key] += value;
+    }
+    this.setState(next);
+  }
+
+  /**
+   * Every second of audio streamed to Gemini Live counts as audio input,
+   * speech or not, so the session's audio is counted as it's fed. It's added to the tally
+   * every few seconds rather than on every chunk.
+   */
+  #countUsage(stt: Transcriber, options?: TranscriberSessionOptions) {
+    let bytes = 0;
+    let flushedAt = Date.now();
+    const flush = () => {
+      if (!bytes) return;
+      this.#addUsage({ audioSeconds: bytes / AUDIO_BYTES_PER_SECOND });
+      bytes = 0;
+      flushedAt = Date.now();
+    };
+    const session = stt.createSession({
+      ...options,
+      onUtterance: (text) => {
+        this.#addUsage({ transcriptChars: text.length });
+        options?.onUtterance?.(text);
+      }
+    });
+    const feed = session.feed.bind(session);
+    const close = session.close.bind(session);
+    session.feed = (chunk) => {
+      bytes += chunk.byteLength;
+      if (Date.now() - flushedAt > USAGE_FLUSH_MS) flush();
+      feed(chunk);
+    };
+    session.close = () => {
+      flush();
+      close();
+    };
+    return session;
   }
 
   // Appends run one after another so each one sees the previous write.
@@ -275,14 +341,23 @@ export class ConversationAgent extends VoiceChatAgent<Env> {
       `Task: ${trigger ? textOf(trigger) : "Ask one question."}`
     ].join("\n");
 
-    const input = (await generateJson(this.env, {
+    const { json, usage } = await generateJson(this.env, {
       system:
         "You help run a spoken interview. Read what the speaker said and ask exactly one " +
         "short, specific follow-up question. Pick the input type that fits the question, " +
         "and give options for radio and checkbox. Refer to something they actually said.",
       prompt: context,
       schema: QUESTION_SCHEMA
-    })) as Pick<Question, "type" | "prompt" | "options" | "min" | "max">;
+    });
+    this.#addUsage({
+      agentCalls: 1,
+      agentInputTokens: usage.inputTokens,
+      agentOutputTokens: usage.outputTokens
+    });
+    const input = json as Pick<
+      Question,
+      "type" | "prompt" | "options" | "min" | "max"
+    >;
 
     await this.#appendQuestion({
       ...input,

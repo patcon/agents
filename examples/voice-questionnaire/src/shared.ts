@@ -1,4 +1,5 @@
 import type { UIMessage } from "ai";
+import generatedPrices from "./prices.json";
 
 // --- Questions and answers ---
 
@@ -90,6 +91,71 @@ export const SCHEDULE: {
 
 /** When the agent asks its question, based on the transcript so far. */
 export const AGENT_QUESTION_AT = 120;
+
+// --- Usage and cost ---
+//
+// Kept in the agent's state rather than the log: it's a running tally, not
+// an event anyone acts on.
+
+export type Usage = {
+  sttModel: string;
+  agentModel: string;
+  /** Seconds of microphone audio streamed to the transcriber. */
+  audioSeconds: number;
+  /** Characters of final transcript Gemini sent back. */
+  transcriptChars: number;
+  agentCalls: number;
+  /** As Gemini reported them in `usageMetadata`. */
+  agentInputTokens: number;
+  /** Response and thinking tokens, which are both billed as output. */
+  agentOutputTokens: number;
+};
+
+export const EMPTY_USAGE: Usage = {
+  sttModel: "",
+  agentModel: "",
+  audioSeconds: 0,
+  transcriptChars: 0,
+  agentCalls: 0,
+  agentInputTokens: 0,
+  agentOutputTokens: 0
+};
+
+/** Gemini counts audio at 25 tokens a second. */
+export const AUDIO_TOKENS_PER_SECOND = 25;
+/** Rough tokens for transcript text we only have as characters. */
+export const CHARS_PER_TOKEN = 4;
+
+/** USD per million tokens, from the date given (or always, without one). */
+export type Rate = { from?: string; input: number; output: number };
+
+/**
+ * List prices for the models in wrangler.jsonc: today's from LiteLLM and
+ * announced changes from genai-prices. Refresh with `pnpm update-prices`.
+ */
+export const PRICES: Record<string, Rate[]> = generatedPrices.models;
+
+/** The rate in effect on `date` (YYYY-MM-DD), if the model is priced. */
+export function rateOn(model: string, date: string): Rate | undefined {
+  return PRICES[model]?.filter((r) => !r.from || r.from <= date).at(-1);
+}
+
+/** Dates after `today` on which any of these models' price changes. */
+export function priceChangesAfter(today: string, models: string[]) {
+  const dates = models.flatMap((m) =>
+    (PRICES[m] ?? []).flatMap((r) => (r.from && r.from > today ? [r.from] : []))
+  );
+  return [...new Set(dates)].sort();
+}
+
+export function costOf(
+  rate: Rate | undefined,
+  inputTokens: number,
+  outputTokens: number
+) {
+  if (!rate) return undefined;
+  return (inputTokens * rate.input + outputTokens * rate.output) / 1e6;
+}
 
 // --- The fold ---
 

@@ -39,14 +39,20 @@ import {
 } from "@phosphor-icons/react";
 import {
   AGENT_QUESTION_AT,
+  AUDIO_TOKENS_PER_SECOND,
+  CHARS_PER_TOKEN,
   SCHEDULE,
+  costOf,
   foldLog,
   formatAnswer,
+  priceChangesAfter,
+  rateOn,
   sameAnswer,
   type AnswerValue,
   type LogMessage,
   type Question,
-  type QuestionView
+  type QuestionView,
+  type Usage
 } from "./shared";
 
 // --- Session id (one Durable Object per conversation) ---
@@ -587,13 +593,103 @@ function DebugLog({ messages }: { messages: LogMessage[] }) {
   );
 }
 
+// --- Cost estimate ---
+
+function formatUsd(usd: number | undefined) {
+  if (usd === undefined) return "—";
+  return usd > 0 && usd < 0.0001 ? "<$0.0001" : `$${usd.toFixed(4)}`;
+}
+
+/**
+ * What the session has cost so far, at today's prices and at each announced
+ * change after today.
+ */
+function CostEstimate({ usage }: { usage: Usage }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const dates = [
+    today,
+    ...priceChangesAfter(today, [usage.sttModel, usage.agentModel])
+  ];
+  const audioTokens = usage.audioSeconds * AUDIO_TOKENS_PER_SECOND;
+  const transcriptTokens = usage.transcriptChars / CHARS_PER_TOKEN;
+  const rows = [
+    {
+      label: "Transcription",
+      detail: `${formatClock(usage.audioSeconds)} of audio`,
+      costs: dates.map((d) =>
+        costOf(rateOn(usage.sttModel, d), audioTokens, transcriptTokens)
+      )
+    },
+    {
+      label: "Agent",
+      detail: `${usage.agentCalls} calls · ${usage.agentInputTokens.toLocaleString()} in / ${usage.agentOutputTokens.toLocaleString()} out`,
+      costs: dates.map((d) =>
+        costOf(
+          rateOn(usage.agentModel, d),
+          usage.agentInputTokens,
+          usage.agentOutputTokens
+        )
+      )
+    }
+  ];
+  const totals = dates.map((_, i) =>
+    rows.some((r) => r.costs[i] === undefined)
+      ? undefined
+      : rows.reduce((sum, r) => sum + (r.costs[i] ?? 0), 0)
+  );
+
+  return (
+    <section className="pb-3 mb-3 border-b border-kumo-line">
+      <table className="w-full text-xs tabular-nums">
+        <thead className="text-kumo-subtle">
+          <tr>
+            <th className="text-left font-normal">Cost estimate</th>
+            {dates.map((d, i) => (
+              <th key={d} className="text-right font-normal pl-3">
+                {i === 0 ? "Now" : `From ${d}`}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="text-kumo-default">
+          {rows.map((row) => (
+            <tr key={row.label}>
+              <td className="py-1">
+                {row.label}
+                <div className="text-[11px] text-kumo-subtle">{row.detail}</div>
+              </td>
+              {row.costs.map((cost, i) => (
+                <td key={dates[i]} className="text-right pl-3 align-top py-1">
+                  {formatUsd(cost)}
+                </td>
+              ))}
+            </tr>
+          ))}
+          <tr className="font-semibold">
+            <td className="pt-1">Total</td>
+            {totals.map((cost, i) => (
+              <td key={dates[i]} className="text-right pl-3 pt-1">
+                {formatUsd(cost)}
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+      <p className="mt-2 text-[11px] text-kumo-subtle">
+        From list prices; <code>pnpm update-prices</code> refreshes them.
+        Transcription counts every second streamed, silence included.
+      </p>
+    </section>
+  );
+}
+
 // --- App ---
 
 function App() {
   const sessionId = useMemo(getSessionId, []);
   const [connection, setConnection] = useState<ConnectionStatus>("connecting");
 
-  const agent = useAgent({
+  const agent = useAgent<Usage>({
     agent: "ConversationAgent",
     name: sessionId,
     onOpen: useCallback(() => setConnection("connected"), []),
@@ -921,6 +1017,7 @@ function App() {
             From agent
           </Button>
         </div>
+        {agent.state && <CostEstimate usage={agent.state} />}
         <DebugLog messages={messages} />
       </Drawer>
     </div>
