@@ -4,7 +4,7 @@ Prototypes built on Cloudflare Agents, each deployed as its own Worker. The land
 
 | Folder                                                                           | What it is                                                                  |
 | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| [`2026-10-21`](2026-10-21)                                                       | A copy of `2026-10-20-portal-queued-interactions` to build on               |
+| [`2026-10-21-portal-admin-setup`](2026-10-21-portal-admin-setup)                 | A copy of `2026-10-20-portal-queued-interactions` to build on               |
 | [`2026-10-20-portal-queued-interactions`](2026-10-20-portal-queued-interactions) | A voice session that collects a transcript while questions arrive           |
 | [`landing`](landing)                                                             | The landing page, built from the other folders' titles and descriptions     |
 | [`packages/shared`](packages/shared)                                             | Code the prototypes share, used as TypeScript source (e.g. `withBasicAuth`) |

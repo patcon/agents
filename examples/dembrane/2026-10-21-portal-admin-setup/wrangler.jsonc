@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "2026-10-21",
+  "name": "2026-10-21-portal-admin-setup",
   // Transcription and the agent's question both come from Gemini on Vertex AI.
   // In local dev the secrets come from .env (see .env.example);
   // `pnpm google-token` refreshes the token, which lasts an hour.

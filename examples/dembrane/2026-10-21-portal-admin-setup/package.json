@@ -1,5 +1,5 @@
 {
-  "name": "@dembrane/2026-10-21",
+  "name": "@dembrane/2026-10-21-portal-admin-setup",
   "description": "Continuous voice transcript plus scheduled, host and agent questions, stored as an append-only UIMessage log",
   "private": true,
   "type": "module",
