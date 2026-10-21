@@ -1,5 +1,5 @@
 /**
- * `GeminiBatchSTT`: speech-to-text for a finished recording, over Vertex AI's
+ * `VertexBatchSTT`: speech-to-text for a finished recording, over Vertex AI's
  * `generateContent`.
  */
 
@@ -11,7 +11,7 @@ import {
   type VertexOptions
 } from "./vertex";
 
-export interface GeminiBatchSTTOptions extends VertexOptions {
+export interface VertexBatchSTTOptions extends VertexOptions {
   /**
    * Model ID. `gemini-3.5-transcribe-preview` is only served from `global`.
    * @default "gemini-3.5-transcribe-preview"
@@ -49,17 +49,17 @@ export interface TranscriptSegment {
  *
  * @example
  * ```typescript
- * const stt = new GeminiBatchSTT({
+ * const stt = new VertexBatchSTT({
  *   accessToken: env.GOOGLE_ACCESS_TOKEN,
  *   project: env.GOOGLE_CLOUD_PROJECT
  * });
  * const segments = await stt.transcribe(wav, { diarize: true });
  * ```
  */
-export class GeminiBatchSTT {
-  #options: GeminiBatchSTTOptions;
+export class VertexBatchSTT {
+  #options: VertexBatchSTTOptions;
 
-  constructor(options: GeminiBatchSTTOptions) {
+  constructor(options: VertexBatchSTTOptions) {
     this.#options = options;
   }
 
@@ -88,7 +88,7 @@ export class GeminiBatchSTT {
         { status: resp.status }
       );
       logVoiceError({
-        component: "GeminiBatchSTT",
+        component: "VertexBatchSTT",
         stage: "request",
         message: error.message,
         error
@@ -100,7 +100,7 @@ export class GeminiBatchSTT {
 }
 
 /** Underscore-prefixed: internal helper, exported only for unit tests. */
-export function _buildGenerateContentUrl(opts: GeminiBatchSTTOptions): string {
+export function _buildGenerateContentUrl(opts: VertexBatchSTTOptions): string {
   const location = opts.location ?? "global";
   const model = opts.model ?? "gemini-3.5-transcribe-preview";
   return `https://${vertexHost(location)}/v1beta1/projects/${opts.project}/locations/${location}/publishers/google/models/${model}:generateContent`;

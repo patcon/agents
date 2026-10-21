@@ -1238,9 +1238,9 @@ importers:
       '@dembrane/examples-shared':
         specifier: workspace:*
         version: link:../packages/shared
-      '@dembrane/voice-gemini':
+      '@dembrane/voice-google':
         specifier: workspace:*
-        version: link:../packages/voice-gemini
+        version: link:../packages/voice-google
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -1308,9 +1308,9 @@ importers:
       '@dembrane/examples-shared':
         specifier: workspace:*
         version: link:../packages/shared
-      '@dembrane/voice-gemini':
+      '@dembrane/voice-google':
         specifier: workspace:*
-        version: link:../packages/voice-gemini
+        version: link:../packages/voice-google
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -1379,7 +1379,7 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
-  examples/dembrane/packages/voice-gemini:
+  examples/dembrane/packages/voice-google:
     devDependencies:
       agents:
         specifier: '*'

@@ -1,9 +1,9 @@
-# @dembrane/voice-gemini
+# @dembrane/voice-google
 
-Gemini speech-to-text for the [Cloudflare Agents](https://github.com/cloudflare/agents) voice pipeline, over Vertex AI:
+Google speech-to-text for the [Cloudflare Agents](https://github.com/cloudflare/agents) voice pipeline. Google sells speech through several services, which differ in auth, regions and models, so each class is named for the service it calls. So far they all call Gemini models on Vertex AI:
 
-- `GeminiLiveSTT` streams, over the `BidiGenerateContent` WebSocket. It's a `Transcriber`.
-- `GeminiBatchSTT` transcribes a finished recording with `generateContent`, and can tell speakers apart.
+- `VertexLiveSTT` streams, over the `BidiGenerateContent` WebSocket. It's a `Transcriber`.
+- `VertexBatchSTT` transcribes a finished recording with `generateContent`, and can tell speakers apart.
 
 Dembrane maintains it for the prototypes in [`examples/dembrane`](../..), which use it through a pnpm workspace. It's `private`, and shaped like the providers in [cloudflare/agents `voice-providers/`](https://github.com/cloudflare/agents/tree/main/voice-providers). It isn't built: `exports` points at the TypeScript source, which Vite bundles.
 
@@ -14,8 +14,8 @@ It needs no Workers AI binding. It only opens an outbound WebSocket with `fetch`
 | File                     | What's in it                                             |
 | ------------------------ | -------------------------------------------------------- |
 | `src/index.ts`           | The public exports                                       |
-| `src/live.ts`            | `GeminiLiveSTT`, a streaming `Transcriber`               |
-| `src/batch.ts`           | `GeminiBatchSTT`, for a finished recording               |
+| `src/live.ts`            | `VertexLiveSTT`, a streaming `Transcriber`               |
+| `src/batch.ts`           | `VertexBatchSTT`, for a finished recording               |
 | `src/vertex.ts`          | What both share: options, host, access token             |
 | `src/service-account.ts` | `serviceAccountToken`, tokens from a service account key |
 
@@ -26,12 +26,12 @@ Tests are split the same way, in `tests/live.test.ts`, `tests/batch.test.ts` and
 ```typescript
 import { Agent } from "agents";
 import { withVoiceInput } from "agents/voice";
-import { GeminiLiveSTT } from "@dembrane/voice-gemini";
+import { VertexLiveSTT } from "@dembrane/voice-google";
 
 const InputAgent = withVoiceInput(Agent);
 
 export class MyAgent extends InputAgent<Env> {
-  transcriber = new GeminiLiveSTT({
+  transcriber = new VertexLiveSTT({
     accessToken: this.env.GOOGLE_ACCESS_TOKEN,
     project: this.env.GOOGLE_CLOUD_PROJECT
   });
@@ -45,9 +45,9 @@ It works with `withVoice` too, for a full voice agent, alongside any TTS provide
 A token from `gcloud auth print-access-token` lasts an hour. For a deployed Worker, pass `serviceAccountToken` a service account's JSON key instead. It signs a JWT with WebCrypto, exchanges it at Google's token endpoint, and reuses the token until 5 minutes before it expires. The cache is per isolate, so every session shares one token. The account needs a role that can call Vertex AI, such as `roles/aiplatform.user`.
 
 ```typescript
-import { GeminiLiveSTT, serviceAccountToken } from "@dembrane/voice-gemini";
+import { VertexLiveSTT, serviceAccountToken } from "@dembrane/voice-google";
 
-transcriber = new GeminiLiveSTT({
+transcriber = new VertexLiveSTT({
   accessToken: serviceAccountToken(this.env.GOOGLE_SERVICE_ACCOUNT_KEY),
   project: this.env.GOOGLE_CLOUD_PROJECT
 });
@@ -55,12 +55,12 @@ transcriber = new GeminiLiveSTT({
 
 ### Batch
 
-`GeminiBatchSTT` isn't a `Transcriber`. The pipeline drops anything a session sends after the call ends, so call it yourself once the recording is finished, such as from a `@callable()` method:
+`VertexBatchSTT` isn't a `Transcriber`. The pipeline drops anything a session sends after the call ends, so call it yourself once the recording is finished, such as from a `@callable()` method:
 
 ```typescript
-import { GeminiBatchSTT } from "@dembrane/voice-gemini";
+import { VertexBatchSTT } from "@dembrane/voice-google";
 
-const stt = new GeminiBatchSTT({
+const stt = new VertexBatchSTT({
   accessToken: this.env.GOOGLE_ACCESS_TOKEN,
   project: this.env.GOOGLE_CLOUD_PROJECT
 });
@@ -68,11 +68,11 @@ const stt = new GeminiBatchSTT({
 const segments = await stt.transcribe(wav, { diarize: true });
 ```
 
-Speakers are numbered from 0, in the order they're first heard. Without `diarize`, `speaker` is `null`. It takes the same `accessToken`, `project` and `location` options as `GeminiLiveSTT`. `model` defaults to `"gemini-3.5-transcribe-preview"`, which Vertex only serves from `global`.
+Speakers are numbered from 0, in the order they're first heard. Without `diarize`, `speaker` is `null`. It takes the same `accessToken`, `project` and `location` options as `VertexLiveSTT`. `model` defaults to `"gemini-3.5-transcribe-preview"`, which Vertex only serves from `global`.
 
 ## Options
 
-For `GeminiLiveSTT`:
+For `VertexLiveSTT`:
 
 | Option              | Default                                | Description                                                                                                                                      |
 | ------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -99,7 +99,7 @@ pnpm test
 
 To match the other providers, and to be upstreamed:
 
-- **Gemini Developer API.** Accept an `apiKey` and connect to `generativelanguage.googleapis.com` instead of Vertex, if the transcribe model is served there. An API key doesn't expire.
+- **Other Google services.** Classes for the Gemini API (`generativelanguage.googleapis.com`, with an API key that doesn't expire), and for Cloud Speech-to-Text.
 - **Long sessions, checked live.** Resumption is tested against a mock socket. On 1 October 2026, `gemini-3.5-transcribe-live-preview` accepted `contextWindowCompression` and `sessionResumption` in its setup, but no session has run past Vertex's limits yet.
 - **Stopping mid-sentence.** `close()` sends `realtimeInput.audioStreamEnd`, but any transcript Gemini sends back is dropped, so words spoken just before stopping are lost. No provider waits for one, because `TranscriberSession.close()` can't: it returns `void`, and the pipeline forgets the session straight away. This needs an SDK change upstream, such as `close()` returning a promise.
 - **Language.** Map the session's `language` option onto Gemini's config, once we know which field the transcribe model honours.

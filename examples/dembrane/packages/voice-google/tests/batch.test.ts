@@ -3,7 +3,7 @@ import {
   _buildGenerateContentUrl,
   _buildTranscribeRequest,
   _parseTranscribeResponse,
-  GeminiBatchSTT
+  VertexBatchSTT
 } from "../src/batch";
 
 const options = { accessToken: "test-token", project: "test-project" };
@@ -77,6 +77,6 @@ it("puts Vertex's reason in the error when a transcription fails", async () => {
     vi.fn(async () => new Response("token expired", { status: 401 }))
   );
   await expect(
-    new GeminiBatchSTT(options).transcribe(new Uint8Array(44))
+    new VertexBatchSTT(options).transcribe(new Uint8Array(44))
   ).rejects.toThrow("Gemini transcription failed (401): token expired");
 });

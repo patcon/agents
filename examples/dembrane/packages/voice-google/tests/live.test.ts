@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import {
   _buildConnectionUrl,
   _buildSetupMessage,
-  GeminiLiveSTT
+  VertexLiveSTT
 } from "../src/live";
 
 class MockWebSocket extends EventTarget {
@@ -59,7 +59,7 @@ it("only sends voice detection settings that are set", () => {
 it("fetches the token from a function for each session", async () => {
   const { ws, fetch } = stubSocket();
   const accessToken = vi.fn(async () => "fresh-token");
-  const session = new GeminiLiveSTT({
+  const session = new VertexLiveSTT({
     ...options,
     accessToken
   }).createSession();
@@ -78,7 +78,7 @@ it("fetches the token from a function for each session", async () => {
 
 it("buffers audio until setup completes, then sends it as base64", async () => {
   const { ws } = stubSocket();
-  const session = new GeminiLiveSTT(options).createSession();
+  const session = new VertexLiveSTT(options).createSession();
   session.feed(new Uint8Array([1, 2, 3]).buffer);
   await vi.waitFor(() => expect(ws.send).toHaveBeenCalledTimes(1));
 
@@ -94,7 +94,7 @@ it("buffers audio until setup completes, then sends it as base64", async () => {
 it("turns server messages into speech start, interim and final transcripts", async () => {
   const { ws } = stubSocket();
   const events: string[] = [];
-  const session = new GeminiLiveSTT(options).createSession({
+  const session = new VertexLiveSTT(options).createSession({
     onSpeechStart: () => events.push("start"),
     onInterim: (text) => events.push(`interim:${text}`),
     onUtterance: (text) => events.push(`final:${text}`)
@@ -117,7 +117,7 @@ it("turns server messages into speech start, interim and final transcripts", asy
 
 it("ends the audio stream before closing", async () => {
   const { ws } = stubSocket();
-  const session = new GeminiLiveSTT(options).createSession();
+  const session = new VertexLiveSTT(options).createSession();
   await vi.waitFor(() => expect(ws.send).toHaveBeenCalled());
   serverMessage(ws, { setupComplete: {} });
   await session.waitUntilReady?.();
@@ -132,7 +132,7 @@ it("ends the audio stream before closing", async () => {
 
 it("marks the whole session as one segment when detection is disabled", async () => {
   const { ws } = stubSocket();
-  const session = new GeminiLiveSTT({
+  const session = new VertexLiveSTT({
     ...options,
     activityDetection: { disabled: true }
   }).createSession();
@@ -162,7 +162,7 @@ it("rejects readiness and reports a fatal error when the socket upgrade fails", 
     )
   );
   const fatalErrors: Error[] = [];
-  const session = new GeminiLiveSTT(options).createSession({
+  const session = new VertexLiveSTT(options).createSession({
     onFatalError: (error) => fatalErrors.push(error)
   });
 
@@ -176,7 +176,7 @@ it("reports one fatal error when Vertex closes, and none for our own close", asy
   vi.spyOn(console, "error").mockImplementation(() => {});
   const { ws } = stubSocket();
   const fatalErrors: Error[] = [];
-  const session = new GeminiLiveSTT(options).createSession({
+  const session = new VertexLiveSTT(options).createSession({
     onFatalError: (error) => fatalErrors.push(error)
   });
   await vi.waitFor(() => expect(ws.send).toHaveBeenCalled());
@@ -224,7 +224,7 @@ it("asks for a sliding context window and resumption handles", () => {
 it("resumes on goAway with the latest handle, sending the audio heard meanwhile", async () => {
   const sockets = stubSockets();
   const onFatalError = vi.fn();
-  const session = new GeminiLiveSTT(options).createSession({ onFatalError });
+  const session = new VertexLiveSTT(options).createSession({ onFatalError });
   await vi.waitFor(() => expect(sockets[0]?.send).toHaveBeenCalled());
   const [first] = sockets as [MockWebSocket];
   serverMessage(first, { setupComplete: {} });
@@ -256,7 +256,7 @@ it("resumes on goAway with the latest handle, sending the audio heard meanwhile"
 it("resumes when the connection drops once there's a handle", async () => {
   const sockets = stubSockets();
   const onFatalError = vi.fn();
-  const session = new GeminiLiveSTT(options).createSession({ onFatalError });
+  const session = new VertexLiveSTT(options).createSession({ onFatalError });
   await vi.waitFor(() => expect(sockets[0]?.send).toHaveBeenCalled());
   const [first] = sockets as [MockWebSocket];
   serverMessage(first, { setupComplete: {} });
@@ -279,7 +279,7 @@ it("doesn't resume when the token is the problem", async () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   const sockets = stubSockets();
   const onFatalError = vi.fn();
-  const session = new GeminiLiveSTT(options).createSession({ onFatalError });
+  const session = new VertexLiveSTT(options).createSession({ onFatalError });
   await vi.waitFor(() => expect(sockets[0]?.send).toHaveBeenCalled());
   const [first] = sockets as [MockWebSocket];
   serverMessage(first, { setupComplete: {} });

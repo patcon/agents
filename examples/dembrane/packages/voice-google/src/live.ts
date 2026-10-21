@@ -1,5 +1,5 @@
 /**
- * `GeminiLiveSTT`: streaming speech-to-text over Vertex AI's
+ * `VertexLiveSTT`: streaming speech-to-text over Vertex AI's
  * `BidiGenerateContent` WebSocket.
  */
 
@@ -33,7 +33,7 @@ const MAX_PENDING_BYTES = 960_000;
  */
 const MAX_RESUMES = 3;
 
-export interface GeminiLiveSTTOptions extends VertexOptions {
+export interface VertexLiveSTTOptions extends VertexOptions {
   /** Model ID. @default "gemini-3.5-transcribe-live-preview" */
   model?: string;
   /** Tunes Gemini's voice activity detection. Unset fields keep its defaults. */
@@ -73,22 +73,22 @@ export interface ActivityDetection {
  * ```typescript
  * import { Agent } from "agents";
  * import { withVoiceInput } from "agents/voice";
- * import { GeminiLiveSTT } from "@dembrane/voice-gemini";
+ * import { VertexLiveSTT } from "@dembrane/voice-google";
  *
  * const InputAgent = withVoiceInput(Agent);
  *
  * export class MyAgent extends InputAgent<Env> {
- *   transcriber = new GeminiLiveSTT({
+ *   transcriber = new VertexLiveSTT({
  *     accessToken: this.env.GOOGLE_ACCESS_TOKEN,
  *     project: this.env.GOOGLE_CLOUD_PROJECT
  *   });
  * }
  * ```
  */
-export class GeminiLiveSTT implements Transcriber {
-  #options: GeminiLiveSTTOptions;
+export class VertexLiveSTT implements Transcriber {
+  #options: VertexLiveSTTOptions;
 
-  constructor(options: GeminiLiveSTTOptions) {
+  constructor(options: VertexLiveSTTOptions) {
     this.#options = options;
   }
 
@@ -108,7 +108,7 @@ export class GeminiLiveSTT implements Transcriber {
  * to resume the session on a new one. `handle` is the latest, when resuming.
  */
 export function _buildSetupMessage(
-  opts: GeminiLiveSTTOptions,
+  opts: VertexLiveSTTOptions,
   handle?: string
 ) {
   const location = opts.location ?? "global";
@@ -158,7 +158,7 @@ class GeminiLiveSession implements TranscriberSession {
   #onUtterance: TranscriberSessionOptions["onUtterance"];
   #onFatalError: TranscriberSessionOptions["onFatalError"];
 
-  #config: GeminiLiveSTTOptions;
+  #config: VertexLiveSTTOptions;
   #ws: WebSocket | null = null;
   #manualActivity: boolean;
   /** The latest handle Gemini said the session can resume from. */
@@ -177,7 +177,7 @@ class GeminiLiveSession implements TranscriberSession {
   #rejectReady: ((reason: unknown) => void) | null = null;
 
   constructor(
-    config: GeminiLiveSTTOptions,
+    config: VertexLiveSTTOptions,
     options?: TranscriberSessionOptions
   ) {
     this.#onInterim = options?.onInterim;
@@ -208,7 +208,7 @@ class GeminiLiveSession implements TranscriberSession {
       if (!this.#pendingOverflowLogged) {
         this.#pendingOverflowLogged = true;
         logVoiceError({
-          component: "GeminiLiveSTT",
+          component: "VertexLiveSTT",
           stage: "audio_buffer",
           message: "Gemini Live pending audio buffer full",
           error: new Error("Dropping audio until the socket connects")
@@ -332,7 +332,7 @@ class GeminiLiveSession implements TranscriberSession {
   #resume(why: string) {
     this.#resumes++;
     // biome-ignore lint/suspicious/noConsole: a resume is worth seeing in the terminal.
-    console.info(`[GeminiLiveSTT] Resuming the session: ${why}`);
+    console.info(`[VertexLiveSTT] Resuming the session: ${why}`);
     const old = this.#ws;
     this.#ws = null;
     this.#connected = false;
@@ -426,7 +426,7 @@ class GeminiLiveSession implements TranscriberSession {
     if (this.#closed || this.#fatalReported) return;
     this.#fatalReported = true;
     logVoiceError({
-      component: "GeminiLiveSTT",
+      component: "VertexLiveSTT",
       stage,
       message: error.message,
       error

@@ -3,7 +3,7 @@ import {
   serviceAccountToken,
   vertexHost,
   type VertexOptions
-} from "@dembrane/voice-gemini";
+} from "@dembrane/voice-google";
 
 export type TokenUsage = { inputTokens: number; outputTokens: number };
 

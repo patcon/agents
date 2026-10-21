@@ -1,5 +1,5 @@
 /**
- * What `GeminiLiveSTT` and `GeminiBatchSTT` share: reaching Vertex AI.
+ * What `VertexLiveSTT` and `VertexBatchSTT` share: reaching Vertex AI.
  */
 
 import { VoiceProviderError } from "agents/voice/errors";

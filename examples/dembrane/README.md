@@ -9,7 +9,7 @@ Prototypes built on Cloudflare Agents, each deployed as its own Worker. The land
 | [`design`](design)                                                               | RFCs not yet built in any prototype                                         |
 | [`landing`](landing)                                                             | The landing page, built from the other folders' titles and descriptions     |
 | [`packages/shared`](packages/shared)                                             | Code the prototypes share, used as TypeScript source (e.g. `withBasicAuth`) |
-| [`packages/voice-gemini`](packages/voice-gemini)                                 | Gemini speech-to-text on Vertex AI (`@dembrane/voice-gemini`)               |
+| [`packages/voice-google`](packages/voice-google)                                 | Google speech-to-text (`@dembrane/voice-google`)                            |
 | [`scripts`](scripts)                                                             | Helpers for the deploy workflow                                             |
 
 ## Deploying

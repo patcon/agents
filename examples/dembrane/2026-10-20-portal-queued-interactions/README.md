@@ -12,7 +12,7 @@ pnpm google-token      # writes a fresh GOOGLE_ACCESS_TOKEN to .env (lasts about
 pnpm run start
 ```
 
-Transcription and the agent's question both use Gemini on Vertex AI, so you need a Google Cloud project with Vertex AI enabled and `gcloud` signed in. Deploys use a JSON key for a service account with `roles/aiplatform.user` instead, as `GOOGLE_SERVICE_ACCOUNT_KEY`: the Worker trades it for access tokens with `serviceAccountToken`, and fetches a new one before each expires. Transcription streams to `gemini-3.5-transcribe-live-preview` through `GeminiLiveSTT` from [`@dembrane/voice-gemini`](../packages/voice-gemini); the agent's question comes from `gemini-3.8-flash`. Both models are set in `wrangler.jsonc`.
+Transcription and the agent's question both use Gemini on Vertex AI, so you need a Google Cloud project with Vertex AI enabled and `gcloud` signed in. Deploys use a JSON key for a service account with `roles/aiplatform.user` instead, as `GOOGLE_SERVICE_ACCOUNT_KEY`: the Worker trades it for access tokens with `serviceAccountToken`, and fetches a new one before each expires. Transcription streams to `gemini-3.5-transcribe-live-preview` through `VertexLiveSTT` from [`@dembrane/voice-google`](../packages/voice-google); the agent's question comes from `gemini-3.8-flash`. Both models are set in `wrangler.jsonc`.
 
 ## How it works
 

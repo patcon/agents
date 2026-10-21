@@ -12,7 +12,7 @@ import {
   type UIMessage
 } from "ai";
 import { generateJson, googleAccessToken } from "./gemini";
-import { GeminiLiveSTT } from "@dembrane/voice-gemini";
+import { VertexLiveSTT } from "@dembrane/voice-google";
 import {
   AGENT_QUESTION_AT,
   EMPTY_USAGE,
@@ -81,7 +81,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
   initialState = EMPTY_USAGE;
 
   createTranscriber(_connection: Connection): Transcriber {
-    const stt = new GeminiLiveSTT({
+    const stt = new VertexLiveSTT({
       accessToken: googleAccessToken(this.env),
       project: this.env.GOOGLE_CLOUD_PROJECT,
       location: "global",

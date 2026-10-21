@@ -1,8 +1,8 @@
 {
-  "name": "@dembrane/voice-gemini",
+  "name": "@dembrane/voice-google",
   "version": "0.0.0",
   "private": true,
-  "description": "Gemini Live streaming STT provider for Cloudflare Agents voice pipeline",
+  "description": "Google STT providers for Cloudflare Agents voice pipeline, starting with Gemini on Vertex AI",
   "peerDependencies": {
     "agents": ">=0.23.0 <2.0.0"
   },
@@ -17,6 +17,7 @@
     "agents",
     "voice",
     "stt",
+    "google",
     "gemini",
     "vertex-ai",
     "speech-to-text",
