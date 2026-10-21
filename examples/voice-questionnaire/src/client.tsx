@@ -25,7 +25,6 @@ import {
   ArrowRightIcon,
   BugIcon,
   CheckCircleIcon,
-  CheckIcon,
   FlagCheckeredIcon,
   InfoIcon,
   MicrophoneIcon,
@@ -466,7 +465,7 @@ function QuestionStage({
               Skip
             </Button>
             <Button
-              variant={changed ? "primary" : "secondary"}
+              variant="secondary"
               onClick={changed ? () => submit(false) : onNext}
               disabled={changed ? disabled || saving : !hasNext}
               aria-label={
@@ -476,11 +475,7 @@ function QuestionStage({
             >
               <span className="relative flex items-center gap-1.5">
                 {changed ? "Submit" : "Next"}
-                {changed ? (
-                  <CheckIcon size={16} />
-                ) : (
-                  <ArrowRightIcon size={16} />
-                )}
+                <ArrowRightIcon size={16} />
                 {pendingAhead > 0 && (
                   <span className="absolute -top-3.5 -right-4 min-w-5 h-5 px-1 rounded-full bg-kumo-danger text-white text-[11px] font-semibold flex items-center justify-center animate-pulse">
                     {pendingAhead}
