@@ -403,8 +403,21 @@ function QuestionStage({
 
   const hasNext = activeIndex < questions.length - 1;
   const stackDepth = Math.min(pendingAhead, 2);
-  // An unanswered question is skipped on the way past; an answered one isn't.
-  const skips = !entry.answer;
+  const saved =
+    entry.answer && !entry.answer.skipped
+      ? entry.answer.value
+      : defaultValue(question);
+  const edited =
+    question.id in drafts &&
+    !sameAnswer({ value: saved, skipped: false }, { value, skipped: false });
+  // Skip records a skip on an unanswered question, and drops an unsaved edit
+  // on an answered one. Otherwise it's just Next.
+  const skips = !entry.answer || edited;
+  const skip = () => {
+    if (!entry.answer) return submit(true);
+    if (hasNext) return onNext();
+    setDrafts(({ [question.id]: _, ...rest }) => rest);
+  };
 
   return (
     <div className="relative">
@@ -469,7 +482,7 @@ function QuestionStage({
             </Button>
             <Button
               variant="secondary"
-              onClick={skips ? () => submit(true) : onNext}
+              onClick={skips ? skip : onNext}
               disabled={skips ? disabled || saving : !hasNext}
               aria-label={
                 (skips ? "Skip" : "Next") +
