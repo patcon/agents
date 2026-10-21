@@ -1,5 +1,3 @@
-// Vendored from dembrane's portal prototype
-// (dembrane/portal-prototypes/01-admin-portal/packages/voice-gemini, 8dc9332b5).
 /**
  * What `GeminiLiveSTT` and `GeminiBatchSTT` share: reaching Vertex AI.
  */

@@ -12,7 +12,7 @@ import {
   type UIMessage
 } from "ai";
 import { generateJson } from "./gemini";
-import { GeminiLiveSTT } from "./voice-gemini/live";
+import { GeminiLiveSTT } from "@dembrane/voice-gemini";
 import {
   AGENT_QUESTION_AT,
   EMPTY_USAGE,

@@ -11,7 +11,7 @@ pnpm google-token      # writes a fresh GOOGLE_ACCESS_TOKEN to .env (lasts about
 pnpm run start
 ```
 
-Transcription and the agent's question both use Gemini on Vertex AI, so you need a Google Cloud project with Vertex AI enabled and `gcloud` signed in. Transcription streams to `gemini-3.5-transcribe-live-preview` through `GeminiLiveSTT`, vendored in `src/voice-gemini/`; the agent's question comes from `gemini-3.8-flash`. Both models are set in `wrangler.jsonc`.
+Transcription and the agent's question both use Gemini on Vertex AI, so you need a Google Cloud project with Vertex AI enabled and `gcloud` signed in. Transcription streams to `gemini-3.5-transcribe-live-preview` through `GeminiLiveSTT` from [`@dembrane/voice-gemini`](../packages/voice-gemini); the agent's question comes from `gemini-3.8-flash`. Both models are set in `wrangler.jsonc`.
 
 ## How it works
 

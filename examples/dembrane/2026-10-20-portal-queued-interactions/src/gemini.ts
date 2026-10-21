@@ -1,4 +1,4 @@
-import { vertexHost } from "./voice-gemini/vertex";
+import { vertexHost } from "@dembrane/voice-gemini";
 
 export type TokenUsage = { inputTokens: number; outputTokens: number };
 

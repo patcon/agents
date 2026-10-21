@@ -7,7 +7,7 @@
 //
 //   node deploy.mjs standalone <out-dir>
 //     Copies examples/dembrane into <out-dir> as a workspace of its own.
-//     Siblings like shared/ still resolve through "workspace:*", and
+//     Siblings and packages/* still resolve through "workspace:*", and
 //     dependencies on monorepo packages (agents, @cloudflare/ai-chat) switch
 //     to the npm release matching the version in packages/.
 //
@@ -76,9 +76,13 @@ async function standalone(outDir) {
     if (!isPrivate) published[name] = `^${version}`;
   }
 
-  for (const entry of await readdir(outDir, { withFileTypes: true })) {
-    const path = join(outDir, entry.name, "package.json");
-    const text = entry.isDirectory() && (await read(path));
+  const dirs = [
+    ...(await readdir(outDir)),
+    ...(await readdir(join(outDir, "packages"))).map((n) => `packages/${n}`)
+  ];
+  for (const dir of dirs) {
+    const path = join(outDir, dir, "package.json");
+    const text = await read(path);
     if (!text) continue;
     const pkg = JSON.parse(text);
     for (const field of ["dependencies", "devDependencies"]) {
@@ -104,6 +108,7 @@ async function standalone(outDir) {
     [
       "packages:",
       '  - "*"',
+      '  - "packages/*"',
       "allowBuilds:",
       "  core-js-pure: true",
       "  esbuild: true",

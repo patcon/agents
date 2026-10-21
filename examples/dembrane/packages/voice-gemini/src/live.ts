@@ -1,5 +1,3 @@
-// Vendored from dembrane's portal prototype
-// (dembrane/portal-prototypes/01-admin-portal/packages/voice-gemini, 8dc9332b5).
 /**
  * `GeminiLiveSTT`: streaming speech-to-text over Vertex AI's
  * `BidiGenerateContent` WebSocket.
@@ -75,7 +73,7 @@ export interface ActivityDetection {
  * ```typescript
  * import { Agent } from "agents";
  * import { withVoiceInput } from "agents/voice";
- * import { GeminiLiveSTT } from "@cloudflare/voice-gemini";
+ * import { GeminiLiveSTT } from "@dembrane/voice-gemini";
  *
  * const InputAgent = withVoiceInput(Agent);
  *
