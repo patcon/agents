@@ -1,0 +1,87 @@
+name: Deploy Dembrane examples
+
+# Deploys every app in examples/dembrane (each folder with a wrangler.jsonc
+# and a "deploy" script) as its own Worker. Each app is installed outside the
+# monorepo, against the npm releases of agents and @cloudflare/ai-chat; see
+# examples/dembrane/scripts/deploy.mjs.
+#
+# Needs these repository secrets:
+#   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+#   plus every secret an app lists under secrets.required in its wrangler.jsonc
+#   (e.g. GOOGLE_CLOUD_PROJECT, GOOGLE_ACCESS_TOKEN, BASIC_AUTH_PASSWORD)
+
+on:
+  push:
+    branches:
+      - dembrane-examples
+    paths:
+      - "examples/dembrane/**"
+      - ".github/workflows/dembrane-deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  apps:
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.apps.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: apps
+        run: echo "apps=$(node examples/dembrane/scripts/deploy.mjs apps)" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: apps
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.apps.outputs.apps) }}
+    name: deploy ${{ matrix.app }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Copy out of the monorepo
+        run: |
+          echo "STANDALONE=$RUNNER_TEMP/dembrane" >> "$GITHUB_ENV"
+          node examples/dembrane/scripts/deploy.mjs standalone "$RUNNER_TEMP/dembrane"
+
+      - name: Install
+        working-directory: ${{ env.STANDALONE }}
+        run: pnpm install --filter "./${{ matrix.app }}..."
+
+      # The landing page links to each app's workers.dev address
+      - name: Look up the workers.dev subdomain
+        run: |
+          subdomain=$(curl -sf \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" \
+            | jq -r .result.subdomain)
+          echo "WORKERS_DEV_SUBDOMAIN=$subdomain" >> "$GITHUB_ENV"
+
+      - name: Gather secrets
+        working-directory: ${{ env.STANDALONE }}/${{ matrix.app }}
+        env:
+          SECRETS_JSON: ${{ toJSON(secrets) }}
+        run: node ../scripts/deploy.mjs secrets . "$RUNNER_TEMP/secrets.json"
+
+      - name: Deploy
+        working-directory: ${{ env.STANDALONE }}/${{ matrix.app }}
+        run: pnpm run deploy --secrets-file "$RUNNER_TEMP/secrets.json"
