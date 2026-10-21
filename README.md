@@ -1,5 +1,9 @@
 # Cloudflare Agents
 
+## About this fork
+
+This fork holds Dembrane's prototypes, built on Cloudflare Agents. They live in [`examples/dembrane`](examples/dembrane) and are deployed at https://dembrane-prototypes.patcon.workers.dev. Everything else is upstream [cloudflare/agents](https://github.com/cloudflare/agents).
+
 [![npm version](https://img.shields.io/npm/v/agents)](https://www.npmjs.com/package/agents)
 [![npm downloads](https://img.shields.io/npm/dw/agents)](https://www.npmjs.com/package/agents)
 
