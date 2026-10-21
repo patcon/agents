@@ -531,19 +531,28 @@ function Summary({ questions }: { questions: QuestionView[] }) {
           </Text>
         </div>
       )}
-      <ol className="flex flex-col gap-3">
+      <ol className="flex flex-col divide-y divide-kumo-line">
         {questions.map((entry, i) => (
-          <li key={entry.question.id} className="flex flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-kumo-subtle">{i + 1}.</span>
+          <li
+            key={entry.question.id}
+            className="grid grid-cols-[1.5rem_1fr] gap-x-2 py-3 first:pt-0 last:pb-0"
+          >
+            <span className="text-sm text-kumo-subtle tabular-nums">
+              {i + 1}.
+            </span>
+            <div className="flex flex-col gap-1.5 min-w-0">
               <span className="text-sm font-medium text-kumo-default">
                 {entry.question.prompt}
               </span>
-              <AnswerStatusBadge entry={entry} />
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={`text-sm ${entry.answer && !entry.answer.skipped ? "text-kumo-default" : "text-kumo-subtle italic"}`}
+                >
+                  {formatAnswer(entry.answer)}
+                </span>
+                <AnswerStatusBadge entry={entry} />
+              </div>
             </div>
-            <span className="text-sm text-kumo-subtle pl-5">
-              {formatAnswer(entry.answer)}
-            </span>
           </li>
         ))}
       </ol>
