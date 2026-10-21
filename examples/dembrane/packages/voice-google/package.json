@@ -2,7 +2,7 @@
   "name": "@dembrane/voice-google",
   "version": "0.0.0",
   "private": true,
-  "description": "Google STT providers for Cloudflare Agents voice pipeline, starting with Gemini on Vertex AI",
+  "description": "Google STT and TTS providers for Cloudflare Agents voice pipeline, starting with Gemini on Vertex AI",
   "peerDependencies": {
     "agents": ">=0.23.0 <2.0.0"
   },
@@ -10,7 +10,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "probe-vertex-tts": "node scripts/probe-vertex-tts.mjs"
   },
   "keywords": [
     "cloudflare",
@@ -21,6 +22,8 @@
     "gemini",
     "vertex-ai",
     "speech-to-text",
+    "tts",
+    "text-to-speech",
     "streaming"
   ],
   "license": "MIT",
