@@ -404,6 +404,10 @@ function QuestionStage({
 
   const hasNext = activeIndex < questions.length - 1;
   const stackDepth = Math.min(pendingAhead, 2);
+  // Next becomes Submit once the draft would change the answer.
+  const changed =
+    isAnswerable(question, value) &&
+    !sameAnswer(entry.answer, { value, skipped: false });
 
   return (
     <div className="relative">
@@ -462,29 +466,21 @@ function QuestionStage({
               Skip
             </Button>
             <Button
-              variant="primary"
-              onClick={() => submit(false)}
-              disabled={
-                disabled ||
-                saving ||
-                !isAnswerable(question, value) ||
-                sameAnswer(entry.answer, { value, skipped: false })
-              }
-              icon={<CheckIcon size={16} />}
-            >
-              {entry.answer && !entry.answer.skipped ? "Update" : "Submit"}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={onNext}
-              disabled={!hasNext}
+              variant={changed ? "primary" : "secondary"}
+              onClick={changed ? () => submit(false) : onNext}
+              disabled={changed ? disabled || saving : !hasNext}
               aria-label={
-                pendingAhead > 0 ? `Next, ${pendingAhead} new` : "Next"
+                (changed ? "Submit" : "Next") +
+                (pendingAhead > 0 ? `, ${pendingAhead} new` : "")
               }
             >
               <span className="relative flex items-center gap-1.5">
-                Next
-                <ArrowRightIcon size={16} />
+                {changed ? "Submit" : "Next"}
+                {changed ? (
+                  <CheckIcon size={16} />
+                ) : (
+                  <ArrowRightIcon size={16} />
+                )}
                 {pendingAhead > 0 && (
                   <span className="absolute -top-3.5 -right-4 min-w-5 h-5 px-1 rounded-full bg-kumo-danger text-white text-[11px] font-semibold flex items-center justify-center animate-pulse">
                     {pendingAhead}
