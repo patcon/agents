@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "dembrane-examples",
+  "name": "dembrane-prototypes",
   // No Worker code: Cloudflare serves the page that scripts/build.mjs writes.
   "assets": { "directory": "./dist" },
   "compatibility_date": "2026-06-11"
