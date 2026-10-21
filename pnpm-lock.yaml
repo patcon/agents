@@ -1249,7 +1249,7 @@ importers:
         version: link:../../../packages/agents
       ai:
         specifier: ^7.0.0
-        version: 7.0.118(zod@4.5.4)
+        version: 7.0.18(zod@4.5.4)
       react:
         specifier: ^19.2.7
         version: 19.2.7
@@ -1319,7 +1319,7 @@ importers:
         version: link:../../../packages/agents
       ai:
         specifier: ^7.0.0
-        version: 7.0.118(zod@4.5.4)
+        version: 7.0.18(zod@4.5.4)
       react:
         specifier: ^19.2.7
         version: 19.2.8
