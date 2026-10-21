@@ -818,7 +818,7 @@ function App() {
           />
           <span className="truncate">
             <Text size="sm" bold>
-              Portal Queued Interactions
+              Portal: Queued Interactions
             </Text>
           </span>
           <ConnectionIndicator status={connection} />
