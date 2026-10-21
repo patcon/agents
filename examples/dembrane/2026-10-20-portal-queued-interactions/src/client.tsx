@@ -818,7 +818,7 @@ function App() {
           />
           <span className="truncate">
             <Text size="sm" bold>
-              Voice Questionnaire
+              Portal Queued Interactions
             </Text>
           </span>
           <ConnectionIndicator status={connection} />

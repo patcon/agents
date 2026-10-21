@@ -1,4 +1,4 @@
-# Voice Questionnaire
+# Portal Queued Interactions
 
 A continuous voice session that collects a transcript while questions arrive on a schedule, on demand from the host, and from an agent — all stored as an append-only `UIMessage` log in one Durable Object.
 
