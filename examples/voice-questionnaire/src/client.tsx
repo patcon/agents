@@ -16,7 +16,6 @@ import {
   Button,
   Input,
   InputArea,
-  PoweredByCloudflare,
   Surface,
   Text
 } from "@cloudflare/kumo";
@@ -972,10 +971,6 @@ function App() {
           </div>
         </div>
       )}
-
-      <footer className="border-t border-kumo-line px-4 py-3 flex items-center justify-center">
-        <PoweredByCloudflare href="https://developers.cloudflare.com/agents/" />
-      </footer>
 
       <Drawer
         open={drawer === "transcript"}
