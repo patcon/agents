@@ -6,6 +6,7 @@ Prototypes built on Cloudflare Agents, each deployed as its own Worker. The land
 | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | [`2026-10-21-portal-admin-setup`](2026-10-21-portal-admin-setup)                 | A copy of `2026-10-20-portal-queued-interactions` to build on               |
 | [`2026-10-20-portal-queued-interactions`](2026-10-20-portal-queued-interactions) | A voice session that collects a transcript while questions arrive           |
+| [`design`](design)                                                               | RFCs for features the prototypes share or build towards                     |
 | [`landing`](landing)                                                             | The landing page, built from the other folders' titles and descriptions     |
 | [`packages/shared`](packages/shared)                                             | Code the prototypes share, used as TypeScript source (e.g. `withBasicAuth`) |
 | [`packages/voice-gemini`](packages/voice-gemini)                                 | Gemini speech-to-text on Vertex AI (`@dembrane/voice-gemini`)               |
