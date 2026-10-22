@@ -2,7 +2,7 @@
 // host UI will: compilePlaybook() from src/compile.ts, with the prompts in
 // src/prompts.
 //
-// Usage: pnpm compile-playbook src/playbooks/admin-setup.decompiled.md [--runs N]
+// Usage: pnpm compile-playbook src/playbooks/admin-setup.decompiled.md [--runs N] [--thinking low]
 // Writes compiled/<the playbook's name>.json, or with --runs, .1.json and
 // on, compiled in parallel. A run that ends with errors writes nothing.
 // `pnpm compare-plans` says how close they came. compiled/ isn't committed:
@@ -15,13 +15,22 @@ import { compilePlaybook } from "../src/compile.ts";
 import { formatUsage, generator, loadEnv, root } from "./gemini.ts";
 
 const args = process.argv.slice(2);
-const runsAt = args.indexOf("--runs");
-const runs = runsAt === -1 ? 1 : Number(args[runsAt + 1]);
+/** The value after `--name`, and its index, so it isn't taken for the playbook. */
+const flag = (name: string) => {
+  const at = args.indexOf(`--${name}`);
+  return at === -1 ? undefined : { at: at + 1, value: args[at + 1] };
+};
+const runsFlag = flag("runs");
+const thinkingFlag = flag("thinking");
+const runs = runsFlag ? Number(runsFlag.value) : 1;
+const thinking = thinkingFlag?.value;
 const [playbookPath] = args.filter(
-  (a, i) => !a.startsWith("--") && (runsAt === -1 || i !== runsAt + 1)
+  (a, i) => !a.startsWith("--") && i !== runsFlag?.at && i !== thinkingFlag?.at
 );
 if (!playbookPath || !Number.isInteger(runs) || runs < 1) {
-  console.error("Usage: pnpm compile-playbook <playbook.md> [--runs N]");
+  console.error(
+    "Usage: pnpm compile-playbook <playbook.md> [--runs N] [--thinking level]"
+  );
   process.exit(1);
 }
 
@@ -37,7 +46,7 @@ const prompts = {
 const env = loadEnv();
 const model = env.COMPILE_MODEL;
 // A whole plan takes a while: 50 s for the first one
-const generate = generator(env, model, 180_000);
+const generate = generator(env, model, 180_000, thinking);
 
 const results = await Promise.all(
   Array.from({ length: runs }, (_, i) =>

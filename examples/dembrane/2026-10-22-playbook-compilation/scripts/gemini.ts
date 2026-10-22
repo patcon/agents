@@ -50,7 +50,12 @@ export function formatUsage(model: string, usage: TokenUsage) {
  * generateJson() for one model, giving up after `timeoutMs`, and logging
  * each call as it starts and ends.
  */
-export function generator(env: Env, model: string, timeoutMs = 90_000) {
+export function generator(
+  env: Env,
+  model: string,
+  timeoutMs = 90_000,
+  thinkingLevel?: string
+) {
   let calls = 0;
   return async (
     request: Omit<Parameters<typeof generateJson>[1], "model" | "signal">
@@ -58,11 +63,12 @@ export function generator(env: Env, model: string, timeoutMs = 90_000) {
     const call = ++calls;
     const started = Date.now();
     console.error(
-      `${model} call ${call}: asking (gives up after ${timeoutMs / 1000} s)...`
+      `${model} call ${call}: asking${thinkingLevel ? `, thinking ${thinkingLevel}` : ""} (gives up after ${timeoutMs / 1000} s)...`
     );
     const answer = await generateJson(env, {
       ...request,
       model,
+      thinkingLevel,
       signal: AbortSignal.timeout(timeoutMs)
     });
     const seconds = ((Date.now() - started) / 1000).toFixed(1);

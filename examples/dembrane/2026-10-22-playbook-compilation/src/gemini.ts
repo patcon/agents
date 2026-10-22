@@ -42,6 +42,8 @@ export async function generateJson(
     prompt: string | Turn[];
     schema: object;
     temperature?: number;
+    /** How much the model thinks first, e.g. "low"; its default when absent. */
+    thinkingLevel?: string;
     signal?: AbortSignal;
   }
 ): Promise<{ json: unknown; usage: TokenUsage }> {
@@ -67,7 +69,10 @@ export async function generateJson(
       generationConfig: {
         responseMimeType: "application/json",
         responseJsonSchema: request.schema,
-        temperature: request.temperature
+        temperature: request.temperature,
+        thinkingConfig: request.thinkingLevel
+          ? { thinkingLevel: request.thinkingLevel }
+          : undefined
       }
     }),
     signal: request.signal
