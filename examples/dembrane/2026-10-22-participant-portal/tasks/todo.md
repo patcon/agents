@@ -77,6 +77,51 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 
 **Estimated scope:** Medium
 
+## Task 3a: A display layer shows the draft with interim text inline
+
+**Description:** Replaces task 3's wrapper box and greyed line under the text (`70e9714b`, `819959c1`). `TextInput` stacks a display `<div>` over the real `<textarea>` in one grid cell, with identical height (about 8 lines), font, padding, line height, wrapping and `scrollbar-gutter: stable`. While dictation fills the field, the div shows the draft followed by the interim text, greyed, inline; `cursor: text`. It follows new text while scrolled to the bottom. The page tells the card whether dictation is filling it (`/dictating` in card state), since only the page knows whether it's been taken over.
+
+**Acceptance criteria:**
+- [ ] While dictating, the interim text shows greyed right after the last word, and the field's height never changes.
+- [ ] New text keeps the display scrolled to the bottom, unless the person scrolled up.
+- [ ] Without dictation (off, answered, or taken over), the field is a plain textarea of the same height.
+
+**Verification:**
+- [ ] `pnpm exec tsc --noEmit` and `pnpm test` pass
+- [ ] By hand: the criteria above, with a long enough dictation to pass the fold
+
+**Dependencies:** Task 3
+
+**Files likely touched:**
+- `src/cards/registry.tsx`
+- `src/client.tsx`
+- `src/cards/cards.ts`
+
+**Estimated scope:** Medium
+
+## Task 3b: Pressing the display swaps in the textarea, caret where pressed
+
+**Description:** On pointer-down on the display, or focus by Tab, `TextInput` hides the div and focuses the textarea in the same event, carrying over the scroll position and placing the caret: where pressed (`caretPositionFromPoint`, falling back to `caretRangeFromPoint`), at the end of the draft for a press on the interim text, at the end for Tab. Taking over stops dictation for the field, as an edit did: the page records the draft as theirs. Turning the caret result into an offset is a pure function in `src/cards/caret.ts`, tested beside it.
+
+**Acceptance criteria:**
+- [ ] Pressing anywhere in the display gives a focused textarea with no text moving, the caret where pressed.
+- [ ] After taking over, the badge goes, new speech doesn't change the field, and it stays a textarea after clicking away.
+- [ ] Tab into the field gives a focused textarea with the caret at the end.
+
+**Verification:**
+- [ ] `pnpm test`, including `src/cards/caret.test.ts`
+- [ ] `pnpm exec tsc --noEmit` passes
+- [ ] By hand: the criteria above, on desktop, and on a phone if one's handy (the keyboard should open)
+
+**Dependencies:** Task 3a
+
+**Files likely touched:**
+- `src/cards/registry.tsx`
+- `src/cards/caret.ts`, `src/cards/caret.test.ts` (new)
+- `src/client.tsx`
+
+**Estimated scope:** Medium
+
 ## Task 4: The README describes dictation
 
 **Description:** Add a short "Dictation" subsection after "Jev" in `README.md`: what fills a text field and when, the interim text, `"dictate": false`, and that nothing is submitted for the person. Note that tests now also live beside their source.
@@ -85,9 +130,9 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 - [ ] The section matches what was built, and links the spec.
 
 **Verification:**
-- [ ] Read it against the code once tasks 1 to 3 are in
+- [ ] Read it against the code once tasks 1 to 3b are in
 
-**Dependencies:** Tasks 1, 2, 3
+**Dependencies:** Tasks 1, 2, 3, 3a, 3b
 
 **Files likely touched:**
 - `README.md`

@@ -42,6 +42,8 @@ README "Dictation" section: after all of the above
 ### Phase 2: interim text and docs
 
 - [ ] Task 3: Interim text shows greyed in the text field on screen
+- [ ] Task 3a: A display layer shows the draft with interim text inline (replaces task 3's line under the text)
+- [ ] Task 3b: Pressing the display swaps in the textarea, caret where pressed
 - [ ] Task 4: The README describes dictation
 
 ### Checkpoint: complete
