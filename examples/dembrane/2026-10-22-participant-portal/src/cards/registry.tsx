@@ -241,6 +241,7 @@ function DictationField({
   interim?: string;
 }) {
   const display = useRef<HTMLDivElement>(null);
+  const interimText = useRef<HTMLSpanElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
   // Shared by both layers, so swapping keeps the field's place.
   const scroll = useRef({ top: 0, atBottom: true });
@@ -250,6 +251,12 @@ function DictationField({
   const typed = useRef(false);
   const [focused, setFocused] = useState(false);
   const showDisplay = dictating && !focused;
+  // While the textarea has focus, what's being said now is in it as plain
+  // text, and the final words replace it when they arrive. If they type
+  // first, it's theirs as it stands.
+  const separator = value ? " " : "";
+  const text =
+    focused && dictating && interim ? value + separator + interim : value;
 
   const onScroll = (el: HTMLElement) => {
     scroll.current = {
@@ -284,7 +291,7 @@ function DictationField({
     if (!el || !focused || !dictating || typed.current) return;
     el.setSelectionRange(selection.current.start, selection.current.end);
     place(el);
-  }, [value, interim, showDisplay]);
+  }, [text, interim, showDisplay]);
 
   return (
     <div className="grid rounded-lg bg-kumo-control ring ring-kumo-line focus-within:ring-[1.5px] focus-within:ring-kumo-focus/50">
@@ -292,7 +299,7 @@ function DictationField({
         ref={textarea}
         aria-label={label}
         placeholder={placeholder}
-        value={value}
+        value={text}
         onChange={(e) => {
           typed.current = true;
           onChange(e.target.value);
@@ -323,7 +330,9 @@ function DictationField({
               draftOffset(caretHitAt(e.clientX, e.clientY), {
                 display: el,
                 draft: value ? el.firstChild : null,
-                length: value.length
+                length: value.length,
+                interim: interimText.current?.lastChild ?? null,
+                interimStart: value.length + separator.length
               })
             );
           }}
@@ -335,8 +344,8 @@ function DictationField({
           {/* A textarea shows a trailing line break; a div needs a nudge. */}
           {value.endsWith("\n") && "\u200b"}
           {interim ? (
-            <span className="italic text-kumo-subtle">
-              {value ? " " : ""}
+            <span ref={interimText} className="italic text-kumo-subtle">
+              {separator}
               {interim}
             </span>
           ) : (

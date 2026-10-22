@@ -19,10 +19,18 @@ describe("draftOffset()", () => {
     expect(draftOffset(hit, { display, draft, length: 20 })).toBe(20);
   });
 
-  it("is the end of the draft for a press on the interim text", () => {
-    const hit = { node: interim, offset: 3 };
+  it("is the end of the draft for a press on anything else after it", () => {
+    const hit = { node: {} as Node, offset: 3 };
 
     expect(draftOffset(hit, { display, draft, length: 20 })).toBe(20);
+  });
+
+  it("is within the interim text, after the draft and its space, for a press on it", () => {
+    const hit = { node: interim, offset: 3 };
+
+    expect(
+      draftOffset(hit, { display, draft, length: 20, interim, interimStart: 21 })
+    ).toBe(24);
   });
 
   it("is the start for a press on the display before the draft", () => {
