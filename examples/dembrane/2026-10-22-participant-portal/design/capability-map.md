@@ -146,3 +146,7 @@ To decide:
 - **`jurisdiction: "eu"`.** These objects hold voice transcripts, and it can only be set when an object is created. Cheap now, costly once real data exists. Decide before anything is deployed with real people.
 - **How a host is identified.** Basic auth guards the whole Worker today; roles need something per user.
 - Later, beyond this map: more than one plan per project, with a permission for who can run each.
+
+## Beyond this map
+
+- **`revisit`: later speech proposing changes to answered questions.** "Oh, and for the tags, add libraries", said three questions on. None of the modules above covers it: once a question is answered, Jev stops assessing it and drafting stops. Unlike them, it would change something the person has already submitted, so it should propose rather than change: a confirm step ("You mentioned tags: update them?"). That may fit a **review item**, a plan item near the end that gathers proposed changes to earlier answers for the person to accept or dismiss, rather than interrupting the question on screen. It would build on `context-carryover`'s judgement of what earlier talk answers, turned the other way.
