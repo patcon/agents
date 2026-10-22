@@ -121,11 +121,12 @@ An assessment is stale once utterances newer than `seenUpTo` exist, and is run a
 
 A narrower use than the one proposed above: no candidate answer and no `relation` question. Jev is asked directly which options of each card the speaker chose, and the page shades and fills them in.
 
-- **Which questions.** Every unanswered radio and checkbox question, in one request, over the last 40 utterances. It runs about 1.5 seconds after an utterance or a new question, with one request in flight at a time. Number and text questions aren't assessed. A plan prompt can opt out with `"assess": false`.
+- **Which questions.** Every unanswered radio and checkbox question, in one request, over the last 40 utterances. It runs ~~about 1.5 seconds after an utterance or a new question~~ as soon as an utterance arrives, or 100 ms after a new question so a section's questions share one run, with one request in flight at a time. Number and text questions aren't assessed. A plan prompt can opt out with `"assess": false`.
 - **What's asked.** For radio, `pick`, a Choice over the options, and `stated`, a Noul: "has the speaker answered this at all?". An option's likelihood is `pick × stated`. That keeps "none of the above" out of the Choice, as the docs advise. For checkbox, one Noul per option, as proposed above.
 - **What was on screen.** The page reports each question it shows, as a `shown` entry in the log. Each utterance in Jev's state carries the question that was on screen when it was said. Jev is told that those lines answer that question directly, and that earlier ones count only if they clearly settle it. Questions arrive filled in from earlier talk, at lower likelihoods than answers given while they show.
 - **The log.** An `assessment` entry per run, with the raw probabilities, the model version, the last utterance seen (`seenUpTo`), the question on screen, and per question the utterances said while it showed (`heardOnScreen`). The fold applies thresholds, as proposed above. There's one entry per run rather than per question, since one request covers them all.
 - **The page.** Each option has a bar as wide as its likelihood: dim and blurred below 0.8, crisp above it. At 0.8 the option is filled into the draft, never submitted, and a manual edit wins. Once filled, it stays until it drops below 0.3, so noise between runs doesn't flip it.
+- **Previews while speaking.** Gemini's interim transcript drives a preview: Jev is asked about the question on screen only, over the last 10 utterances plus the interim text, one request in flight at a time. Previews are broadcast to the page, not logged. They move the bars but fill nothing in; filling waits for the utterance and its full run.
 - **Switching it on.** On whenever `TYPESAFE_API_KEY` is set; `JEV_ENABLED=false` turns it off.
 
 What we learned:
@@ -139,7 +140,7 @@ What we learned:
 | Checkbox: three topics named, one turned down               | 0.91–0.96, and not ticked |
 | "Don't anonymize… no, actually, do"                         | 0.63, so not filled in   |
 
-- **Cost and speed.** About 4,500 input tokens per run for the admin setup's 13 option questions, about $0.0002, in 230–400 ms. Most of those tokens are the questions themselves, not the transcript.
+- **Cost and speed.** About ~~4,500~~ 4,100 input tokens per run for the admin setup's ~~13~~ 12 option questions (name and email are now one checkbox card), about $0.0002, in 200–400 ms. A preview of one question is about 570 tokens in 185–215 ms, and is less sure of itself: "Yes, they can fill in their names. But we…" scored "A name" at 0.69, against 0.87 in a full run. Most of those tokens are the questions themselves, not the transcript.
 - **Model.** `jev-1.14.0` (`jev-preview`) is slightly sharper. But it scored "the language is Dutch" at 0.31 from unrelated Dutch speech, reading the speech's own language as an answer. `jev-1.13.0` stays pinned for now.
 
 ## The decision
