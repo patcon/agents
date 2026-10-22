@@ -10,6 +10,7 @@ Prototypes built on Cloudflare Agents, each deployed as its own Worker. The land
 | [`2026-10-20-portal-queued-interactions`](2026-10-20-portal-queued-interactions) | A voice session that collects a transcript while questions arrive           |
 | [`design`](design)                                                               | RFCs not yet built in any prototype                                         |
 | [`plans`](plans)                                                                 | Working plans prototypes were built from                                    |
+| [`TODO.md`](TODO.md)                                                             | Ideas not yet worth an RFC                                                  |
 | [`landing`](landing)                                                             | The landing page, built from the other folders' titles and descriptions     |
 | [`packages/shared`](packages/shared)                                             | Code the prototypes share, used as TypeScript source (e.g. `withBasicAuth`) |
 | [`packages/voice-google`](packages/voice-google)                                 | Google speech-to-text and text-to-speech (`@dembrane/voice-google`)         |
