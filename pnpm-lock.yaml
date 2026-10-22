@@ -1298,13 +1298,13 @@ importers:
     dependencies:
       '@ai-sdk/react':
         specifier: ^4.0.0
-        version: 4.0.19(react@19.2.8)(zod@4.5.4)
+        version: 4.0.19(react@19.2.7)(zod@4.5.4)
       '@cloudflare/ai-chat':
         specifier: '*'
         version: link:../../../packages/ai-chat
       '@cloudflare/kumo':
         specifier: ^2.6.0
-        version: 2.6.0(@date-fns/tz@1.5.0)(@phosphor-icons/react@2.1.10(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.5.4)
+        version: 2.6.0(@date-fns/tz@1.5.0)(@phosphor-icons/react@2.1.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(zod@4.5.4)
       '@dembrane/examples-shared':
         specifier: workspace:*
         version: link:../packages/shared
@@ -1313,7 +1313,7 @@ importers:
         version: link:../packages/voice-google
       '@phosphor-icons/react':
         specifier: ^2.1.10
-        version: 2.1.10(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 2.1.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       agents:
         specifier: '*'
         version: link:../../../packages/agents
@@ -1322,10 +1322,10 @@ importers:
         version: 7.0.18(zod@4.5.4)
       react:
         specifier: ^19.2.7
-        version: 19.2.8
+        version: 19.2.7
       react-dom:
         specifier: ^19.2.7
-        version: 19.2.8(react@19.2.8)
+        version: 19.2.7(react@19.2.7)
     devDependencies:
       '@cloudflare/vite-plugin':
         specifier: 1.62.3
