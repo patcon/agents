@@ -1,6 +1,6 @@
 # Plan: compiling a markdown playbook into a Plan
 
-Status: working plan, temporary. An RFC replaces this once it's built.
+Status: ~~working plan, temporary. An RFC replaces this once it's built.~~ Built. The decisions and measurements are in [`2026-10-22-playbook-compilation/design/rfc-playbook-compilation.md`](../2026-10-22-playbook-compilation/design/rfc-playbook-compilation.md); this is kept as the plan we worked from.
 
 ## Goal
 
@@ -103,4 +103,4 @@ One commit per step, no amends.
 4. `compile.ts`, prompt template loader, `compare-plans.ts`; a stub-`generate` test of the retry loop.
 5. `decompile-plan` and its prompt. Generate ~~and tidy~~ `src/playbooks/admin-setup.decompiled.md`.
 6. `compile-playbook` and its prompt. Iterate on the prompt until the comparison is clean, or record what stays different.
-7. README section. Then the RFC, and this file goes.
+7. README section. Then the RFC~~, and this file goes~~.
