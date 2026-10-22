@@ -278,7 +278,7 @@ export function questionFor(item: PlanItem): Question | undefined {
     case "consent":
       return {
         id: item.id,
-        type: "radio",
+        type: "checkbox",
         prompt: CONSENT.prompt,
         options: ["I agree"],
         required: true,

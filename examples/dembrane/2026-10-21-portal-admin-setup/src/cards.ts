@@ -202,7 +202,7 @@ export const CONSENT = {
         children: []
       },
       agree: {
-        type: "RadioGroup",
+        type: "CheckboxGroup",
         props: {
           options: ["I agree"],
           columns: null,
