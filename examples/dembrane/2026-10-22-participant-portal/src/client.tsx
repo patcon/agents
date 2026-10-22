@@ -261,8 +261,10 @@ function QuestionStage({
 
   // Until the person touches the card, an unanswered question shows the
   // options Jev thinks were said. It's only a draft: they still submit it.
+  // A skipped question counts as unanswered.
+  const unanswered = !entry.answer || entry.answer.skipped;
   const filled =
-    !(question.id in drafts) && !entry.answer && entry.suggested !== undefined;
+    !(question.id in drafts) && unanswered && entry.suggested !== undefined;
   const value =
     question.id in drafts
       ? drafts[question.id]
@@ -275,7 +277,7 @@ function QuestionStage({
   const dictating =
     question.type === "text" &&
     question.dictate !== false &&
-    !entry.answer &&
+    unanswered &&
     !(question.id in drafts);
 
   // Submitting mid-sentence saves what's on screen, the greyed words too.

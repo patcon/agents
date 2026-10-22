@@ -35,7 +35,7 @@ While someone is still talking, the transcriber's interim text (`voice.interimTr
 
 - dictation is on for the question;
 - the question is the one on screen (`view.onScreen`), and recording is on;
-- the person hasn't ~~edited the card~~ ~~taken over the field (clicked or tabbed into it, below)~~ changed the field's text, and it isn't answered.
+- the person hasn't ~~edited the card~~ ~~taken over the field (clicked or tabbed into it, below)~~ changed the field's text, and it isn't answered (a skip doesn't count as an answer).
 
 ~~It never becomes part of the value: it's only shown, and it's never saved or logged.~~ It isn't part of the draft, and isn't logged as an utterance until it's final. But Submit saves what's on screen: pressed mid-sentence, the greyed words are saved with the draft as they stand (decided 2026-10-22, after Submit was found to drop them). It reaches the card the way Jev's likelihoods do, through card state: `CardInput` takes an `interim` prop and keeps `/interim` in step, and `TextInput` draws it greyed, after the draft. ~~A textarea can't style part of its text, so `TextInput` shows it as a greyed line directly under the text, inside the same bordered box.~~ A textarea can't style part of its text, so while dictation fills the field, `TextInput` shows it in a display layer instead (below), with the interim text greyed inline right after the last word. Custom cards can read `/interim` too.
 
