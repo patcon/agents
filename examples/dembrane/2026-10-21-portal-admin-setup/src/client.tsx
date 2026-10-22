@@ -718,12 +718,14 @@ function App() {
             />
             <div>
               <Text size="sm" bold>
-                A voice session
+                One conversation, one append-only log
               </Text>
               <span className="mt-1 block">
                 <Text size="xs" variant="secondary">
-                  Start talking, and answer the questions as they appear. Open
-                  the bug icon to see the raw log.
+                  Start talking, and answer the questions as they appear. Every
+                  utterance, question, answer and status change is a new
+                  UIMessage; changing an answer appends a revision. Open the bug
+                  icon to see the raw log.
                 </Text>
               </span>
             </div>
