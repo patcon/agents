@@ -172,10 +172,11 @@ const { registry } = defineRegistry(cardCatalog, {
             onValueChange={(v) => setValue(v)}
             className="bg-transparent ring-0 focus:ring-0"
           />
-          {interim && (
+          {/* Kept while listening, even empty, so the layout doesn't jump */}
+          {interim !== null && (
             <p
               aria-live="polite"
-              className="px-3 pb-2 text-sm italic text-kumo-subtle"
+              className="min-h-7 px-3 pb-2 text-sm italic text-kumo-subtle"
             >
               {interim}
             </p>
@@ -229,7 +230,10 @@ export function CardInput({
   question: Question;
   value: AnswerValue;
   likelihood?: Record<string, number>;
-  /** What's being said now, shown greyed in a text field. Never the value. */
+  /**
+   * What's being said now, shown greyed in a text field; empty while
+   * listening to silence. Never the value.
+   */
   interim?: string;
   /** Shows the answer without letting it change. */
   readOnly?: boolean;

@@ -246,7 +246,10 @@ function QuestionStage({
   activeIndex: number;
   pendingAhead: number;
   disabled: boolean;
-  /** What's being said now, before the transcriber makes it final. */
+  /**
+   * What's being said now, before the transcriber makes it final. Empty
+   * while listening to silence, so the field keeps room for it.
+   */
   interim?: string;
   onBack: () => void;
   onNext: () => void;
@@ -825,7 +828,7 @@ function App() {
             disabled={connection !== "connected"}
             interim={
               view.status === "recording" && view.onScreen === current
-                ? voice.interimTranscript || undefined
+                ? (voice.interimTranscript ?? "")
                 : undefined
             }
             onBack={() => goTo(activeIndex - 1)}
