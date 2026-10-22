@@ -1,12 +1,12 @@
-import type { TokenUsage, Turn } from "./gemini";
+import type { TokenUsage, Turn } from "../models/gemini";
 import {
   PlanSchema,
   lintPlan,
   planLlmSchema,
   type LintMessage,
   type Plan
-} from "./plan";
-import { SETTINGS, settingsForPrompt, type Setting } from "./settings";
+} from "../plan/plan";
+import { SETTINGS, settingsForPrompt, type Setting } from "../plan/settings";
 
 // Compiling a markdown playbook into a plan: a model writes it, and Zod and
 // lintPlan() check it. Whatever they object to goes back to the model,
@@ -14,7 +14,7 @@ import { SETTINGS, settingsForPrompt, type Setting } from "./settings";
 //
 // This is what a host UI calls, so it reads no files and calls no API
 // itself. The prompts and the model come in as arguments: the Worker imports
-// src/prompts/*.md with `?raw` and passes generateJson(), and scripts read
+// src/compile/prompts/*.md with `?raw` and passes generateJson(), and scripts read
 // the prompts from disk.
 
 /** Asks the model once. generateJson() with the env and model bound. */
@@ -101,9 +101,9 @@ export async function compilePlaybook(
     /** What `source.playbook` says, e.g. the file's name. */
     name: string;
     prompts: {
-      /** src/prompts/compile-playbook.md: the system prompt, with `{{settings}}`. */
+      /** src/compile/prompts/compile-playbook.md: the system prompt, with `{{settings}}`. */
       system: string;
-      /** src/prompts/compile-playbook-retry.md: asks again, with `{{errors}}`. */
+      /** src/compile/prompts/compile-playbook-retry.md: asks again, with `{{errors}}`. */
       retry: string;
     };
     generate: Generate;

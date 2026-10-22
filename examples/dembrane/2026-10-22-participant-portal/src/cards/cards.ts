@@ -1,7 +1,7 @@
 import { defineCatalog, validateSpec, type Spec } from "@json-render/core";
 import { schema } from "@json-render/react/schema";
 import { z } from "zod";
-import type { Question } from "./shared";
+import type { Question } from "../shared";
 
 // A card is a json-render spec: what goes between a question's prompt and
 // its Submit button. The client renders it with the registry in

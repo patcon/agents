@@ -11,9 +11,9 @@ import {
 import { useAgent } from "agents/react";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
 import { useVoiceInput } from "agents/voice/react";
-import { CardInput } from "./card-registry";
-import { PlatformAdmin } from "./platform-admin";
-import { activePlanArgs } from "./platform-admin-plan";
+import { CardInput } from "./cards/registry";
+import { PlatformAdmin } from "./platform-admin/page";
+import { activePlanArgs } from "./platform-admin/plan-storage";
 import {
   Badge,
   Button,

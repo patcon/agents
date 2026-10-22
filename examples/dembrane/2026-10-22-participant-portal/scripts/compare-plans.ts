@@ -1,5 +1,5 @@
 // Says how far compiled plans are from the plan they should reconstruct,
-// with comparePlans() from src/compare-plans.ts. No model is called.
+// with comparePlans() from src/compile/compare-plans.ts. No model is called.
 //
 // Usage: pnpm compare-plans <expected.json> <compiled.json>...
 // With one compiled plan, lists what differs. With several, tallies how many
@@ -8,8 +8,8 @@
 
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
-import { comparePlans, type Difference } from "../src/compare-plans.ts";
-import { PlanSchema } from "../src/plan.ts";
+import { comparePlans, type Difference } from "../src/compile/compare-plans.ts";
+import { PlanSchema } from "../src/plan/plan.ts";
 
 const [expectedPath, ...actualPaths] = process.argv.slice(2);
 if (!expectedPath || !actualPaths.length) {

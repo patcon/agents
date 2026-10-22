@@ -3,7 +3,7 @@
 // to these keys, so a prompt's `key`, and any condition on it, names a real
 // setting.
 //
-// Written by hand from src/plans/admin-setup.json, in the platform's terms.
+// Written by hand from src/plan/admin-setup.json, in the platform's terms.
 // The platform's own field definitions (echo's ProjectPortalEditor.tsx)
 // would be the source if this outlives the prototype.
 //

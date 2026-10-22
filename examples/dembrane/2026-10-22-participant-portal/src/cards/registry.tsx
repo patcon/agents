@@ -9,7 +9,7 @@ import {
 } from "@json-render/react";
 import { Input, InputArea } from "@cloudflare/kumo";
 import { cardCatalog, defaultCard } from "./cards";
-import { AUTO_SELECT, type AnswerValue, type Question } from "./shared";
+import { AUTO_SELECT, type AnswerValue, type Question } from "../shared";
 
 // How each card component looks. The catalog in cards.ts says what props
 // they take; props arrive here with `$state` and `$bindState` already

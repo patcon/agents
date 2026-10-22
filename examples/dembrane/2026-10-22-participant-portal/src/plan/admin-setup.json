@@ -1,5 +1,5 @@
 {
-  "$schema": "../plan.schema.json",
+  "$schema": "./plan.schema.json",
   "schemaVersion": 1,
   "source": { "playbook": "portal-admin-setup", "version": "0.1.0" },
   "items": [

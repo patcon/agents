@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { CONSENT, CardSpecSchema, cardIssues } from "./cards.ts";
-import type { AnswerValue, Question } from "./shared";
+import { CONSENT, CardSpecSchema, cardIssues } from "../cards/cards.ts";
+import type { AnswerValue, Question } from "../shared";
 
 // A plan is what a markdown playbook compiles to: a flat, typed list of
 // sections and items, plus the triggers that cue them. It's the rigid form
@@ -9,7 +9,7 @@ import type { AnswerValue, Question } from "./shared";
 //
 // The Zod schemas below are the one definition. The TypeScript types are
 // inferred from them, and `pnpm check-plans` writes them out as
-// src/plan.schema.json for anything that isn't TypeScript (an LLM's
+// src/plan/plan.schema.json for anything that isn't TypeScript (an LLM's
 // structured output, the platform, an editor).
 //
 // A schema can only say a plan has the right shape. Whether it makes sense

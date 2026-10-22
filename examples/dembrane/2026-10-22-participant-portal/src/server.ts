@@ -11,15 +11,15 @@ import {
   createUIMessageStreamResponse,
   type UIMessage
 } from "ai";
-import { checkPlan, compilePlaybook } from "./compile";
-import { generateJson, googleAccessToken } from "./gemini";
+import { checkPlan, compilePlaybook } from "./compile/compile";
+import { generateJson, googleAccessToken } from "./models/gemini";
 import {
   askJev,
   assessmentRequest,
   isAssessable,
   likelihoodOf,
   readAssessment
-} from "./jev";
+} from "./models/jev";
 import { VertexLiveSTT } from "@dembrane/voice-google";
 import {
   PlanSchema,
@@ -28,10 +28,10 @@ import {
   questionFor,
   type Plan,
   type PlanEvent
-} from "./plan";
-import adminSetup from "./plans/admin-setup.json";
-import compileSystem from "./prompts/compile-playbook.md?raw";
-import compileRetry from "./prompts/compile-playbook-retry.md?raw";
+} from "./plan/plan";
+import adminSetup from "./plan/admin-setup.json";
+import compileSystem from "./compile/prompts/compile-playbook.md?raw";
+import compileRetry from "./compile/prompts/compile-playbook-retry.md?raw";
 import {
   EMPTY_USAGE,
   foldLog,

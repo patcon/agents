@@ -1,7 +1,7 @@
 import type { UIMessage } from "ai";
-import type { CardSpec } from "./cards";
-import { likelihoodOf, type QuestionAssessment } from "./jev";
-import generatedPrices from "./prices.json";
+import type { CardSpec } from "./cards/cards";
+import { likelihoodOf, type QuestionAssessment } from "./models/jev";
+import generatedPrices from "./models/prices.json";
 
 // --- Questions and answers ---
 

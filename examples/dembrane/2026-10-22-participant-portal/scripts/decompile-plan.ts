@@ -2,13 +2,13 @@
 // it, with COMPILE_MODEL. It's not the main use: what it writes is a decompiled
 // playbook, ours rather than a host's, worded as closely as the plan.
 //
-// Usage: pnpm decompile-plan src/plans/admin-setup.json [--force]
-// Writes src/playbooks/<the plan's file name>.decompiled.md, and won't overwrite
+// Usage: pnpm decompile-plan src/plan/admin-setup.json [--force]
+// Writes src/compile/playbooks/<the plan's file name>.decompiled.md, and won't overwrite
 // one unless --force says to.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, relative } from "node:path";
-import { PlanSchema } from "../src/plan.ts";
+import { PlanSchema } from "../src/plan/plan.ts";
 import { generator, loadEnv, root } from "./gemini.ts";
 
 const args = process.argv.slice(2);
@@ -22,7 +22,7 @@ if (!planPath) {
 const plan = PlanSchema.parse(JSON.parse(readFileSync(planPath, "utf8")));
 const out = join(
   root,
-  "src/playbooks",
+  "src/compile/playbooks",
   `${basename(planPath, ".json")}.decompiled.md`
 );
 if (existsSync(out) && !force) {
@@ -33,7 +33,7 @@ if (existsSync(out) && !force) {
 const env = loadEnv();
 const generate = generator(env, env.COMPILE_MODEL, 180_000);
 const { json } = await generate({
-  system: readFileSync(join(root, "src/prompts/decompile-plan.md"), "utf8"),
+  system: readFileSync(join(root, "src/compile/prompts/decompile-plan.md"), "utf8"),
   prompt: JSON.stringify({ items: plan.items, triggers: plan.triggers }),
   schema: {
     type: "object",
@@ -42,6 +42,6 @@ const { json } = await generate({
   }
 });
 
-mkdirSync(join(root, "src/playbooks"), { recursive: true });
+mkdirSync(join(root, "src/compile/playbooks"), { recursive: true });
 writeFileSync(out, `${(json as { markdown: string }).markdown.trim()}\n`);
 console.error(`wrote ${relative(root, out)}`);

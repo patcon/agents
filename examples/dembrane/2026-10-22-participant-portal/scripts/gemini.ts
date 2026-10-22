@@ -4,11 +4,11 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { generateJson, type TokenUsage } from "../src/gemini.ts";
+import { generateJson, type TokenUsage } from "../src/models/gemini.ts";
 
 export const root = join(import.meta.dirname, "..");
 
-const prices = JSON.parse(readFileSync(join(root, "src/prices.json"), "utf8"));
+const prices = JSON.parse(readFileSync(join(root, "src/models/prices.json"), "utf8"));
 
 export function loadEnv(): Env {
   const env = Object.fromEntries(

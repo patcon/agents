@@ -1,5 +1,5 @@
-import type { CardSpec } from "./cards";
-import { flatten, type Condition, type Plan, type PlanItem } from "./plan";
+import type { CardSpec } from "../cards/cards";
+import { flatten, type Condition, type Plan, type PlanItem } from "../plan/plan";
 
 // How far one plan is from another: a compiled plan from the hand-made one
 // it should reconstruct. Items are matched by what they mean, not by id:
