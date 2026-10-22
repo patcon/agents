@@ -35,6 +35,7 @@ import {
   EMPTY_USAGE,
   foldLog,
   formatAnswer,
+  isOpen,
   sameAnswer,
   textOf,
   type AnswerValue,
@@ -302,7 +303,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
       await this.#tail;
       const view = this.#view();
       const open = view.questions
-        .filter((q) => !q.answer)
+        .filter(isOpen)
         .map((q) => q.question)
         .filter(isAssessable);
       const transcript = view.utterances.slice(-ASSESS_UTTERANCES);
@@ -396,7 +397,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
       const view = this.#view();
       if (view.status !== "recording") return;
       const question = view.questions.find(
-        (q) => q.question.id === view.onScreen && !q.answer
+        (q) => q.question.id === view.onScreen && isOpen(q)
       )?.question;
       if (!question || !isAssessable(question)) return;
       const said = view.utterances.slice(-PREVIEW_UTTERANCES);

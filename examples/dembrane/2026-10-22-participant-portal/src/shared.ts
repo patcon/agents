@@ -221,6 +221,11 @@ export type LogView = {
   consented: boolean;
 };
 
+/** Still waiting for an answer: a skip doesn't count as one. */
+export function isOpen(entry: QuestionView) {
+  return !entry.answer || entry.answer.skipped;
+}
+
 export function textOf(message: LogMessage) {
   return message.parts
     .map((part) => (part.type === "text" ? part.text : ""))

@@ -60,7 +60,7 @@ Consent comes before recording. The page calls `open()` as soon as it connects, 
 
 Jev is on whenever `TYPESAFE_API_KEY` is set. `JEV_ENABLED=false` turns it off with the key still set.
 
-As soon as an utterance arrives, or 100 ms after a question does, the server asks Jev about every unanswered question whose card presents options (radio and checkbox), in one request over the last 40 utterances. Only one request is in flight; whatever arrives meanwhile is covered by one more after it.
+As soon as an utterance arrives, or 100 ms after a question does, the server asks Jev about every unanswered question whose card presents options (radio and checkbox; a skipped question counts as unanswered), in one request over the last 40 utterances. Only one request is in flight; whatever arrives meanwhile is covered by one more after it.
 
 | Card     | What Jev is asked                                                                              | An option's likelihood |
 | -------- | ---------------------------------------------------------------------------------------------- | ---------------------- |

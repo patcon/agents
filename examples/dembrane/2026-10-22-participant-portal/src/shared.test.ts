@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { foldLog, type LogMessage, type Question } from "./shared";
+import { foldLog, isOpen, type LogMessage, type Question } from "./shared";
 
 // Log entries as the server appends them.
 
@@ -152,5 +152,25 @@ describe("foldLog() dictation into text questions", () => {
     ];
 
     expect(suggestedFor(log, "pick")).toBe("Yes");
+  });
+});
+
+describe("isOpen()", () => {
+  const question = { id: "tags", type: "text", prompt: "Tags?", required: false, source: "plan" } as const;
+
+  it("is open with no answer", () => {
+    expect(isOpen({ question, askedAt: 1, answerCount: 0 })).toBe(true);
+  });
+
+  it("is open when skipped, since a skip isn't an answer", () => {
+    const answer = { value: null, skipped: true };
+
+    expect(isOpen({ question, askedAt: 1, answerCount: 1, answer })).toBe(true);
+  });
+
+  it("is closed once answered", () => {
+    const answer = { value: "Housing", skipped: false };
+
+    expect(isOpen({ question, askedAt: 1, answerCount: 1, answer })).toBe(false);
   });
 });

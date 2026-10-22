@@ -44,6 +44,7 @@ import {
   foldLog,
   formatAnswer,
   isCurrent,
+  isOpen,
   priceChangesAfter,
   rateOn,
   sameAnswer,
@@ -262,9 +263,9 @@ function QuestionStage({
   // Until the person touches the card, an unanswered question shows the
   // options Jev thinks were said. It's only a draft: they still submit it.
   // A skipped question counts as unanswered.
-  const unanswered = !entry.answer || entry.answer.skipped;
+  const open = isOpen(entry);
   const filled =
-    !(question.id in drafts) && unanswered && entry.suggested !== undefined;
+    !(question.id in drafts) && open && entry.suggested !== undefined;
   const value =
     question.id in drafts
       ? drafts[question.id]
@@ -277,7 +278,7 @@ function QuestionStage({
   const dictating =
     question.type === "text" &&
     question.dictate !== false &&
-    unanswered &&
+    open &&
     !(question.id in drafts);
 
   // Submitting mid-sentence saves what's on screen, the greyed words too.
@@ -356,7 +357,7 @@ function QuestionStage({
         <CardInput
           question={question}
           value={value}
-          likelihood={entry.answer ? undefined : entry.likelihood}
+          likelihood={open ? entry.likelihood : undefined}
           dictating={dictating}
           interim={dictating ? interim : undefined}
           readOnly={locked}
