@@ -91,8 +91,12 @@ const VoiceChatAgent = withVoiceInput(AIChatAgent);
 const AUDIO_BYTES_PER_SECOND = 32_000;
 /** How often streamed audio is added to the usage tally while recording. */
 const USAGE_FLUSH_MS = 5_000;
-/** How long Jev waits after the last utterance or question before it runs. */
-const ASSESS_AFTER_MS = 1_500;
+/**
+ * How long Jev waits after a question arrives before it runs, so a section's
+ * worth of questions arriving together is judged in one run. An utterance
+ * doesn't wait.
+ */
+const ASSESS_AFTER_QUESTION_MS = 100;
 /** How much of the transcript Jev sees, from the end. */
 const ASSESS_UTTERANCES = 40;
 
@@ -197,7 +201,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
 
   #appendQuestion(question: Question) {
     // Jev looks at it with what's been said so far, so it can arrive filled.
-    this.#assessSoon();
+    this.#assessSoon(ASSESS_AFTER_QUESTION_MS);
     return this.#append({
       id: newId("msg"),
       role: "system",
@@ -234,14 +238,14 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
       metadata: { kind: "utterance", subjectId: newId("u"), at: Date.now() },
       parts: [{ type: "text", text }]
     });
-    this.#assessSoon();
+    this.#assessSoon(0);
   }
 
   // --- Jev ---
   //
   // After each utterance, and each question that arrives, Jev judges which
-  // options of every open question the speaker has chosen. Runs are
-  // debounced, and only one is in flight: whatever arrives meanwhile is
+  // options of every open question the speaker has chosen. Only one run is
+  // in flight: whatever arrives meanwhile is
   // covered by one more run after it.
 
   #assessTimer?: ReturnType<typeof setTimeout>;
@@ -253,7 +257,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
     return !!this.env.TYPESAFE_API_KEY && String(this.env.JEV_ENABLED) !== "false";
   }
 
-  #assessSoon(delay = ASSESS_AFTER_MS) {
+  #assessSoon(delay: number) {
     if (!this.#jevOn()) return;
     clearTimeout(this.#assessTimer);
     this.#assessTimer = setTimeout(() => void this.#assess(), delay);
