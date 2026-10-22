@@ -35,7 +35,7 @@ While someone is still talking, the transcriber's interim text (`voice.interimTr
 
 - dictation is on for the question;
 - the question is the one on screen (`view.onScreen`), and recording is on;
-- the person hasn't ~~edited the card~~ taken over the field (clicked or tabbed into it, below), and it isn't answered.
+- the person hasn't ~~edited the card~~ ~~taken over the field (clicked or tabbed into it, below)~~ changed the field's text, and it isn't answered.
 
 It never becomes part of the value: it's only shown, and it's never saved or logged. It reaches the card the way Jev's likelihoods do, through card state: `CardInput` takes an `interim` prop and keeps `/interim` in step, and `TextInput` draws it greyed, after the draft. ~~A textarea can't style part of its text, so `TextInput` shows it as a greyed line directly under the text, inside the same bordered box.~~ A textarea can't style part of its text, so while dictation fills the field, `TextInput` shows it in a display layer instead (below), with the interim text greyed inline right after the last word. Custom cards can read `/interim` too.
 
@@ -48,8 +48,9 @@ Added after trying a greyed line under the text: it looked poor, and the field's
 - **Taller, fixed height.** About 8 lines, scrolling inside, for every text field. A fixed height means nothing jumps as text arrives. A `rows` prop can come with the planner.
 - **Follows new text.** If the div was scrolled to the bottom, it stays at the bottom as text arrives; if the person scrolled up, it stays where they are.
 - **Looks editable.** `cursor: text` over the div.
-- **Taking over.** Pressing on the div, or tabbing to it, swaps in the textarea in the same event: the scroll position carries over, the textarea is focused, and the caret goes where they pressed (from `document.caretPositionFromPoint`, falling back to `caretRangeFromPoint`; a press on the interim text puts it at the end of the draft; tabbing puts it at the end). Focusing within the event keeps a phone's keyboard opening.
-- **Taking over stops dictation**, as an edit did: the draft becomes theirs, the badge goes, and new speech no longer changes the field. It stays a textarea if they click away without typing.
+- **~~Taking over~~ Swapping in the textarea.** Pressing on the div, or tabbing to it, swaps in the textarea in the same event: the scroll position carries over, the textarea is focused, and the caret goes where they pressed (from `document.caretPositionFromPoint`, falling back to `caretRangeFromPoint`; a press on the interim text puts it at the end of the draft; tabbing puts it at the end). Focusing within the event keeps a phone's keyboard opening.
+- ~~**Taking over stops dictation**, as an edit did: the draft becomes theirs, the badge goes, and new speech no longer changes the field. It stays a textarea if they click away without typing.~~
+- **Only changing the text stops dictation** (decided 2026-10-22, after trying clicks as takeovers). While the textarea has focus and they haven't typed, dictation keeps adding to it, their caret and scroll position stay put, and the badge stays; interim text isn't shown there. If they leave without changing the text, the display comes back. Once they change it, the draft is theirs: the badge goes, new speech no longer changes it, and it stays a textarea.
 
 Turning a press into a character offset is a small pure function, unit-tested; the rest is checked by hand.
 
@@ -74,7 +75,7 @@ src/shared.ts         Question.dictate, and foldLog() fills `suggested` for text
 src/plan/plan.ts      `dictate` on the prompt payload; questionFor() carries it over
 src/plan/plan.schema.json, plan.llm.schema.json   regenerated if they're generated from the Zod schemas
 src/client.tsx        passes the interim text to the card on screen
-src/cards/registry.tsx  CardInput keeps /interim in card state; TextInput's display layer and takeover
+src/cards/registry.tsx  CardInput keeps /interim in card state; TextInput's display layer and swap to the textarea
 src/cards/caret.ts    new: a press point's character offset in the draft, and its test beside it
 src/cards/cards.ts    documents /interim beside /likelihood
 src/shared.test.ts    new: foldLog() dictation cases, beside the file it tests
@@ -112,7 +113,7 @@ Unit tests on `foldLog()` in `src/shared.test.ts`, with hand-built logs; no mode
 5. Radio, checkbox and number questions get no dictated `suggested` (Jev's still works on options).
 6. No utterances while showing: no `suggested`.
 
-Then a check by hand with `pnpm run start`: record, open the tags question, speak, and confirm that the interim text shows greyed while speaking, then joins the draft when final; that the field shows the badge, stops changing once ~~edited~~ taken over, and is only saved on Submit; and that pressing anywhere in the field swaps to a textarea with no text moving and the caret where pressed. The interim display is client-only and isn't unit-tested.
+Then a check by hand with `pnpm run start`: record, open the tags question, speak, and confirm that the interim text shows greyed while speaking, then joins the draft when final; that the field shows the badge, stops changing once ~~edited~~ ~~taken over~~ its text is changed, and is only saved on Submit; that pressing anywhere in the field swaps to a textarea with no text moving and the caret where pressed; and that leaving it unchanged brings the display back. The interim display is client-only and isn't unit-tested.
 
 ## Boundaries
 
@@ -123,10 +124,10 @@ Then a check by hand with `pnpm run start`: record, open the tags question, spea
 ## Success criteria
 
 - [ ] With recording on, final utterances said while a text question shows appear in its field, in order, within the time it takes the utterance to arrive in the log.
-- [ ] While someone is speaking, their interim text shows greyed ~~in the field~~ inline after the draft in the field on screen, and is replaced by normal text once final. It's never saved, and doesn't show once the field is ~~edited~~ taken over or answered.
+- [ ] While someone is speaking, their interim text shows greyed ~~in the field~~ inline after the draft in the field on screen, and is replaced by normal text once final. It's never saved, and doesn't show once the field's text is changed ~~taken over~~, while the textarea has focus, or once it's answered.
 - [ ] Text fields are about 8 lines tall, and don't change height as text arrives or speech starts and stops. The display follows new text unless the person has scrolled up.
 - [ ] Pressing the field swaps in a textarea with no text moving, focused, with the caret where they pressed; tabbing to it puts the caret at the end.
-- [ ] The field shows "Filled in from what was said" until the person ~~edits it~~ takes it over. After ~~an edit~~ that, new speech no longer changes the field.
+- [ ] The field shows "Filled in from what was said" until the person ~~edits it~~ ~~takes it over~~ changes its text. After ~~an edit~~ that, new speech no longer changes the field; clicking in and out without changing it doesn't count.
 - [ ] Nothing is saved until the person presses Submit or Skip.
 - [ ] Once answered, the field shows the answer, not the dictation.
 - [ ] `"dictate": false` on a prompt turns it off for that question; the plan schema accepts the field and `pnpm check-plans` passes.
@@ -134,6 +135,6 @@ Then a check by hand with `pnpm run start`: record, open the tags question, spea
 
 ## Decisions
 
-1. **Speech after an edit:** once someone ~~types in~~ takes over the field, dictation stops changing it. Adding new speech after their edit is left for the planner slice.
+1. **Speech after an edit:** once someone ~~types in~~ ~~takes over~~ changes the text in the field, dictation stops changing it. Adding new speech after their edit is left for the planner slice.
 2. **Live interim text:** shown greyed, ~~as above~~ inline after the draft, in a display layer that turns into the textarea when pressed (decided 2026-10-22, after trying a line under the text).
 3. **Location:** this spec lives in this example's `design/` folder.

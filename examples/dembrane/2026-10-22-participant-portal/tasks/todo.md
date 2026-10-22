@@ -79,12 +79,12 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 
 ## Task 3a: A display layer shows the draft with interim text inline
 
-**Description:** Replaces task 3's wrapper box and greyed line under the text (`70e9714b`, `819959c1`). `TextInput` stacks a display `<div>` over the real `<textarea>` in one grid cell, with identical height (about 8 lines), font, padding, line height, wrapping and `scrollbar-gutter: stable`. While dictation fills the field, the div shows the draft followed by the interim text, greyed, inline; `cursor: text`. It follows new text while scrolled to the bottom. The page tells the card whether dictation is filling it (`/dictating` in card state), since only the page knows whether it's been taken over.
+**Description:** Replaces task 3's wrapper box and greyed line under the text (`70e9714b`, `819959c1`). `TextInput` stacks a display `<div>` over the real `<textarea>` in one grid cell, with identical height (about 8 lines), font, padding, line height, wrapping and `scrollbar-gutter: stable`. While dictation fills the field, the div shows the draft followed by the interim text, greyed, inline; `cursor: text`. It follows new text while scrolled to the bottom. The page tells the card whether dictation is filling it (`/dictating` in card state), since only the page knows whether its text has been changed.
 
 **Acceptance criteria:**
 - [ ] While dictating, the interim text shows greyed right after the last word, and the field's height never changes.
 - [ ] New text keeps the display scrolled to the bottom, unless the person scrolled up.
-- [ ] Without dictation (off, answered, or taken over), the field is a plain textarea of the same height.
+- [ ] Without dictation (off, answered, or its text changed), the field is a plain textarea of the same height.
 
 **Verification:**
 - [x] `pnpm exec tsc --noEmit` and `pnpm test` pass
@@ -101,11 +101,11 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 
 ## Task 3b: Pressing the display swaps in the textarea, caret where pressed
 
-**Description:** On pointer-down on the display, or focus by Tab, `TextInput` hides the div and focuses the textarea in the same event, carrying over the scroll position and placing the caret: where pressed (`caretPositionFromPoint`, falling back to `caretRangeFromPoint`), at the end of the draft for a press on the interim text, at the end for Tab. Taking over stops dictation for the field, as an edit did: the page records the draft as theirs. Turning the caret result into an offset is a pure function in `src/cards/caret.ts`, tested beside it.
+**Description:** On pointer-down on the display, or focus by Tab, `TextInput` hides the div and focuses the textarea in the same event, carrying over the scroll position and placing the caret: where pressed (`caretPositionFromPoint`, falling back to `caretRangeFromPoint`), at the end of the draft for a press on the interim text, at the end for Tab. ~~Taking over stops dictation for the field, as an edit did: the page records the draft as theirs.~~ Only changing the text stops dictation; while focused and unchanged, dictation keeps adding with the caret and scroll kept, and leaving brings the display back. Turning the caret result into an offset is a pure function in `src/cards/caret.ts`, tested beside it.
 
 **Acceptance criteria:**
 - [ ] Pressing anywhere in the display gives a focused textarea with no text moving, the caret where pressed.
-- [ ] After taking over, the badge goes, new speech doesn't change the field, and it stays a textarea after clicking away.
+- [ ] ~~After taking over, the badge goes, new speech doesn't change the field, and it stays a textarea after clicking away.~~ Clicking in and out without typing keeps the badge and brings the display back; while focused, new speech is added without moving the caret. After typing, the badge goes, new speech doesn't change the field, and it stays a textarea.
 - [ ] Tab into the field gives a focused textarea with the caret at the end.
 
 **Verification:**
