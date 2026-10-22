@@ -1,0 +1,1215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "playbook": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "playbook",
+        "version"
+      ],
+      "additionalProperties": false,
+      "description": "The playbook this was compiled from, so a log can say which"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "order": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Fractional index: sorts as a string among siblings"
+              },
+              "parentId": {
+                "description": "The section this item sits in. Top level when absent.",
+                "type": "string"
+              },
+              "duration": {
+                "description": "Self-paced items leave this out",
+                "type": "object",
+                "properties": {
+                  "pref": {
+                    "type": "number",
+                    "description": "Negative offsets mean \"before\""
+                  },
+                  "min": {
+                    "type": "number",
+                    "description": "Negative offsets mean \"before\""
+                  },
+                  "max": {
+                    "description": "Also caps extends",
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "pref"
+                ],
+                "additionalProperties": false
+              },
+              "anchor": {
+                "description": "Anchors are hard",
+                "type": "object",
+                "properties": {
+                  "start": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  "end": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "locked": {
+                "description": "The host can't remove it, during setup or live",
+                "type": "boolean"
+              },
+              "kind": {
+                "type": "string",
+                "const": "section"
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "title"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "order",
+              "kind",
+              "payload"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "order": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Fractional index: sorts as a string among siblings"
+              },
+              "parentId": {
+                "description": "The section this item sits in. Top level when absent.",
+                "type": "string"
+              },
+              "duration": {
+                "description": "Self-paced items leave this out",
+                "type": "object",
+                "properties": {
+                  "pref": {
+                    "type": "number",
+                    "description": "Negative offsets mean \"before\""
+                  },
+                  "min": {
+                    "type": "number",
+                    "description": "Negative offsets mean \"before\""
+                  },
+                  "max": {
+                    "description": "Also caps extends",
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "pref"
+                ],
+                "additionalProperties": false
+              },
+              "anchor": {
+                "description": "Anchors are hard",
+                "type": "object",
+                "properties": {
+                  "start": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  "end": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "locked": {
+                "description": "The host can't remove it, during setup or live",
+                "type": "boolean"
+              },
+              "kind": {
+                "type": "string",
+                "const": "consent"
+              }
+            },
+            "required": [
+              "id",
+              "order",
+              "kind"
+            ],
+            "additionalProperties": false,
+            "description": "The platform's consent card. A plan places it but can't change it."
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "order": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Fractional index: sorts as a string among siblings"
+              },
+              "parentId": {
+                "description": "The section this item sits in. Top level when absent.",
+                "type": "string"
+              },
+              "duration": {
+                "description": "Self-paced items leave this out",
+                "type": "object",
+                "properties": {
+                  "pref": {
+                    "type": "number",
+                    "description": "Negative offsets mean \"before\""
+                  },
+                  "min": {
+                    "type": "number",
+                    "description": "Negative offsets mean \"before\""
+                  },
+                  "max": {
+                    "description": "Also caps extends",
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "pref"
+                ],
+                "additionalProperties": false
+              },
+              "anchor": {
+                "description": "Anchors are hard",
+                "type": "object",
+                "properties": {
+                  "start": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  "end": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "locked": {
+                "description": "The host can't remove it, during setup or live",
+                "type": "boolean"
+              },
+              "kind": {
+                "type": "string",
+                "const": "discussion"
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "guide": {
+                    "type": "string",
+                    "description": "For the agent: what to talk through, not what to say"
+                  }
+                },
+                "required": [
+                  "title",
+                  "guide"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "order",
+              "kind",
+              "payload"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "order": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Fractional index: sorts as a string among siblings"
+              },
+              "parentId": {
+                "description": "The section this item sits in. Top level when absent.",
+                "type": "string"
+              },
+              "duration": {
+                "description": "Self-paced items leave this out",
+                "type": "object",
+                "properties": {
+                  "pref": {
+                    "type": "number",
+                    "description": "Negative offsets mean \"before\""
+                  },
+                  "min": {
+                    "type": "number",
+                    "description": "Negative offsets mean \"before\""
+                  },
+                  "max": {
+                    "description": "Also caps extends",
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "pref"
+                ],
+                "additionalProperties": false
+              },
+              "anchor": {
+                "description": "Anchors are hard",
+                "type": "object",
+                "properties": {
+                  "start": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  "end": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "locked": {
+                "description": "The host can't remove it, during setup or live",
+                "type": "boolean"
+              },
+              "kind": {
+                "type": "string",
+                "const": "prompt"
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The setting the answer writes, and how conditions refer to it"
+                  },
+                  "question": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "radio",
+                          "checkbox",
+                          "text",
+                          "number"
+                        ]
+                      },
+                      "prompt": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "options": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "min": {
+                        "type": "number"
+                      },
+                      "max": {
+                        "type": "number"
+                      },
+                      "required": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "prompt",
+                      "required"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "card": {
+                    "description": "How the question is shown, as a json-render spec. A default card for its type when absent.",
+                    "type": "object",
+                    "properties": {
+                      "root": {
+                        "type": "string",
+                        "description": "Key of the root element"
+                      },
+                      "elements": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "Stack"
+                                },
+                                "props": {
+                                  "type": "object",
+                                  "properties": {
+                                    "gap": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "sm",
+                                            "md",
+                                            "lg"
+                                          ]
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "gap"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "children": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "props",
+                                "children"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Stacks its children vertically"
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "Prose"
+                                },
+                                "props": {
+                                  "type": "object",
+                                  "properties": {
+                                    "text": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "$state": {
+                                              "type": "string",
+                                              "pattern": "^\\/question\\/.*"
+                                            }
+                                          },
+                                          "required": [
+                                            "$state"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "text"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "children": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "props",
+                                "children"
+                              ],
+                              "additionalProperties": false,
+                              "description": "A paragraph of text. Blank lines separate paragraphs."
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "RadioGroup"
+                                },
+                                "props": {
+                                  "type": "object",
+                                  "properties": {
+                                    "options": {
+                                      "anyOf": [
+                                        {
+                                          "minItems": 1,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "$state": {
+                                              "type": "string",
+                                              "pattern": "^\\/question\\/.*"
+                                            }
+                                          },
+                                          "required": [
+                                            "$state"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      ]
+                                    },
+                                    "columns": {
+                                      "anyOf": [
+                                        {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 4
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "Lay options out in this many columns; one when null"
+                                    },
+                                    "value": {
+                                      "type": "object",
+                                      "properties": {
+                                        "$bindState": {
+                                          "type": "string",
+                                          "const": "/value"
+                                        }
+                                      },
+                                      "required": [
+                                        "$bindState"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "options",
+                                    "columns",
+                                    "value"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "children": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "props",
+                                "children"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Pick one option. The answer is the option's text."
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "CheckboxGroup"
+                                },
+                                "props": {
+                                  "type": "object",
+                                  "properties": {
+                                    "options": {
+                                      "anyOf": [
+                                        {
+                                          "minItems": 1,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "$state": {
+                                              "type": "string",
+                                              "pattern": "^\\/question\\/.*"
+                                            }
+                                          },
+                                          "required": [
+                                            "$state"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      ]
+                                    },
+                                    "columns": {
+                                      "anyOf": [
+                                        {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 4
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "Lay options out in this many columns; one when null"
+                                    },
+                                    "value": {
+                                      "type": "object",
+                                      "properties": {
+                                        "$bindState": {
+                                          "type": "string",
+                                          "const": "/value"
+                                        }
+                                      },
+                                      "required": [
+                                        "$bindState"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "options",
+                                    "columns",
+                                    "value"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "children": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "props",
+                                "children"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Pick any number of options. The answer is a list of them."
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "TextInput"
+                                },
+                                "props": {
+                                  "type": "object",
+                                  "properties": {
+                                    "placeholder": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "value": {
+                                      "type": "object",
+                                      "properties": {
+                                        "$bindState": {
+                                          "type": "string",
+                                          "const": "/value"
+                                        }
+                                      },
+                                      "required": [
+                                        "$bindState"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "placeholder",
+                                    "value"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "children": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "props",
+                                "children"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Free text"
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "NumberInput"
+                                },
+                                "props": {
+                                  "type": "object",
+                                  "properties": {
+                                    "min": {
+                                      "anyOf": [
+                                        {
+                                          "anyOf": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "$state": {
+                                                  "type": "string",
+                                                  "pattern": "^\\/question\\/.*"
+                                                }
+                                              },
+                                              "required": [
+                                                "$state"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "max": {
+                                      "anyOf": [
+                                        {
+                                          "anyOf": [
+                                            {
+                                              "type": "number"
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "$state": {
+                                                  "type": "string",
+                                                  "pattern": "^\\/question\\/.*"
+                                                }
+                                              },
+                                              "required": [
+                                                "$state"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "value": {
+                                      "type": "object",
+                                      "properties": {
+                                        "$bindState": {
+                                          "type": "string",
+                                          "const": "/value"
+                                        }
+                                      },
+                                      "required": [
+                                        "$bindState"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "min",
+                                    "max",
+                                    "value"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "children": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "props",
+                                "children"
+                              ],
+                              "additionalProperties": false,
+                              "description": "A number, optionally between min and max"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "root",
+                      "elements"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "key",
+                  "question"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "order",
+              "kind",
+              "payload"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "order": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Fractional index: sorts as a string among siblings"
+              },
+              "parentId": {
+                "description": "The section this item sits in. Top level when absent.",
+                "type": "string"
+              },
+              "duration": {
+                "description": "Self-paced items leave this out",
+                "type": "object",
+                "properties": {
+                  "pref": {
+                    "type": "number",
+                    "description": "Negative offsets mean \"before\""
+                  },
+                  "min": {
+                    "type": "number",
+                    "description": "Negative offsets mean \"before\""
+                  },
+                  "max": {
+                    "description": "Also caps extends",
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "pref"
+                ],
+                "additionalProperties": false
+              },
+              "anchor": {
+                "description": "Anchors are hard",
+                "type": "object",
+                "properties": {
+                  "start": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  "end": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "locked": {
+                "description": "The host can't remove it, during setup or live",
+                "type": "boolean"
+              },
+              "kind": {
+                "type": "string",
+                "const": "phoneActivity"
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "activity": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "config": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "required": [
+                  "activity"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "order",
+              "kind",
+              "payload"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "order": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Fractional index: sorts as a string among siblings"
+              },
+              "parentId": {
+                "description": "The section this item sits in. Top level when absent.",
+                "type": "string"
+              },
+              "duration": {
+                "description": "Self-paced items leave this out",
+                "type": "object",
+                "properties": {
+                  "pref": {
+                    "type": "number",
+                    "description": "Negative offsets mean \"before\""
+                  },
+                  "min": {
+                    "type": "number",
+                    "description": "Negative offsets mean \"before\""
+                  },
+                  "max": {
+                    "description": "Also caps extends",
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "pref"
+                ],
+                "additionalProperties": false
+              },
+              "anchor": {
+                "description": "Anchors are hard",
+                "type": "object",
+                "properties": {
+                  "start": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  "end": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "locked": {
+                "description": "The host can't remove it, during setup or live",
+                "type": "boolean"
+              },
+              "kind": {
+                "type": "string",
+                "const": "break"
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "order",
+              "kind",
+              "payload"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "triggers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "when": {
+            "$ref": "#/$defs/__schema0"
+          },
+          "cue": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "when",
+          "cue"
+        ],
+        "additionalProperties": false,
+        "description": "Cueing a section cues every child that has no trigger of its own"
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "source",
+    "items",
+    "triggers"
+  ],
+  "additionalProperties": false,
+  "title": "Plan",
+  "description": "A playbook, compiled",
+  "$defs": {
+    "__schema0": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "start"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "description": "The session starts"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "wall"
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          },
+          "required": [
+            "kind",
+            "at"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "relative"
+            },
+            "item": {
+              "type": "string"
+            },
+            "edge": {
+              "type": "string",
+              "enum": [
+                "start",
+                "end"
+              ]
+            },
+            "offset": {
+              "type": "number",
+              "description": "Negative offsets mean \"before\""
+            }
+          },
+          "required": [
+            "kind",
+            "item",
+            "edge",
+            "offset"
+          ],
+          "additionalProperties": false,
+          "description": "Resolves against the item's effective end"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "answer"
+            },
+            "key": {
+              "type": "string"
+            },
+            "equals": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "key",
+            "equals"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "answered"
+            },
+            "item": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "item"
+          ],
+          "additionalProperties": false,
+          "description": "Once the item's question is answered, whatever the answer; a skip doesn't count"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "manual"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "description": "The host cues it"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "any"
+            },
+            "of": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema0"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "of"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}
