@@ -4,6 +4,7 @@ interface __BaseEnv_Env {
   ASSETS: Fetcher;
   STT_MODEL: "gemini-3.5-transcribe-live-preview";
   AGENT_MODEL: "gemini-3.8-flash";
+  COMPILE_MODEL: "gemini-3.8-flash";
   JEV_MODEL: "jev-1.13.0";
   JEV_ENABLED: "true";
   GOOGLE_CLOUD_PROJECT: string;
