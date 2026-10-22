@@ -195,13 +195,14 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
     await this.#tail;
     const { questions } = this.#view();
     const released = new Set(questions.map((q) => q.question.id));
-    const answers = new Map<string, AnswerValue>();
+    const answered = { byKey: new Map<string, AnswerValue>(), items: new Set<string>() };
     for (const item of PLAN.items) {
-      if (item.kind !== "prompt") continue;
       const answer = questions.find((q) => q.question.id === item.id)?.answer;
-      if (answer && !answer.skipped) answers.set(item.payload.key, answer.value);
+      if (!answer || answer.skipped) continue;
+      answered.items.add(item.id);
+      if (item.kind === "prompt") answered.byKey.set(item.payload.key, answer.value);
     }
-    for (const item of dueItems(PLAN, event, answers, released)) {
+    for (const item of dueItems(PLAN, event, answered, released)) {
       const question = questionFor(item);
       if (question) await this.#appendQuestion(question);
     }

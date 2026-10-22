@@ -307,10 +307,10 @@
   ],
   "triggers": [
     { "id": "start:consent", "when": { "kind": "start" }, "cue": "consent" },
-    { "id": "start:basics", "when": { "kind": "start" }, "cue": "basics" },
-    { "id": "start:features", "when": { "kind": "start" }, "cue": "features" },
-    { "id": "start:content", "when": { "kind": "start" }, "cue": "content" },
-    { "id": "start:advanced", "when": { "kind": "start" }, "cue": "advanced" },
+    { "id": "consent:basics", "when": { "kind": "answered", "item": "consent" }, "cue": "basics" },
+    { "id": "consent:features", "when": { "kind": "answered", "item": "consent" }, "cue": "features" },
+    { "id": "consent:content", "when": { "kind": "answered", "item": "consent" }, "cue": "content" },
+    { "id": "consent:advanced", "when": { "kind": "answered", "item": "consent" }, "cue": "advanced" },
     {
       "id": "answer:is_project_notification_subscription_allowed",
       "when": { "kind": "answer", "key": "default_conversation_ask_for_participant_email", "equals": "Yes" },

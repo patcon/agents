@@ -1162,6 +1162,24 @@
           "properties": {
             "kind": {
               "type": "string",
+              "const": "answered"
+            },
+            "item": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "item"
+          ],
+          "additionalProperties": false,
+          "description": "Once the item's question is answered, whatever the answer; a skip doesn't count"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
               "const": "manual"
             }
           },

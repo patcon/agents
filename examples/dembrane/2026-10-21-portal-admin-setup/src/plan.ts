@@ -137,6 +137,9 @@ export const ConditionSchema = z.discriminatedUnion("kind", [
     key: z.string(),
     equals: AnswerValueSchema
   }),
+  z
+    .strictObject({ kind: z.literal("answered"), item: z.string() })
+    .describe("Once the item's question is answered, whatever the answer; a skip doesn't count"),
   z.strictObject({ kind: z.literal("manual") }).describe("The host cues it"),
   z.strictObject({
     kind: z.literal("any"),
@@ -200,6 +203,14 @@ export type PlanEvent = { kind: "start" } | { kind: "answer" };
 /** Current answers, by prompt key. */
 export type AnswersByKey = ReadonlyMap<string, AnswerValue>;
 
+/** What's been answered so far, and not skipped. */
+export type Answered = {
+  /** Answers to prompts, by key. */
+  byKey: AnswersByKey;
+  /** Ids of every item whose question has an answer. */
+  items: ReadonlySet<string>;
+};
+
 function sameValue(a: AnswerValue | undefined, b: AnswerValue) {
   const normalize = (value: AnswerValue | undefined) =>
     JSON.stringify(
@@ -215,18 +226,20 @@ function sameValue(a: AnswerValue | undefined, b: AnswerValue) {
 function holds(
   condition: Condition,
   event: PlanEvent,
-  answers: AnswersByKey
+  answered: Answered
 ): boolean {
   switch (condition.kind) {
     case "start":
       return event.kind === "start";
     case "answer":
       return (
-        answers.has(condition.key) &&
-        sameValue(answers.get(condition.key), condition.equals)
+        answered.byKey.has(condition.key) &&
+        sameValue(answered.byKey.get(condition.key), condition.equals)
       );
+    case "answered":
+      return answered.items.has(condition.item);
     case "any":
-      return condition.of.some((c) => holds(c, event, answers));
+      return condition.of.some((c) => holds(c, event, answered));
     // Not yet: these need timers, or a host control.
     case "wall":
     case "relative":
@@ -243,7 +256,7 @@ function holds(
 export function dueItems(
   plan: Plan,
   event: PlanEvent,
-  answers: AnswersByKey,
+  answered: Answered,
   released: ReadonlySet<string>
 ): PlanItem[] {
   const triggered = new Set(plan.triggers.map((t) => t.cue));
@@ -255,7 +268,7 @@ export function dueItems(
     }
   };
   for (const trigger of plan.triggers) {
-    if (holds(trigger.when, event, answers)) cue(trigger.cue);
+    if (holds(trigger.when, event, answered)) cue(trigger.cue);
   }
   return flatten(plan).filter(
     (item) => due.has(item.id) && !released.has(item.id)
@@ -427,6 +440,19 @@ export function lintPlan(plan: Plan): LintMessage[] {
     for (const condition of conditionsIn(trigger.when)) {
       if (condition.kind === "relative" && !byId.has(condition.item)) {
         report("condition-refers-to-item", "error", `trigger "${trigger.id}" waits on "${condition.item}", which doesn't exist`, target.id);
+      }
+      if (condition.kind === "answered") {
+        const source = byId.get(condition.item);
+        if (!source || questionFor(source) === undefined) {
+          report("condition-refers-to-item", "error", `trigger "${trigger.id}" waits on an answer to "${condition.item}", which asks no question`, target.id);
+        } else if ((position.get(source.id) ?? 0) > (position.get(target.id) ?? 0)) {
+          report("condition-comes-first", "warning", `"${target.id}" comes before "${source.id}", the item it waits on`, target.id);
+        }
+      }
+      // Consent comes first in time, not just in order: nothing else is
+      // asked until it's answered.
+      if (condition.kind === "start" && target.kind !== "consent") {
+        report("consent-before-all", "error", `only consent can be cued at the start; "${target.id}" should wait for it`, target.id);
       }
       if (condition.kind !== "answer") continue;
       const source = prompts.get(condition.key);
