@@ -3,11 +3,13 @@
 // src/prompts.
 //
 // Usage: pnpm compile-playbook src/playbooks/admin-setup.decompiled.md [--runs N]
-// Writes src/plans/<the playbook's name>.compiled.json, or with --runs,
-// .compiled.1.json and on, compiled in parallel. A run that ends with errors
-// writes nothing. `pnpm compare-plans` says how close they came.
+// Writes compiled/<the playbook's name>.json, or with --runs, .1.json and
+// on, compiled in parallel. A run that ends with errors writes nothing.
+// `pnpm compare-plans` says how close they came. compiled/ isn't committed:
+// a compile is one sample of what the model does; the comparison is what's
+// worth keeping.
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 import { compilePlaybook } from "../src/compile.ts";
 import { formatUsage, generator, loadEnv, root } from "./gemini.ts";
@@ -77,12 +79,13 @@ for (const outcome of results) {
   }
   const out = join(
     root,
-    "src/plans",
-    `${name}.compiled${runs === 1 ? "" : `.${outcome.run}`}.json`
+    "compiled",
+    `${name}${runs === 1 ? "" : `.${outcome.run}`}.json`
   );
+  mkdirSync(join(root, "compiled"), { recursive: true });
   writeFileSync(
     out,
-    `${JSON.stringify({ $schema: "../plan.schema.json", ...plan }, null, 2)}\n`
+    `${JSON.stringify({ $schema: "../src/plan.schema.json", ...plan }, null, 2)}\n`
   );
   console.log(`  wrote ${relative(root, out)}`);
 }

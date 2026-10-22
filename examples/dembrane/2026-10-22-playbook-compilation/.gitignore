@@ -146,3 +146,5 @@ vite.config.ts.timestamp-*
 
 .wrangler
 .DS_Store
+# What pnpm compile-playbook writes
+compiled/
