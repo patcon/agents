@@ -4,6 +4,7 @@ Prototypes built on Cloudflare Agents, each deployed as its own Worker. The land
 
 | Folder                                                                           | What it is                                                                  |
 | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| [`2026-10-22-playbook-compilation`](2026-10-22-playbook-compilation)             | A copy of `2026-10-22-jev` to compile its plan from a markdown playbook     |
 | [`2026-10-22-jev`](2026-10-22-jev)                                               | A copy of `2026-10-21-portal-admin-setup` to try Jev on the options of cards |
 | [`2026-10-21-portal-admin-setup`](2026-10-21-portal-admin-setup)                 | A copy of `2026-10-20-portal-queued-interactions` to build on               |
 | [`2026-10-20-portal-queued-interactions`](2026-10-20-portal-queued-interactions) | A voice session that collects a transcript while questions arrive           |
