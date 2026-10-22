@@ -2,7 +2,8 @@
 // host UI will: compilePlaybook() from src/compile.ts, with the prompts in
 // src/prompts.
 //
-// Usage: pnpm compile-playbook src/playbooks/admin-setup.decompiled.md [--runs N] [--thinking low]
+// Usage: pnpm compile-playbook src/playbooks/admin-setup.decompiled.md [--runs N] [--thinking level]
+// --thinking overrides COMPILE_THINKING in wrangler.jsonc.
 // Writes compiled/<the playbook's name>.json, or with --runs, .1.json and
 // on, compiled in parallel. A run that ends with errors writes nothing.
 // `pnpm compare-plans` says how close they came. compiled/ isn't committed:
@@ -23,7 +24,6 @@ const flag = (name: string) => {
 const runsFlag = flag("runs");
 const thinkingFlag = flag("thinking");
 const runs = runsFlag ? Number(runsFlag.value) : 1;
-const thinking = thinkingFlag?.value;
 const [playbookPath] = args.filter(
   (a, i) => !a.startsWith("--") && i !== runsFlag?.at && i !== thinkingFlag?.at
 );
@@ -46,7 +46,12 @@ const prompts = {
 const env = loadEnv();
 const model = env.COMPILE_MODEL;
 // A whole plan takes a while: 50 s for the first one
-const generate = generator(env, model, 180_000, thinking);
+const generate = generator(
+  env,
+  model,
+  180_000,
+  thinkingFlag?.value ?? env.COMPILE_THINKING
+);
 
 const results = await Promise.all(
   Array.from({ length: runs }, (_, i) =>

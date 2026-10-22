@@ -5,6 +5,7 @@ interface __BaseEnv_Env {
   STT_MODEL: "gemini-3.5-transcribe-live-preview";
   AGENT_MODEL: "gemini-3.8-flash";
   COMPILE_MODEL: "gemini-3.8-flash";
+  COMPILE_THINKING: "low";
   JEV_MODEL: "jev-1.13.0";
   JEV_ENABLED: "true";
   GOOGLE_CLOUD_PROJECT: string;
@@ -36,6 +37,7 @@ declare namespace NodeJS {
       | "STT_MODEL"
       | "AGENT_MODEL"
       | "COMPILE_MODEL"
+      | "COMPILE_THINKING"
       | "JEV_MODEL"
       | "JEV_ENABLED"
       | "GOOGLE_CLOUD_PROJECT"

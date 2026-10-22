@@ -20,7 +20,7 @@ export function loadEnv(): Env {
       .map(([, key, value]) => [key, value.replace(/^'(.*)'$/, "$1")])
   );
   const wrangler = readFileSync(join(root, "wrangler.jsonc"), "utf8");
-  for (const name of ["AGENT_MODEL", "COMPILE_MODEL"]) {
+  for (const name of ["AGENT_MODEL", "COMPILE_MODEL", "COMPILE_THINKING"]) {
     const model = wrangler.match(new RegExp(`"${name}":\\s*"([^"]+)"`))?.[1];
     if (model) env[name] ??= model;
   }
