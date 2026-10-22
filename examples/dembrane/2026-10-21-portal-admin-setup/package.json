@@ -19,6 +19,8 @@
     "@cloudflare/kumo": "^2.6.0",
     "@dembrane/examples-shared": "workspace:*",
     "@dembrane/voice-google": "workspace:*",
+    "@json-render/core": "^0.21.1",
+    "@json-render/react": "^0.21.1",
     "@phosphor-icons/react": "^2.1.10",
     "agents": "*",
     "ai": "^7.0.0",

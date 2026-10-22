@@ -1,4 +1,5 @@
 import type { UIMessage } from "ai";
+import type { CardSpec } from "./cards";
 import generatedPrices from "./prices.json";
 
 // --- Questions and answers ---
@@ -13,6 +14,8 @@ export type Question = {
   min?: number;
   max?: number;
   required: boolean;
+  /** How it's shown, as a json-render spec. `defaultCard()` when absent. */
+  card?: CardSpec;
   source: "plan" | "host" | "agent";
 };
 

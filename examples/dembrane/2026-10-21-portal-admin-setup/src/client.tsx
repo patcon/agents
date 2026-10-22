@@ -11,11 +11,10 @@ import {
 import { useAgent } from "agents/react";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
 import { useVoiceInput } from "agents/voice/react";
+import { CardInput } from "./card-registry";
 import {
   Badge,
   Button,
-  Input,
-  InputArea,
   Surface,
   Text
 } from "@cloudflare/kumo";
@@ -200,102 +199,6 @@ function isAnswerable(question: Question, value: AnswerValue) {
   }
 }
 
-function QuestionInput({
-  question,
-  value,
-  onChange
-}: {
-  question: Question;
-  value: AnswerValue;
-  onChange: (value: AnswerValue) => void;
-}) {
-  const optionClass = (checked: boolean) =>
-    `flex items-center gap-3 rounded-lg px-3 py-3 ring cursor-pointer transition-colors ${
-      checked
-        ? "ring-kumo-brand bg-kumo-tint"
-        : "ring-kumo-line hover:bg-kumo-tint"
-    }`;
-
-  if (question.type === "radio") {
-    return (
-      <fieldset className="flex flex-col gap-2">
-        <legend className="sr-only">{question.prompt}</legend>
-        {question.options?.map((option) => (
-          <label key={option} className={optionClass(value === option)}>
-            <input
-              type="radio"
-              name={question.id}
-              className="accent-[var(--color-kumo-brand)] size-4"
-              checked={value === option}
-              onChange={() => onChange(option)}
-            />
-            <span className="text-sm text-kumo-default">{option}</span>
-          </label>
-        ))}
-      </fieldset>
-    );
-  }
-
-  if (question.type === "checkbox") {
-    const selected = Array.isArray(value) ? value : [];
-    return (
-      <fieldset className="flex flex-col gap-2">
-        <legend className="sr-only">{question.prompt}</legend>
-        {question.options?.map((option) => {
-          const checked = selected.includes(option);
-          return (
-            <label key={option} className={optionClass(checked)}>
-              <input
-                type="checkbox"
-                className="accent-[var(--color-kumo-brand)] size-4"
-                checked={checked}
-                onChange={() =>
-                  onChange(
-                    checked
-                      ? selected.filter((o) => o !== option)
-                      : [...selected, option]
-                  )
-                }
-              />
-              <span className="text-sm text-kumo-default">{option}</span>
-            </label>
-          );
-        })}
-      </fieldset>
-    );
-  }
-
-  if (question.type === "number") {
-    return (
-      <Input
-        type="number"
-        inputMode="numeric"
-        aria-label={question.prompt}
-        min={question.min}
-        max={question.max}
-        placeholder={
-          question.min !== undefined && question.max !== undefined
-            ? `${question.min}–${question.max}`
-            : "Enter a number"
-        }
-        value={typeof value === "number" ? String(value) : ""}
-        onChange={(e) =>
-          onChange(e.target.value === "" ? null : Number(e.target.value))
-        }
-      />
-    );
-  }
-
-  return (
-    <InputArea
-      aria-label={question.prompt}
-      placeholder="Type your answer"
-      value={typeof value === "string" ? value : ""}
-      onValueChange={(v) => onChange(v)}
-    />
-  );
-}
-
 const SOURCE_LABEL: Record<Question["source"], string> = {
   plan: "Setup",
   host: "From host",
@@ -415,7 +318,7 @@ function QuestionStage({
           {question.prompt}
         </p>
 
-        <QuestionInput
+        <CardInput
           question={question}
           value={value}
           onChange={(v) => setDrafts((d) => ({ ...d, [question.id]: v }))}

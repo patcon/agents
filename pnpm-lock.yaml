@@ -1311,6 +1311,12 @@ importers:
       '@dembrane/voice-google':
         specifier: workspace:*
         version: link:../packages/voice-google
+      '@json-render/core':
+        specifier: ^0.21.1
+        version: 0.21.1(zod@4.5.4)
+      '@json-render/react':
+        specifier: ^0.21.1
+        version: 0.21.1(react@19.2.7)(zod@4.5.4)
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -7489,6 +7495,16 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
+
+  '@json-render/core@0.21.1':
+    resolution: {integrity: sha512-5hUxJTOnNlBhLuSzS/Vs46jjAqQ2TnkGz9n/0RW2djYwxANZKhOTc1QOuL1Cgu+HxtfTPdJjzUs5dOei/Y+aag==}
+    peerDependencies:
+      zod: ^4.0.0
+
+  '@json-render/react@0.21.1':
+    resolution: {integrity: sha512-xuK67UzMhKCwGlB48Y22BfPsPxwKy+xLq+fK8dG0jCJyE8SKT/WCLReOEG0+rRzGZo5gcIbjC+3r6fcbtNt16w==}
+    peerDependencies:
+      react: ^19.2.3
 
   '@kreuzberg/tree-sitter-language-pack-darwin-arm64@1.10.1':
     resolution: {integrity: sha512-ugAIpHqQObgz8wKIyxQZMFgco5DWJ1IVNwJkbJM5X5qEDitCfD4TIuCRlOB+WVU9YrVYigydh7CK1lPTPiQZEQ==}
@@ -14962,18 +14978,6 @@ snapshots:
     transitivePeerDependencies:
       - zod
 
-  '@ai-sdk/react@4.0.19(react@19.2.8)(zod@4.5.4)':
-    dependencies:
-      '@ai-sdk/mcp': 2.0.9(zod@4.5.4)
-      '@ai-sdk/provider': 4.0.2
-      '@ai-sdk/provider-utils': 5.0.6(zod@4.5.4)
-      ai: 7.0.18(zod@4.5.4)
-      react: 19.2.8
-      swr: 2.4.1(react@19.2.8)
-      throttleit: 2.1.0
-    transitivePeerDependencies:
-      - zod
-
   '@ai-sdk/tui@1.0.119(zod@4.5.4)':
     dependencies:
       ai: 7.0.118(zod@4.5.4)
@@ -17468,6 +17472,17 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
+
+  '@json-render/core@0.21.1(zod@4.5.4)':
+    dependencies:
+      zod: 4.5.4
+
+  '@json-render/react@0.21.1(react@19.2.7)(zod@4.5.4)':
+    dependencies:
+      '@json-render/core': 0.21.1(zod@4.5.4)
+      react: 19.2.7
+    transitivePeerDependencies:
+      - zod
 
   '@kreuzberg/tree-sitter-language-pack-darwin-arm64@1.10.1':
     optional: true
@@ -26246,12 +26261,6 @@ snapshots:
       dequal: 2.0.3
       react: 19.2.7
       use-sync-external-store: 1.6.0(react@19.2.7)
-
-  swr@2.4.1(react@19.2.8):
-    dependencies:
-      dequal: 2.0.3
-      react: 19.2.8
-      use-sync-external-store: 1.6.0(react@19.2.8)
 
   swrv@1.2.0(vue@3.5.40(typescript@6.0.3)):
     dependencies:
