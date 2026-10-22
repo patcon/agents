@@ -2,7 +2,7 @@
 
 A continuous voice session that walks a host through setting up their project's portal. The setup questions come from a plan compiled from a playbook (`src/plans/admin-setup.json`); more can come on demand from the host and from an agent. Everything is stored as an append-only `UIMessage` log in one Durable Object.
 
-A copy of `2026-10-22-jev`, to compile its plan from a markdown playbook with Gemini. Like that one, it has [Jev](https://docs.typesafe.ai), TypeSafe's System One model, listen along: every card with options shows how likely each option is to be what the speaker chose, and fills in the likely ones.
+A copy of `2026-10-22-jev` that compiles its plan from a markdown playbook with Gemini, and checks the result against the hand-made plan (see [Playbooks](#playbooks-srccompilets)). The running session still uses the hand-made plan. Like `2026-10-22-jev`, it has [Jev](https://docs.typesafe.ai), TypeSafe's System One model, listen along: every card with options shows how likely each option is to be what the speaker chose, and fills in the likely ones.
 
 ## Run it
 
@@ -14,7 +14,7 @@ pnpm google-token      # writes a fresh GOOGLE_ACCESS_TOKEN to .env (lasts about
 pnpm run start
 ```
 
-Transcription and the agent's question both use Gemini on Vertex AI, so you need a Google Cloud project with Vertex AI enabled and `gcloud` signed in. Deploys use a JSON key for a service account with `roles/aiplatform.user` instead, as `GOOGLE_SERVICE_ACCOUNT_KEY`: the Worker trades it for access tokens with `serviceAccountToken`, and fetches a new one before each expires. Transcription streams to `gemini-3.5-transcribe-live-preview` through `VertexLiveSTT` from [`@dembrane/voice-google`](../packages/voice-google); the agent's question comes from `gemini-3.8-flash`. Both models are set in `wrangler.jsonc`.
+Transcription and the agent's question both use Gemini on Vertex AI, so you need a Google Cloud project with Vertex AI enabled and `gcloud` signed in. Deploys use a JSON key for a service account with `roles/aiplatform.user` instead, as `GOOGLE_SERVICE_ACCOUNT_KEY`: the Worker trades it for access tokens with `serviceAccountToken`, and fetches a new one before each expires. Transcription streams to `gemini-3.5-transcribe-live-preview` through `VertexLiveSTT` from [`@dembrane/voice-google`](../packages/voice-google); the agent's question comes from `gemini-3.8-flash`, and so do compiled plans. The models are set in `wrangler.jsonc`.
 
 ## How it works
 
@@ -37,12 +37,12 @@ type LogMeta =
 
 `ConversationAgent` is `withVoiceInput(AIChatAgent)`. Each source of events appends to the log with `persistMessages()`, which writes without starting a model turn:
 
-| Source   | How it appends                                                    |
-| -------- | ----------------------------------------------------------------- |
-| Voice    | `onTranscript()` appends an `utterance`                           |
-| Plan     | `open()` and `answer()` append the questions the plan releases    |
-| Host     | `@callable() pushHostQuestion()`                                  |
-| Person   | `@callable() answer(questionId, value, skipped)`                  |
+| Source | How it appends                                                 |
+| ------ | -------------------------------------------------------------- |
+| Voice  | `onTranscript()` appends an `utterance`                        |
+| Plan   | `open()` and `answer()` append the questions the plan releases |
+| Host   | `@callable() pushHostQuestion()`                               |
+| Person | `@callable() answer(questionId, value, skipped)`               |
 
 The agent is woken without a human message: a `trigger` entry is appended with `saveMessages()`, which runs `onChatMessage()`. That asks Gemini for a question shaped by a JSON schema (`src/gemini.ts`), appends it, and replies with a short assistant message saying what it asked. The trigger stays in the log, so it's clear why the turn ran.
 
@@ -62,10 +62,10 @@ Jev is on whenever `TYPESAFE_API_KEY` is set. `JEV_ENABLED=false` turns it off w
 
 As soon as an utterance arrives, or 100 ms after a question does, the server asks Jev about every unanswered question whose card presents options (radio and checkbox), in one request over the last 40 utterances. Only one request is in flight; whatever arrives meanwhile is covered by one more after it.
 
-| Card     | What Jev is asked                                                                                 | An option's likelihood |
-| -------- | ------------------------------------------------------------------------------------------------- | ---------------------- |
-| radio    | `pick`, a Choice over the options, and `stated`, a Noul: has the speaker answered this at all?    | `pick × stated`        |
-| checkbox | A Noul per option: has the speaker said this one applies?                                         | That Noul              |
+| Card     | What Jev is asked                                                                              | An option's likelihood |
+| -------- | ---------------------------------------------------------------------------------------------- | ---------------------- |
+| radio    | `pick`, a Choice over the options, and `stated`, a Noul: has the speaker answered this at all? | `pick × stated`        |
+| checkbox | A Noul per option: has the speaker said this one applies?                                      | That Noul              |
 
 The page calls `show(questionId)` whenever a question comes on screen, which appends a `shown` entry. Each utterance in Jev's state says which question was on screen when it was said, and Jev is told those lines answer that question directly, while anything said before it appeared counts only if it clearly settles it. Questions arrive filled in from what was said earlier, but what's said while a question is showing counts for more.
 
@@ -79,7 +79,30 @@ The model is pinned in `wrangler.jsonc` (`jev-1.13.0`), and Jev's input tokens s
 
 `pnpm try-jev` runs short Dutch and English transcripts past Jev with every option question in the admin setup plan, and prints the likelihoods: `pnpm try-jev nl` for just the Dutch ones, `JEV_MODEL=jev-1.14.0 pnpm try-jev` to try another model.
 
+### Playbooks (`src/compile.ts`)
+
+A playbook is markdown a host could write: a `#` title, a `##` heading per section, and a bullet per question. It has no setting keys. `compilePlaybook()` turns one into a plan with `COMPILE_MODEL` at `COMPILE_THINKING` (`low`), the same way a host UI will call it:
+
+- The system prompt is `src/prompts/compile-playbook.md`. Its `{{settings}}` placeholder gets the catalog in `src/settings.ts`: each portal setting's key, what it controls, and its options. The compiler maps the playbook's words to those keys. Which setting depends on which is left to the playbook.
+- Gemini answers with the schema from `planLlmSchema()` in `src/plan.ts`. That's the plan's JSON Schema rewritten by `toLlmSchema()` into what Vertex enforces: `anyOf` for `oneOf`, `enum` for `const`, and no `pattern`.
+- Zod and `lintPlan()` check each answer. Errors go back to Gemini with `src/prompts/compile-playbook-retry.md`, for up to three attempts.
+- `source` is set by code: the playbook's name, and a hash of its text as the version.
+
+`compile.ts` reads no files and calls no API itself. It's given the prompts and a `generate` function, so the Worker, the scripts and the tests (`pnpm test`) all call it the same way.
+
+To check the compiler, we rebuild the hand-made plan from a playbook and compare:
+
+```bash
+pnpm decompile-plan src/plans/admin-setup.json                       # → src/playbooks/admin-setup.decompiled.md
+pnpm compile-playbook src/playbooks/admin-setup.decompiled.md --runs 10   # → compiled/admin-setup.decompiled.{1..10}.json
+pnpm compare-plans src/plans/admin-setup.json compiled/*.json
+```
+
+`decompile-plan` has Gemini write the playbook for a plan, with notes for the compiler in square brackets. `compile-playbook` compiles in parallel into `compiled/`, which isn't committed. `compare-plans` calls no model. It matches prompts by key and sections by title, and reports a difference in section, type, options, `required`, card, reading order or what releases an item. Ids and `order` strings don't count, and changed wording is reported apart. Each call prints its time, tokens and cost. 10 of 10 compiles of the decompiled admin setup came out the same as the hand-made plan, at about 21 s and 1.8¢ each.
+
 ## Related
+
+- [`design/rfc-playbook-compilation.md`](design/rfc-playbook-compilation.md) — why playbooks compile this way, and what was measured
 
 - [`voice-input`](../../voice-input) — `withVoiceInput` on its own
 - [`design/rfc-jev-certainty.md`](../design/rfc-jev-certainty.md) — Jev judging proposed answers, not yet built
