@@ -1,5 +1,6 @@
 import type { UIMessage } from "ai";
 import type { CardSpec } from "./cards";
+import { likelihoodOf, type QuestionAssessment } from "./jev";
 import generatedPrices from "./prices.json";
 
 // --- Questions and answers ---
@@ -16,6 +17,8 @@ export type Question = {
   required: boolean;
   /** How it's shown, as a json-render spec. `defaultCard()` when absent. */
   card?: CardSpec;
+  /** False keeps Jev from judging its options. */
+  assess?: boolean;
   source: "plan" | "host" | "agent";
 };
 
@@ -37,12 +40,36 @@ export type LogMeta =
   | { kind: "question"; subjectId: string; at: number }
   | { kind: "answer"; subjectId: string; at: number }
   | { kind: "trigger"; subjectId: string; at: number }
-  | { kind: "status"; subjectId: "session"; at: number };
+  | { kind: "status"; subjectId: "session"; at: number }
+  | { kind: "shown"; subjectId: string; at: number }
+  | { kind: "assessment"; subjectId: "jev"; at: number };
+
+/**
+ * What Jev made of the transcript, for every open question with options.
+ * The raw probabilities are kept, and thresholds are applied in the fold.
+ */
+export type Assessment = {
+  model: string;
+  /** The last utterance Jev saw. */
+  seenUpTo: string;
+  /** The question on screen when it ran. */
+  onScreen: string | null;
+  questions: Record<
+    string,
+    QuestionAssessment & {
+      /** Utterances Jev saw that were said while this question was on screen. */
+      heardOnScreen: string[];
+    }
+  >;
+};
 
 export type LogDataParts = {
   question: Question;
   answer: Answer;
   status: { status: SessionStatus };
+  /** The question a device put on screen. */
+  shown: { questionId: string };
+  assessment: Assessment;
 };
 
 export type LogMessage = UIMessage<LogMeta, LogDataParts>;
@@ -64,6 +91,10 @@ export type Usage = {
   agentInputTokens: number;
   /** Response and thinking tokens, which are both billed as output. */
   agentOutputTokens: number;
+  jevModel: string;
+  jevCalls: number;
+  /** Jev bills input tokens only. */
+  jevInputTokens: number;
 };
 
 export const EMPTY_USAGE: Usage = {
@@ -73,7 +104,10 @@ export const EMPTY_USAGE: Usage = {
   transcriptChars: 0,
   agentCalls: 0,
   agentInputTokens: 0,
-  agentOutputTokens: 0
+  agentOutputTokens: 0,
+  jevModel: "",
+  jevCalls: 0,
+  jevInputTokens: 0
 };
 
 /** Gemini counts audio at 25 tokens a second. */
@@ -88,7 +122,13 @@ export type Rate = { from?: string; input: number; output: number };
  * List prices for the models in wrangler.jsonc: today's from LiteLLM and
  * announced changes from genai-prices. Refresh with `pnpm update-prices`.
  */
-export const PRICES: Record<string, Rate[]> = generatedPrices.models;
+export const PRICES: Record<string, Rate[]> = {
+  ...generatedPrices.models,
+  // TypeSafe's models aren't in LiteLLM. From docs.typesafe.ai/models on
+  // 2026-10-22: $0.042 per million input tokens, output free.
+  "jev-1.13.0": [{ input: 0.042, output: 0 }],
+  "jev-1.14.0": [{ input: 0.042, output: 0 }]
+};
 
 /** The rate in effect on `date` (YYYY-MM-DD), if the model is priced. */
 export function rateOn(model: string, date: string): Rate | undefined {
@@ -114,19 +154,39 @@ export function costOf(
 
 // --- The fold ---
 
+/**
+ * When Jev's likelihood for an option reaches `select`, it's filled into the
+ * draft. It stays filled until it drops below `keep`, so a little noise
+ * between assessments doesn't flip it.
+ */
+export const AUTO_SELECT = { select: 0.8, keep: 0.3 };
+
 export type QuestionView = {
   question: Question;
   askedAt: number;
   answer?: Answer;
   /** How many answer entries exist for this question (1 = never revised). */
   answerCount: number;
+  /** How likely Jev thinks each option is, from its latest assessment. */
+  likelihood?: Record<string, number>;
+  /** What Jev's likelihoods fill into the draft, if anything. */
+  suggested?: AnswerValue;
 };
 
 export type LogView = {
   status: SessionStatus;
   startedAt?: number;
-  utterances: { id: string; text: string; at: number }[];
+  utterances: {
+    id: string;
+    text: string;
+    at: number;
+    /** The question on screen when it was said. */
+    onScreen: string | null;
+  }[];
   questions: QuestionView[];
+  /** The question on screen now, as the last device to move put it. */
+  onScreen: string | null;
+  lastAssessment?: Assessment;
 };
 
 export function textOf(message: LogMessage) {
@@ -140,7 +200,12 @@ export function textOf(message: LogMessage) {
  * renders it, and the server feeds it to the model.
  */
 export function foldLog(messages: readonly LogMessage[]): LogView {
-  const view: LogView = { status: "idle", utterances: [], questions: [] };
+  const view: LogView = {
+    status: "idle",
+    utterances: [],
+    questions: [],
+    onScreen: null
+  };
   const questions = new Map<string, QuestionView>();
 
   for (const message of messages) {
@@ -163,6 +228,20 @@ export function foldLog(messages: readonly LogMessage[]): LogView {
         if (!entry) continue;
         entry.answer = part.data;
         entry.answerCount++;
+      } else if (part.type === "data-shown") {
+        view.onScreen = part.data.questionId;
+      } else if (part.type === "data-assessment") {
+        view.lastAssessment = part.data;
+        for (const [id, assessment] of Object.entries(part.data.questions)) {
+          const entry = questions.get(id);
+          if (!entry) continue;
+          entry.likelihood = likelihoodOf(assessment);
+          entry.suggested = suggest(
+            entry.question,
+            entry.likelihood,
+            entry.suggested
+          );
+        }
       }
     }
 
@@ -170,12 +249,37 @@ export function foldLog(messages: readonly LogMessage[]): LogView {
       view.utterances.push({
         id: message.id,
         text: textOf(message),
-        at: meta.at
+        at: meta.at,
+        onScreen: view.onScreen
       });
     }
   }
 
   return view;
+}
+
+/** The options to fill in, keeping what was filled before while it holds. */
+function suggest(
+  question: Question,
+  likelihood: Record<string, number>,
+  previous: AnswerValue | undefined
+): AnswerValue | undefined {
+  const p = (option: string) => likelihood[option] ?? 0;
+  if (question.type === "checkbox") {
+    const kept = Array.isArray(previous) ? previous : [];
+    const picked = (question.options ?? []).filter(
+      (option) =>
+        p(option) >= AUTO_SELECT.select ||
+        (kept.includes(option) && p(option) >= AUTO_SELECT.keep)
+    );
+    return picked.length ? picked : undefined;
+  }
+  const [top] = Object.keys(likelihood).sort((a, b) => p(b) - p(a));
+  if (top !== undefined && p(top) >= AUTO_SELECT.select) return top;
+  if (typeof previous === "string" && p(previous) >= AUTO_SELECT.keep) {
+    return previous;
+  }
+  return undefined;
 }
 
 /**

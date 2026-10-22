@@ -1,6 +1,6 @@
 {
   "name": "@dembrane/2026-10-22-jev",
-  "description": "Continuous voice transcript plus scheduled, host and agent questions, stored as an append-only UIMessage log",
+  "description": "The portal admin setup, with Jev shading each option by how likely the speaker chose it, and filling in the likely ones",
   "private": true,
   "type": "module",
   "version": "0.0.0",
@@ -11,7 +11,8 @@
     "google-key": "node scripts/google-key.mjs",
     "google-token": "node scripts/google-token.mjs",
     "update-prices": "node scripts/update-prices.mjs",
-    "check-plans": "node scripts/check-plans.mjs"
+    "check-plans": "node scripts/check-plans.mjs",
+    "try-jev": "node scripts/try-jev.mjs"
   },
   "dependencies": {
     "@ai-sdk/react": "^4.0.0",
@@ -23,7 +24,7 @@
     "@json-render/react": "^0.21.1",
     "@phosphor-icons/react": "^2.1.10",
     "agents": "*",
-    "ai": "^7.0.0",
+    "ai": "^7.0.18",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "zod": "^4.5.4"

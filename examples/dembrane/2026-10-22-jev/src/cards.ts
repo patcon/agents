@@ -10,6 +10,8 @@ import type { Question } from "./shared";
 // A card sees one state model, seeded by the client:
 //   /question  the question being asked (read with `$state`)
 //   /value     the answer being drafted (bound with `$bindState`)
+//   /likelihood  Jev's likelihood for each option, which option rows show
+//              on their own; a card doesn't refer to it
 // The prop schemas only accept those paths, so a card can't read or write
 // anything else.
 //

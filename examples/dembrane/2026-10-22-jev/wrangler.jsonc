@@ -11,17 +11,23 @@
   // (see @dembrane/examples-shared/basic-auth). It has to be listed here for
   // local dev to load it from .env, which also makes deploys refuse to go out
   // without one. Leave it empty in .env to keep local dev open.
+  // TYPESAFE_API_KEY lets Jev judge which options of a card have been said.
+  // Jev is on whenever it's set; JEV_ENABLED=false in .env turns it off.
   "secrets": {
     "required": [
       "GOOGLE_CLOUD_PROJECT",
       "GOOGLE_SERVICE_ACCOUNT_KEY",
       "GOOGLE_ACCESS_TOKEN",
-      "BASIC_AUTH_PASSWORD"
+      "BASIC_AUTH_PASSWORD",
+      "TYPESAFE_API_KEY"
     ]
   },
   "vars": {
     "STT_MODEL": "gemini-3.5-transcribe-live-preview",
-    "AGENT_MODEL": "gemini-3.8-flash"
+    "AGENT_MODEL": "gemini-3.8-flash",
+    // Pinned, not jev-latest, so thresholds mean the same from run to run.
+    "JEV_MODEL": "jev-1.13.0",
+    "JEV_ENABLED": "true"
   },
   "compatibility_date": "2026-06-11",
   "compatibility_flags": ["nodejs_compat"],

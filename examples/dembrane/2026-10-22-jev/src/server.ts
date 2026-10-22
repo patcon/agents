@@ -12,6 +12,12 @@ import {
   type UIMessage
 } from "ai";
 import { generateJson, googleAccessToken } from "./gemini";
+import {
+  askJev,
+  assessmentRequest,
+  isAssessable,
+  readAssessment
+} from "./jev";
 import { VertexLiveSTT } from "@dembrane/voice-google";
 import {
   PlanSchema,
@@ -28,6 +34,7 @@ import {
   sameAnswer,
   textOf,
   type AnswerValue,
+  type Assessment,
   type LogMessage,
   type LogView,
   type Question,
@@ -84,6 +91,10 @@ const VoiceChatAgent = withVoiceInput(AIChatAgent);
 const AUDIO_BYTES_PER_SECOND = 32_000;
 /** How often streamed audio is added to the usage tally while recording. */
 const USAGE_FLUSH_MS = 5_000;
+/** How long Jev waits after the last utterance or question before it runs. */
+const ASSESS_AFTER_MS = 1_500;
+/** How much of the transcript Jev sees, from the end. */
+const ASSESS_UTTERANCES = 40;
 
 /**
  * One conversation, one Durable Object.
@@ -107,11 +118,14 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
 
   // --- Usage ---
 
-  #addUsage(add: Partial<Omit<Usage, "sttModel" | "agentModel">>) {
+  #addUsage(
+    add: Partial<Omit<Usage, "sttModel" | "agentModel" | "jevModel">>
+  ) {
     const next: Usage = {
       ...this.state,
       sttModel: this.env.STT_MODEL,
-      agentModel: this.env.AGENT_MODEL
+      agentModel: this.env.AGENT_MODEL,
+      jevModel: this.env.JEV_MODEL
     };
     for (const [key, value] of Object.entries(add) as [
       keyof typeof add,
@@ -182,6 +196,8 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
   }
 
   #appendQuestion(question: Question) {
+    // Jev looks at it with what's been said so far, so it can arrive filled.
+    this.#assessSoon();
     return this.#append({
       id: newId("msg"),
       role: "system",
@@ -218,6 +234,96 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
       metadata: { kind: "utterance", subjectId: newId("u"), at: Date.now() },
       parts: [{ type: "text", text }]
     });
+    this.#assessSoon();
+  }
+
+  // --- Jev ---
+  //
+  // After each utterance, and each question that arrives, Jev judges which
+  // options of every open question the speaker has chosen. Runs are
+  // debounced, and only one is in flight: whatever arrives meanwhile is
+  // covered by one more run after it.
+
+  #assessTimer?: ReturnType<typeof setTimeout>;
+  #assessing = false;
+  #assessAgain = false;
+
+  /** On whenever there's a key, unless JEV_ENABLED is "false". */
+  #jevOn() {
+    return !!this.env.TYPESAFE_API_KEY && String(this.env.JEV_ENABLED) !== "false";
+  }
+
+  #assessSoon(delay = ASSESS_AFTER_MS) {
+    if (!this.#jevOn()) return;
+    clearTimeout(this.#assessTimer);
+    this.#assessTimer = setTimeout(() => void this.#assess(), delay);
+  }
+
+  async #assess() {
+    if (this.#assessing) {
+      this.#assessAgain = true;
+      return;
+    }
+    this.#assessing = true;
+    try {
+      await this.#tail;
+      const view = this.#view();
+      const open = view.questions
+        .filter((q) => !q.answer)
+        .map((q) => q.question)
+        .filter(isAssessable);
+      const transcript = view.utterances.slice(-ASSESS_UTTERANCES);
+      const last = transcript.at(-1);
+      if (!open.length || !last) return;
+      // Nothing new said, and no new question, since the last run.
+      const previous = view.lastAssessment;
+      if (
+        previous?.seenUpTo === last.id &&
+        open.every((q) => q.id in previous.questions)
+      ) {
+        return;
+      }
+
+      const response = await askJev(
+        this.env.TYPESAFE_API_KEY,
+        assessmentRequest(this.env.JEV_MODEL, open, transcript)
+      );
+      this.#addUsage({
+        jevCalls: 1,
+        jevInputTokens: response.usage.input_tokens
+      });
+      const judged = readAssessment(open, response);
+      const assessment: Assessment = {
+        model: response.model,
+        seenUpTo: last.id,
+        onScreen: view.onScreen,
+        questions: Object.fromEntries(
+          Object.entries(judged).map(([id, judgment]) => [
+            id,
+            {
+              ...judgment,
+              heardOnScreen: transcript
+                .filter((u) => u.onScreen === id)
+                .map((u) => u.id)
+            }
+          ])
+        )
+      };
+      await this.#append({
+        id: newId("assessment"),
+        role: "system",
+        metadata: { kind: "assessment", subjectId: "jev", at: Date.now() },
+        parts: [{ type: "data-assessment", data: assessment }]
+      });
+    } catch (error) {
+      console.error("Jev assessment failed", error);
+    } finally {
+      this.#assessing = false;
+      if (this.#assessAgain) {
+        this.#assessAgain = false;
+        this.#assessSoon(0);
+      }
+    }
   }
 
   // --- Session controls (called from the client) ---
@@ -268,6 +374,23 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
       ]
     });
     await this.#releasePlan({ kind: "answer" });
+  }
+
+  /**
+   * A device put this question on screen. What's said from now on is heard
+   * as an answer to it, which counts for more with Jev.
+   */
+  @callable()
+  async show(questionId: string) {
+    const view = this.#view();
+    if (view.onScreen === questionId) return;
+    if (!view.questions.some((q) => q.question.id === questionId)) return;
+    await this.#append({
+      id: newId("shown"),
+      role: "system",
+      metadata: { kind: "shown", subjectId: questionId, at: Date.now() },
+      parts: [{ type: "data-shown", data: { questionId } }]
+    });
   }
 
   /** On-demand question from the host, outside the schedule. */

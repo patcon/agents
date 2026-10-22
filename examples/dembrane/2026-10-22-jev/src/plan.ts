@@ -100,7 +100,13 @@ export const PlanItemSchema = z.discriminatedUnion("kind", [
       question: QuestionSpecSchema,
       card: CardSpecSchema.optional().describe(
         "How the question is shown, as a json-render spec. A default card for its type when absent."
-      )
+      ),
+      assess: z
+        .boolean()
+        .optional()
+        .describe(
+          "False keeps Jev from judging which options were said. Judged when absent."
+        )
     })
   }),
   ItemBase.extend({
@@ -286,6 +292,7 @@ export function questionFor(item: PlanItem): Question | undefined {
         ...item.payload.question,
         id: item.id,
         card: item.payload.card,
+        assess: item.payload.assess,
         source: "plan"
       };
     case "consent":

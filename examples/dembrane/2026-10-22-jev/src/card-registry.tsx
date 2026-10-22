@@ -22,6 +22,43 @@ const optionClass = (checked: boolean) =>
 
 const GAP = { sm: "gap-2", md: "gap-3", lg: "gap-5" } as const;
 
+/**
+ * An option, with a bar behind it as wide as Jev thinks it likely that the
+ * speaker chose it. Cards read the likelihoods from /likelihood.
+ */
+function Option({
+  option,
+  checked,
+  children
+}: {
+  option: string;
+  checked: boolean;
+  children: React.ReactNode;
+}) {
+  const likelihood = useStateValue<Record<string, number> | null>("/likelihood");
+  const p = likelihood?.[option];
+  return (
+    <label className={`${optionClass(checked)} relative isolate overflow-hidden`}>
+      {p !== undefined && (
+        <span
+          aria-hidden
+          className="absolute inset-y-0 left-0 -z-10 bg-kumo-brand/15 transition-[width] duration-500"
+          style={{ width: `${Math.round(p * 100)}%` }}
+        />
+      )}
+      {children}
+      {p !== undefined && (
+        <span
+          className="ml-auto text-[11px] tabular-nums text-kumo-subtle"
+          title="How likely Jev thinks it is that this was said"
+        >
+          {Math.round(p * 100)}%
+        </span>
+      )}
+    </label>
+  );
+}
+
 /** Options laid out in `columns` columns. */
 function OptionGrid({
   columns,
@@ -68,7 +105,7 @@ const { registry } = defineRegistry(cardCatalog, {
           <legend className="sr-only">{prompt}</legend>
           <OptionGrid columns={props.columns}>
             {(props.options as string[]).map((option) => (
-              <label key={option} className={optionClass(value === option)}>
+              <Option key={option} option={option} checked={value === option}>
                 <input
                   type="radio"
                   name={name}
@@ -77,7 +114,7 @@ const { registry } = defineRegistry(cardCatalog, {
                   onChange={() => setValue(option)}
                 />
                 <span className="text-sm text-kumo-default">{option}</span>
-              </label>
+              </Option>
             ))}
           </OptionGrid>
         </fieldset>
@@ -98,7 +135,7 @@ const { registry } = defineRegistry(cardCatalog, {
             {(props.options as string[]).map((option) => {
               const checked = selected.includes(option);
               return (
-                <label key={option} className={optionClass(checked)}>
+                <Option key={option} option={option} checked={checked}>
                   <input
                     type="checkbox"
                     className="accent-[var(--color-kumo-brand)] size-4"
@@ -112,7 +149,7 @@ const { registry } = defineRegistry(cardCatalog, {
                     }
                   />
                   <span className="text-sm text-kumo-default">{option}</span>
-                </label>
+                </Option>
               );
             })}
           </OptionGrid>
@@ -166,21 +203,27 @@ const { registry } = defineRegistry(cardCatalog, {
 
 /**
  * A question's card, drafting its answer. The card gets its own state model
- * with the question at /question and the draft at /value; `value` and
- * `onChange` keep /value in step with the drafts the page holds.
+ * with the question at /question, the draft at /value and Jev's likelihoods
+ * at /likelihood; `value` and `onChange` keep /value in step with the drafts
+ * the page holds.
  */
 export function CardInput({
   question,
   value,
+  likelihood,
   onChange
 }: {
   question: Question;
   value: AnswerValue;
+  likelihood?: Record<string, number>;
   onChange: (value: AnswerValue) => void;
 }) {
   const spec = question.card ?? defaultCard(question);
   // One store per question, seeded with its current draft.
-  const store = useMemo(() => createStateStore({ question, value }), [question.id]);
+  const store = useMemo(
+    () => createStateStore({ question, value, likelihood: likelihood ?? null }),
+    [question.id]
+  );
 
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -190,6 +233,10 @@ export function CardInput({
   useEffect(() => {
     if (store.get("/value") !== value) store.set("/value", value);
   }, [store, value]);
+
+  useEffect(() => {
+    store.set("/likelihood", likelihood ?? null);
+  }, [store, likelihood]);
 
   useEffect(
     () =>

@@ -251,12 +251,16 @@ function QuestionStage({
   const [drafts, setDrafts] = useState<Record<string, AnswerValue>>({});
   const [saving, setSaving] = useState(false);
 
+  // Until the person touches the card, an unanswered question shows the
+  // options Jev thinks were said. It's only a draft: they still submit it.
+  const filled =
+    !(question.id in drafts) && !entry.answer && entry.suggested !== undefined;
   const value =
     question.id in drafts
       ? drafts[question.id]
       : entry.answer && !entry.answer.skipped
         ? entry.answer.value
-        : defaultValue(question);
+        : (entry.suggested ?? defaultValue(question));
 
   const submit = async (skipped: boolean) => {
     setSaving(true);
@@ -312,6 +316,7 @@ function QuestionStage({
           </Badge>
           <Badge variant="outline">{SOURCE_LABEL[question.source]}</Badge>
           <AnswerStatusBadge entry={entry} />
+          {filled && <Badge variant="info">Filled in from what was said</Badge>}
         </div>
 
         <p className="text-lg sm:text-xl font-semibold text-kumo-strong leading-snug">
@@ -321,6 +326,7 @@ function QuestionStage({
         <CardInput
           question={question}
           value={value}
+          likelihood={entry.answer ? undefined : entry.likelihood}
           onChange={(v) => setDrafts((d) => ({ ...d, [question.id]: v }))}
         />
 
@@ -480,7 +486,11 @@ function CostEstimate({ usage }: { usage: Usage }) {
   const today = new Date().toISOString().slice(0, 10);
   const dates = [
     today,
-    ...priceChangesAfter(today, [usage.sttModel, usage.agentModel])
+    ...priceChangesAfter(today, [
+      usage.sttModel,
+      usage.agentModel,
+      usage.jevModel
+    ])
   ];
   const audioTokens = usage.audioSeconds * AUDIO_TOKENS_PER_SECOND;
   const transcriptTokens = usage.transcriptChars / CHARS_PER_TOKEN;
@@ -501,6 +511,15 @@ function CostEstimate({ usage }: { usage: Usage }) {
           usage.agentInputTokens,
           usage.agentOutputTokens
         )
+      )
+    },
+    {
+      label: "Jev",
+      detail: `${usage.jevCalls} calls · ${usage.jevInputTokens.toLocaleString()} in`,
+      costs: dates.map((d) =>
+        usage.jevCalls
+          ? costOf(rateOn(usage.jevModel, d), usage.jevInputTokens, 0)
+          : 0
       )
     }
   ];
@@ -594,6 +613,13 @@ function App() {
       setSeen((s) => new Set(s).add(current));
     }
   }, [current, seen]);
+
+  // What's said while a question is on screen is heard as an answer to it.
+  useEffect(() => {
+    if (current && connection === "connected") {
+      agent.call("show", [current]).catch(() => {});
+    }
+  }, [agent, current, connection]);
 
   const pendingAhead = questions
     .slice(activeIndex + 1)

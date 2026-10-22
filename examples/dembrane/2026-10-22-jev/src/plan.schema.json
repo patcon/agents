@@ -825,6 +825,10 @@
                       "elements"
                     ],
                     "additionalProperties": false
+                  },
+                  "assess": {
+                    "description": "False keeps Jev from judging which options were said. Judged when absent.",
+                    "type": "boolean"
                   }
                 },
                 "required": [
