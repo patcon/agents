@@ -31,7 +31,7 @@ if (existsSync(out) && !force) {
 }
 
 const env = loadEnv();
-const generate = generator(env, env.COMPILE_MODEL);
+const generate = generator(env, env.COMPILE_MODEL, 180_000);
 const { json } = await generate({
   system: readFileSync(join(root, "src/prompts/decompile-plan.md"), "utf8"),
   prompt: JSON.stringify({ items: plan.items, triggers: plan.triggers }),

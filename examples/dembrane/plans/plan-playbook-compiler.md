@@ -89,8 +89,8 @@ A semantic diff. Flatten both plans to reading order, match prompts by `key` and
 ## Scripts
 
 - `pnpm decompile-plan src/plans/admin-setup.json`: writes `src/playbooks/admin-setup.decompiled.md`. Its own raw prompt (`src/prompts/decompile-plan.md`), told not to mention keys. ~~The output gets tidied by hand.~~ What it writes is a decompiled playbook (`*.decompiled.md`): ours, worded as closely as the plan, and left as generated. One a host writes comes later.
-- `pnpm compile-playbook src/playbooks/admin-setup.decompiled.md`: writes ~~`src/plans/admin-setup.compiled.json`~~ `compiled/admin-setup.decompiled.json` (gitignored: a compile is one sample; the comparison is what's kept), prints lint, attempts and tokens~~, then compares against the plan with the same `source.playbook`~~.
-- `pnpm compare-plans <expected.json> <compiled.json>...`: the comparison, as its own script, since it's free to rerun and a host UI never needs it. With several compiled plans, tallies how many show each difference. `--runs N` compiles N times in parallel and reports how often each difference shows up, since one clean run doesn't mean the prompt is enough.
+- `pnpm compile-playbook src/playbooks/admin-setup.decompiled.md`: writes ~~`src/plans/admin-setup.compiled.json`~~ `compiled/admin-setup.decompiled.json` (gitignored: a compile is one sample; the comparison is what's kept), prints lint, attempts and tokens~~, then compares against the plan with the same `source.playbook`~~. `--runs N` compiles N times in parallel, for compare-plans to tally, since one clean run doesn't mean the prompt is enough.
+- `pnpm compare-plans <expected.json> <compiled.json>...`: the comparison, as its own script, since it's free to rerun and a host UI never needs it. With several compiled plans, tallies how many show each difference.
 
 ## Order of work
 
