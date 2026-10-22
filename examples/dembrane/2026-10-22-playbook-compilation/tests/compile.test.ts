@@ -12,10 +12,12 @@ const handMade = PlanSchema.parse(
     )
   )
 );
-const template = readFileSync(
-  new URL("../src/prompts/compile-playbook.md", import.meta.url),
-  "utf8"
-);
+const prompt = (name: string) =>
+  readFileSync(new URL(`../src/prompts/${name}.md`, import.meta.url), "utf8");
+const prompts = {
+  system: prompt("compile-playbook"),
+  retry: prompt("compile-playbook-retry")
+};
 const copy = (): Plan => structuredClone(handMade);
 const usage = { inputTokens: 10, outputTokens: 5 };
 
@@ -44,7 +46,7 @@ describe("fillTemplate", () => {
 describe("compilePlaybook", () => {
   it("fills the settings into the system prompt", async () => {
     const { generate, requests } = stub(copy());
-    await compilePlaybook("# Setup", { name: "setup", template, generate });
+    await compilePlaybook("# Setup", { name: "setup", prompts, generate });
     expect(requests[0].system).toContain("- is_get_reply_enabled:");
     expect(requests[0].system).not.toContain("{{");
   });
@@ -57,7 +59,7 @@ describe("compilePlaybook", () => {
 
     const result = await compilePlaybook("# Setup", {
       name: "setup",
-      template,
+      prompts,
       generate
     });
 
@@ -73,7 +75,7 @@ describe("compilePlaybook", () => {
     const { generate, requests } = stub({ schemaVersion: 1 }, copy());
     const result = await compilePlaybook("# Setup", {
       name: "setup",
-      template,
+      prompts,
       generate
     });
     expect(result.attempts[0].messages[0].rule).toBe("schema");
@@ -84,7 +86,7 @@ describe("compilePlaybook", () => {
     const { generate } = stub({}, {});
     const result = await compilePlaybook("# Setup", {
       name: "setup",
-      template,
+      prompts,
       generate,
       maxAttempts: 2
     });
@@ -96,12 +98,12 @@ describe("compilePlaybook", () => {
   it("names the playbook and hashes its text as the version", async () => {
     const a = await compilePlaybook("one", {
       name: "setup",
-      template,
+      prompts,
       generate: stub(copy()).generate
     });
     const b = await compilePlaybook("two", {
       name: "setup",
-      template,
+      prompts,
       generate: stub(copy()).generate
     });
     expect(a.plan?.source.playbook).toBe("setup");

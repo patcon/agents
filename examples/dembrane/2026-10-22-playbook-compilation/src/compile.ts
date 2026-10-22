@@ -13,9 +13,9 @@ import { SETTINGS, settingsForPrompt, type Setting } from "./settings";
 // until the plan is clean or the attempts run out.
 //
 // This is what a host UI calls, so it reads no files and calls no API
-// itself. The prompt template and the model come in as arguments: the
-// Worker imports the template with `?raw` and passes generateJson(), and
-// scripts read it from disk.
+// itself. The prompts and the model come in as arguments: the Worker imports
+// src/prompts/*.md with `?raw` and passes generateJson(), and scripts read
+// the prompts from disk.
 
 /** Asks the model once. generateJson() with the env and model bound. */
 export type Generate = (request: {
@@ -100,8 +100,12 @@ export async function compilePlaybook(
   options: {
     /** What `source.playbook` says, e.g. the file's name. */
     name: string;
-    /** The system prompt, with a `{{settings}}` placeholder. */
-    template: string;
+    prompts: {
+      /** src/prompts/compile-playbook.md: the system prompt, with `{{settings}}`. */
+      system: string;
+      /** src/prompts/compile-playbook-retry.md: asks again, with `{{errors}}`. */
+      retry: string;
+    };
     generate: Generate;
     settings?: Setting[];
     maxAttempts?: number;
@@ -109,12 +113,12 @@ export async function compilePlaybook(
 ): Promise<Compiled> {
   const {
     name,
-    template,
+    prompts,
     generate,
     settings = SETTINGS,
     maxAttempts = 3
   } = options;
-  const system = fillTemplate(template, {
+  const system = fillTemplate(prompts.system, {
     settings: settingsForPrompt(settings)
   });
   const schema = planLlmSchema();
@@ -144,7 +148,9 @@ export async function compilePlaybook(
       { role: "model", text: JSON.stringify(answer.json) },
       {
         role: "user",
-        text: `That plan has these errors. Answer with the whole plan again, fixed.\n\n${errors.map(describe).join("\n")}`
+        text: fillTemplate(prompts.retry, {
+          errors: errors.map(describe).join("\n")
+        })
       }
     );
   }
