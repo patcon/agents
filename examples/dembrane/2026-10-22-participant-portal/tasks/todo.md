@@ -32,13 +32,13 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 **Description:** Add an optional `dictate` boolean to the prompt payload in `src/plan/plan.ts`, described like `assess`, and have `questionFor()` carry it onto the question. Regenerate the JSON schemas with `pnpm check-plans`.
 
 **Acceptance criteria:**
-- [ ] A prompt with `"dictate": false` parses, and `questionFor()` gives a question with `dictate: false`; without it, `dictate` is absent.
-- [ ] `src/plan/plan.schema.json` and `src/plan/plan.llm.schema.json` include `dictate`, and `admin-setup.json` still checks.
+- [x] A prompt with `"dictate": false` parses, and `questionFor()` gives a question with `dictate: false`; without it, `dictate` is unset, as `assess` is.
+- [x] `src/plan/plan.schema.json` and `src/plan/plan.llm.schema.json` include `dictate`, and `admin-setup.json` still checks.
 
 **Verification:**
-- [ ] `pnpm test`, including a new `src/plan/plan.test.ts` for the two `questionFor()` cases
-- [ ] `pnpm check-plans` passes
-- [ ] `pnpm exec tsc --noEmit` passes
+- [x] `pnpm test`, including a new `src/plan/plan.test.ts` for the two `questionFor()` cases
+- [x] `pnpm check-plans` passes
+- [x] `pnpm exec tsc --noEmit` passes
 
 **Dependencies:** Task 1 (`Question.dictate`)
 
@@ -51,7 +51,7 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 
 ## Checkpoint: the draft
 
-- [ ] Tests, typecheck and `pnpm check-plans` pass
+- [x] Tests, typecheck and `pnpm check-plans` pass
 - [ ] Hand check from task 1 done
 - [ ] Review with the user before phase 2
 

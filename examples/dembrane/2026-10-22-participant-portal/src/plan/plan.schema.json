@@ -829,6 +829,10 @@
                   "assess": {
                     "description": "False keeps Jev from judging which options were said. Judged when absent.",
                     "type": "boolean"
+                  },
+                  "dictate": {
+                    "description": "False keeps what's said from filling in a text question. Filled in when absent.",
+                    "type": "boolean"
                   }
                 },
                 "required": [

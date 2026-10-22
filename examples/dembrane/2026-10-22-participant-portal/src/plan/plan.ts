@@ -106,6 +106,12 @@ export const PlanItemSchema = z.discriminatedUnion("kind", [
         .optional()
         .describe(
           "False keeps Jev from judging which options were said. Judged when absent."
+        ),
+      dictate: z
+        .boolean()
+        .optional()
+        .describe(
+          "False keeps what's said from filling in a text question. Filled in when absent."
         )
     })
   }),
@@ -355,6 +361,7 @@ export function questionFor(item: PlanItem): Question | undefined {
         id: item.id,
         card: item.payload.card,
         assess: item.payload.assess,
+        dictate: item.payload.dictate,
         source: "plan"
       };
     case "consent":
