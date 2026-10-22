@@ -1166,6 +1166,28 @@
           "properties": {
             "kind": {
               "type": "string",
+              "const": "includes"
+            },
+            "key": {
+              "type": "string"
+            },
+            "option": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "key",
+            "option"
+          ],
+          "additionalProperties": false,
+          "description": "A checkbox answer has this option among those picked"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
               "const": "answered"
             },
             "item": {

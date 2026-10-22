@@ -144,6 +144,13 @@ export const ConditionSchema = z.discriminatedUnion("kind", [
     equals: AnswerValueSchema
   }),
   z
+    .strictObject({
+      kind: z.literal("includes"),
+      key: z.string(),
+      option: z.string()
+    })
+    .describe("A checkbox answer has this option among those picked"),
+  z
     .strictObject({ kind: z.literal("answered"), item: z.string() })
     .describe("Once the item's question is answered, whatever the answer; a skip doesn't count"),
   z.strictObject({ kind: z.literal("manual") }).describe("The host cues it"),
@@ -242,6 +249,10 @@ function holds(
         answered.byKey.has(condition.key) &&
         sameValue(answered.byKey.get(condition.key), condition.equals)
       );
+    case "includes": {
+      const value = answered.byKey.get(condition.key);
+      return Array.isArray(value) && value.includes(condition.option);
+    }
     case "answered":
       return answered.items.has(condition.item);
     case "any":
@@ -461,19 +472,20 @@ export function lintPlan(plan: Plan): LintMessage[] {
       if (condition.kind === "start" && target.kind !== "consent") {
         report("consent-before-all", "error", `only consent can be cued at the start; "${target.id}" should wait for it`, target.id);
       }
-      if (condition.kind !== "answer") continue;
+      if (condition.kind !== "answer" && condition.kind !== "includes") continue;
       const source = prompts.get(condition.key);
       if (!source) {
         report("condition-refers-to-key", "error", `trigger "${trigger.id}" waits on key "${condition.key}", which no prompt has`, target.id);
         continue;
       }
-      const { options } = source.payload.question;
-      if (
-        typeof condition.equals === "string" &&
-        options &&
-        !options.includes(condition.equals)
-      ) {
-        report("condition-is-an-option", "error", `"${condition.equals}" isn't an option of "${condition.key}"`, target.id);
+      const { type, options } = source.payload.question;
+      const option =
+        condition.kind === "includes" ? condition.option : condition.equals;
+      if (typeof option === "string" && options && !options.includes(option)) {
+        report("condition-is-an-option", "error", `"${option}" isn't an option of "${condition.key}"`, target.id);
+      }
+      if (condition.kind === "includes" && type !== "checkbox") {
+        report("includes-is-checkbox", "error", `trigger "${trigger.id}" checks what "${condition.key}" includes, but it's a ${type} prompt`, target.id);
       }
       if ((position.get(source.id) ?? 0) > (position.get(target.id) ?? 0)) {
         report("condition-comes-first", "warning", `"${target.id}" comes before "${source.id}", the prompt it depends on`, target.id);
