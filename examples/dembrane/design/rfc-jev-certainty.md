@@ -1,6 +1,6 @@
 # RFC: Jev judges how well the evidence supports an answer
 
-Status: proposed
+Status: partly implemented. [`2026-10-22-jev`](../2026-10-22-jev) asks Jev about each card's options live, as people talk, with no proposal in between (see "What 2026-10-22-jev built" below). Assessing Gemini's proposals isn't built.
 
 ## The problem
 
@@ -97,7 +97,7 @@ An assessment is stale once utterances newer than `seenUpTo` exist, and is run a
 
 ### Calling Jev from the Worker
 
-- Plain `fetch` to `POST https://api.typesafe.ai/v1/systemone` with `Authorization: Bearer`. The JS SDK (`@typesafe-ai/sdk`) needs Node 22, and the docs don't say whether it runs in Workers.
+- Plain `fetch` to `POST https://api.typesafe.ai/v1/systemone` with `Authorization: Bearer`. The JS SDK (`@typesafe-ai/sdk`) needs Node 22, and the docs don't say whether it runs in Workers. `2026-10-22-jev` uses `fetch`, retrying on 429 and 529 (`src/jev.ts`).
 - `TYPESAFE_API_KEY` is listed under `secrets.required` in `wrangler.jsonc`.
 - The model is pinned in `wrangler.jsonc`, not `jev-latest`, and the version Jev reports is logged with each assessment. Assessments can then be compared over time.
 - Input tokens are billed. Output tokens are free for now. The cost tally in the log drawer should count Jev's `usage` too.
@@ -111,11 +111,36 @@ An assessment is stale once utterances newer than `seenUpTo` exist, and is run a
 
 ## Open questions
 
-- **Language.** The docs say Jev is mainly trained on English and is less accurate in other languages. Much of Dembrane's audio is Dutch. We need to test on real Dutch transcripts before trusting any threshold. Translating the evidence to English first is a fallback.
+- **Language.** The docs say Jev is mainly trained on English and is less accurate in other languages. Much of Dembrane's audio is Dutch. On short written Dutch transcripts (`pnpm try-jev` in `2026-10-22-jev`) it did as well as on the English ones; real transcribed Dutch, with its errors, is still untested. Translating the evidence to English first is a fallback.
 - **How much transcript.** The most recent N utterances may miss something said early on. Choosing relevant utterances first (TypeSafe's reranking cookbook) is an option if N turns out too small.
-- **Thresholds.** 0.8 comes from the cookbook, not from our data. We'd collect assessments alongside what people actually accepted, and set thresholds from that.
+- **Thresholds.** 0.8 comes from the cookbook, not from our data. `2026-10-22-jev` fills in options at 0.8 and keeps them until 0.3, which looks right on a dozen test transcripts and nothing more. We'd collect assessments alongside what people actually accepted, and set thresholds from that.
 - **Freeform answers.** Once we have numbers from the quantitative types, we could experiment with Jev on text answers, for instance with the `relation` Choice alone, and see whether its confidences mean anything there.
 - **Assessing the person's own answers.** Flagging an answer the transcript contradicts could be useful or could feel like being second-guessed. Maybe only for the host.
+
+## What 2026-10-22-jev built
+
+A narrower use than the one proposed above: no candidate answer and no `relation` question. Jev is asked directly which options of each card the speaker chose, and the page shades and fills them in.
+
+- **Which questions.** Every unanswered radio and checkbox question, in one request, over the last 40 utterances. It runs about 1.5 seconds after an utterance or a new question, with one request in flight at a time. Number and text questions aren't assessed. A plan prompt can opt out with `"assess": false`.
+- **What's asked.** For radio, `pick`, a Choice over the options, and `stated`, a Noul: "has the speaker answered this at all?". An option's likelihood is `pick × stated`. That keeps "none of the above" out of the Choice, as the docs advise. For checkbox, one Noul per option, as proposed above.
+- **What was on screen.** The page reports each question it shows, as a `shown` entry in the log. Each utterance in Jev's state carries the question that was on screen when it was said. Jev is told that those lines answer that question directly, and that earlier ones count only if they clearly settle it. Questions arrive filled in from earlier talk, at lower likelihoods than answers given while they show.
+- **The log.** An `assessment` entry per run, with the raw probabilities, the model version, the last utterance seen (`seenUpTo`), the question on screen, and per question the utterances said while it showed (`heardOnScreen`). The fold applies thresholds, as proposed above. There's one entry per run rather than per question, since one request covers them all.
+- **The page.** Each option has a bar as wide as its likelihood: dim and blurred below 0.8, solid above it. At 0.8 the option is filled into the draft, never submitted, and a manual edit wins. Once filled, it stays until it drops below 0.3, so noise between runs doesn't flip it.
+- **Switching it on.** On whenever `TYPESAFE_API_KEY` is set; `JEV_ENABLED=false` turns it off.
+
+What we learned:
+
+| Case (`pnpm try-jev`, `jev-1.13.0`)                         | Likelihood               |
+| ----------------------------------------------------------- | ------------------------ |
+| Answered while the question is on screen, Dutch or English  | 0.90–0.99                |
+| Answered before the question appeared                       | 0.81–0.87                |
+| A bare "Ja." to a yes/no question on screen                 | 0.86–0.91                |
+| Undecided, or talking about something else                  | ≤ 0.07                   |
+| Checkbox: three topics named, one turned down               | 0.91–0.96, and not ticked |
+| "Don't anonymize… no, actually, do"                         | 0.63, so not filled in   |
+
+- **Cost and speed.** About 4,500 input tokens per run for the admin setup's 13 option questions, about $0.0002, in 230–400 ms. Most of those tokens are the questions themselves, not the transcript.
+- **Model.** `jev-1.14.0` (`jev-preview`) is slightly sharper. But it scored "the language is Dutch" at 0.31 from unrelated Dutch speech, reading the speech's own language as an answer. `jev-1.13.0` stays pinned for now.
 
 ## The decision
 
