@@ -24,8 +24,8 @@ const GAP = { sm: "gap-2", md: "gap-3", lg: "gap-5" } as const;
 
 /**
  * An option, with a bar behind it as wide as Jev thinks it likely that the
- * speaker chose it: dim and blurred below the auto-select threshold, solid
- * with an edge above it. Cards read the likelihoods from /likelihood.
+ * speaker chose it: dim and blurred below the auto-select threshold, crisp
+ * above it. Cards read the likelihoods from /likelihood.
  */
 function Option({
   option,
@@ -50,10 +50,8 @@ function Option({
     <label className={`${optionClass(checked)} relative isolate overflow-hidden`}>
       <span
         aria-hidden
-        className={`absolute inset-y-0 left-0 -z-10 transition-all duration-700 ease-out ${
-          likely
-            ? "bg-kumo-brand/30 border-r-2 border-kumo-brand"
-            : "bg-kumo-brand/15 opacity-60 blur-[3px]"
+        className={`absolute inset-y-0 left-0 -z-10 bg-kumo-brand/15 transition-all duration-700 ease-out ${
+          likely ? "" : "opacity-60 blur-[3px]"
         }`}
         style={{ width: `${Math.round(width * 100)}%` }}
       />
