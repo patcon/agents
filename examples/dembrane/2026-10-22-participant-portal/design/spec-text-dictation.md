@@ -56,7 +56,7 @@ Turning a press into a character offset is a small pure function, unit-tested; t
 
 ### Which speech counts
 
-Only utterances said *while the question is on screen* count. Jev reads earlier speech too, but it judges relevance. Raw dictation can't judge relevance, so earlier speech would fill the field with unrelated talk.
+Only utterances said *while the question is on screen* count. An utterance counts for the question on screen when it was *started* (decided 2026-10-22): the server notes the question at its first interim text and saves it on the utterance's log entry as `onScreen`, and `foldLog()` uses that when it's there. So pressing Submit or Skip mid-sentence doesn't hand the end of the sentence to the next question, and the page shows that sentence's interim text only on the question it started on. Jev reads the same tagging. Jev reads earlier speech too, but it judges relevance. Raw dictation can't judge relevance, so earlier speech would fill the field with unrelated talk.
 
 ## Commands
 
