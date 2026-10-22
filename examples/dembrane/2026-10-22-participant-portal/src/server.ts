@@ -483,6 +483,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
     );
     if (!entry) throw new Error(`Unknown question ${questionId}`);
     if (entry.question.final && entry.answer && !entry.answer.skipped) return;
+    if (entry.question.consent && skipped) return;
     if (sameAnswer(entry.answer, { value, skipped })) return;
     await this.#append({
       id: newId("msg"),

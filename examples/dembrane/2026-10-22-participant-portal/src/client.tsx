@@ -291,8 +291,9 @@ function QuestionStage({
     !sameAnswer({ value: saved, skipped: false }, { value, skipped: false });
   useEffect(() => onEdited(edited), [edited, onEdited]);
   // Skip records a skip on an unanswered question, and drops an unsaved edit
-  // on an answered one. Otherwise it's just Next.
-  const skips = !entry.answer || edited;
+  // on an answered one. Otherwise it's just Next. Consent can't be skipped:
+  // its only answer is the tick.
+  const skips = !question.consent && (!entry.answer || edited);
   const skip = () => {
     if (!entry.answer) return submit(true);
     if (hasNext) return onNext();
