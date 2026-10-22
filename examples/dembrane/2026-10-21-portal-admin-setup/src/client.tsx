@@ -37,10 +37,8 @@ import {
   XIcon
 } from "@phosphor-icons/react";
 import {
-  AGENT_QUESTION_AT,
   AUDIO_TOKENS_PER_SECOND,
   CHARS_PER_TOKEN,
-  SCHEDULE,
   costOf,
   foldLog,
   formatAnswer,
@@ -176,38 +174,6 @@ function formatClock(seconds: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-// --- Schedule timeline ---
-
-function Timeline({ elapsed }: { elapsed: number }) {
-  const marks = [...SCHEDULE.map((s) => s.at), AGENT_QUESTION_AT];
-  const pct = Math.min(elapsed / AGENT_QUESTION_AT, 1) * 100;
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs tabular-nums text-kumo-subtle w-20 shrink-0">
-        {formatClock(elapsed)} / {formatClock(AGENT_QUESTION_AT)}
-      </span>
-      <div className="relative flex-1 h-1.5 rounded-full bg-kumo-tint">
-        <div
-          className="absolute inset-y-0 left-0 rounded-full bg-kumo-brand transition-[width] duration-1000 ease-linear"
-          style={{ width: `${pct}%` }}
-        />
-        {marks.map((at, i) => (
-          <span
-            key={at}
-            title={
-              i === marks.length - 1 ? "Agent question" : `Question ${i + 1}`
-            }
-            className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-2.5 rounded-full ring-2 ring-kumo-base ${
-              elapsed >= at ? "bg-kumo-brand" : "bg-kumo-line"
-            } ${i === marks.length - 1 ? "size-3" : ""}`}
-            style={{ left: `${(at / AGENT_QUESTION_AT) * 100}%` }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // --- Question input widgets ---
 
 function defaultValue(question: Question): AnswerValue {
@@ -331,7 +297,7 @@ function QuestionInput({
 }
 
 const SOURCE_LABEL: Record<Question["source"], string> = {
-  schedule: "Scheduled",
+  plan: "Setup",
   host: "From host",
   agent: "From agent"
 };
@@ -704,15 +670,6 @@ function App() {
 
   const voice = useVoiceInput({ agent: "ConversationAgent", name: sessionId });
 
-  // Elapsed time on the server's schedule clock (wall time since start).
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    if (view.status === "idle" || view.status === "finished") return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [view.status]);
-  const elapsed = view.startedAt ? (now - view.startedAt) / 1000 : 0;
-
   // Navigation: which question is on screen, and which ones have been seen.
   const [activeId, setActiveId] = useState<string | null>(null);
   const [seen, setSeen] = useState<Set<string>>(() => new Set());
@@ -873,7 +830,6 @@ function App() {
           </div>
         </Surface>
 
-        {view.status !== "idle" && !finished && <Timeline elapsed={elapsed} />}
 
         {finished ? (
           <Summary questions={questions} />
@@ -898,7 +854,7 @@ function App() {
             <Text size="xs" variant="secondary">
               {view.status === "idle"
                 ? "Press Start to begin recording. Questions will appear here."
-                : `The first question arrives at ${formatClock(SCHEDULE[0].at)}.`}
+                : "Questions will appear here as they come up."}
             </Text>
           </Surface>
         )}

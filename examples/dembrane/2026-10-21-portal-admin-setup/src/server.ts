@@ -14,9 +14,15 @@ import {
 import { generateJson, googleAccessToken } from "./gemini";
 import { VertexLiveSTT } from "@dembrane/voice-google";
 import {
-  AGENT_QUESTION_AT,
+  PlanSchema,
+  dueItems,
+  lintPlan,
+  questionFor,
+  type PlanEvent
+} from "./plan";
+import adminSetup from "./plans/admin-setup.json";
+import {
   EMPTY_USAGE,
-  SCHEDULE,
   foldLog,
   formatAnswer,
   sameAnswer,
@@ -28,6 +34,15 @@ import {
   type SessionStatus,
   type Usage
 } from "./shared";
+
+/** The portal admin setup, compiled from its playbook. */
+const PLAN = PlanSchema.parse(adminSetup);
+const planErrors = lintPlan(PLAN).filter((m) => m.severity === "error");
+if (planErrors.length) {
+  throw new Error(
+    `admin-setup plan: ${planErrors.map((m) => m.message).join("; ")}`
+  );
+}
 
 /** Questions the host can push on demand (the log drawer's "From host" button). */
 const HOST_QUESTIONS: Omit<Question, "id" | "source">[] = [
@@ -175,6 +190,23 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
     });
   }
 
+  /** Append a question for each plan item that `event` releases. */
+  async #releasePlan(event: PlanEvent) {
+    await this.#tail;
+    const { questions } = this.#view();
+    const released = new Set(questions.map((q) => q.question.id));
+    const answers = new Map<string, AnswerValue>();
+    for (const item of PLAN.items) {
+      if (item.kind !== "prompt") continue;
+      const answer = questions.find((q) => q.question.id === item.id)?.answer;
+      if (answer && !answer.skipped) answers.set(item.payload.key, answer.value);
+    }
+    for (const item of dueItems(PLAN, event, answers, released)) {
+      const question = questionFor(item);
+      if (question) await this.#appendQuestion(question);
+    }
+  }
+
   // --- Voice ---
 
   async onTranscript(text: string, _connection: Connection) {
@@ -193,10 +225,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
   async begin() {
     if (this.#view().status !== "idle") return;
     await this.#appendStatus("recording");
-    for (const [index, slot] of SCHEDULE.entries()) {
-      await this.schedule(slot.at, "askScheduled", { index });
-    }
-    await this.schedule(AGENT_QUESTION_AT, "askAgentQuestion");
+    await this.#releasePlan({ kind: "start" });
   }
 
   @callable()
@@ -237,6 +266,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
         }
       ]
     });
+    await this.#releasePlan({ kind: "answer" });
   }
 
   /** On-demand question from the host, outside the schedule. */
@@ -260,16 +290,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
     await this.askAgentQuestion();
   }
 
-  // --- Scheduled callbacks ---
-
-  async askScheduled({ index }: { index: number }) {
-    if (this.#view().status === "finished") return;
-    await this.#appendQuestion({
-      ...SCHEDULE[index].question,
-      id: newId("q"),
-      source: "schedule"
-    });
-  }
+  // --- Agent questions ---
 
   /**
    * Wake the agent without a human message: append a `trigger` entry and run

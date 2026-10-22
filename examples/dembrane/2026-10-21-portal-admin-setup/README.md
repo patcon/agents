@@ -1,6 +1,6 @@
 # 2026-10-21
 
-A continuous voice session that collects a transcript while questions arrive on a schedule, on demand from the host, and from an agent — all stored as an append-only `UIMessage` log in one Durable Object.
+A continuous voice session that walks a host through setting up their project's portal. The setup questions come from a plan compiled from a playbook (`src/plans/admin-setup.json`); more can come on demand from the host and from an agent. Everything is stored as an append-only `UIMessage` log in one Durable Object.
 
 ## Run it
 
@@ -38,7 +38,7 @@ type LogMeta =
 | Source   | How it appends                                                    |
 | -------- | ----------------------------------------------------------------- |
 | Voice    | `onTranscript()` appends an `utterance`                           |
-| Schedule | `this.schedule(15, "askScheduled", { index })` appends a question |
+| Plan     | `begin()` and `answer()` append the questions the plan releases   |
 | Host     | `@callable() pushHostQuestion()`                                  |
 | Person   | `@callable() answer(questionId, value, skipped)`                  |
 

@@ -189,6 +189,99 @@ true satisfies Same<
   Omit<Question, "id" | "source">
 >;
 
+// --- Releasing ---
+
+/** What just happened, for deciding which triggers fire. */
+export type PlanEvent = { kind: "start" } | { kind: "answer" };
+
+/** Current answers, by prompt key. */
+export type AnswersByKey = ReadonlyMap<string, AnswerValue>;
+
+function sameValue(a: AnswerValue | undefined, b: AnswerValue) {
+  const normalize = (value: AnswerValue | undefined) =>
+    JSON.stringify(
+      Array.isArray(value)
+        ? [...value].sort()
+        : typeof value === "string"
+          ? value.trim()
+          : value
+    );
+  return normalize(a) === normalize(b);
+}
+
+function holds(
+  condition: Condition,
+  event: PlanEvent,
+  answers: AnswersByKey
+): boolean {
+  switch (condition.kind) {
+    case "start":
+      return event.kind === "start";
+    case "answer":
+      return (
+        answers.has(condition.key) &&
+        sameValue(answers.get(condition.key), condition.equals)
+      );
+    case "any":
+      return condition.of.some((c) => holds(c, event, answers));
+    // Not yet: these need timers, or a host control.
+    case "wall":
+    case "relative":
+    case "manual":
+      return false;
+  }
+}
+
+/**
+ * The items that `event` releases, in reading order: those whose trigger now
+ * holds, and the untriggered items in any section that's cued. Items in
+ * `released` are left out, so each is released at most once.
+ */
+export function dueItems(
+  plan: Plan,
+  event: PlanEvent,
+  answers: AnswersByKey,
+  released: ReadonlySet<string>
+): PlanItem[] {
+  const triggered = new Set(plan.triggers.map((t) => t.cue));
+  const due = new Set<string>();
+  const cue = (id: string) => {
+    due.add(id);
+    for (const child of childrenOf(plan, id)) {
+      if (!triggered.has(child.id)) cue(child.id);
+    }
+  };
+  for (const trigger of plan.triggers) {
+    if (holds(trigger.when, event, answers)) cue(trigger.cue);
+  }
+  return flatten(plan).filter(
+    (item) => due.has(item.id) && !released.has(item.id)
+  );
+}
+
+/**
+ * The question an item shows, if it shows one. Its id is the item's id, so
+ * the log says which item each question came from.
+ */
+export function questionFor(item: PlanItem): Question | undefined {
+  switch (item.kind) {
+    case "prompt":
+      return { ...item.payload.question, id: item.id, source: "plan" };
+    case "consent":
+      return {
+        id: item.id,
+        type: "radio",
+        prompt: item.payload.text,
+        options: ["I agree"],
+        required: true,
+        source: "plan"
+      };
+    // Sections only group; the rest have no card yet.
+    default:
+      return undefined;
+  }
+}
+
 // --- Lint ---
 
 export type LintMessage = {

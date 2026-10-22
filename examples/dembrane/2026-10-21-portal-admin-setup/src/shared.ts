@@ -13,7 +13,7 @@ export type Question = {
   min?: number;
   max?: number;
   required: boolean;
-  source: "schedule" | "host" | "agent";
+  source: "plan" | "host" | "agent";
 };
 
 export type AnswerValue = string | string[] | number | null;
@@ -43,54 +43,6 @@ export type LogDataParts = {
 };
 
 export type LogMessage = UIMessage<LogMeta, LogDataParts>;
-
-// --- The fake schedule ---
-
-/** Seconds after the session starts that each scheduled question appears. */
-export const SCHEDULE: {
-  at: number;
-  question: Omit<Question, "id" | "source">;
-}[] = [
-  {
-    at: 15,
-    question: {
-      type: "radio",
-      prompt: "How are you feeling about the topic so far?",
-      options: ["Optimistic", "Neutral", "Concerned", "Not sure yet"],
-      required: true
-    }
-  },
-  {
-    at: 45,
-    question: {
-      type: "checkbox",
-      prompt: "Which of these have come up in what you've said?",
-      options: ["Cost", "Time", "People", "Risk", "Something else"],
-      required: false
-    }
-  },
-  {
-    at: 75,
-    question: {
-      type: "number",
-      prompt: "On a scale of 1–10, how important is this to you?",
-      min: 1,
-      max: 10,
-      required: true
-    }
-  },
-  {
-    at: 105,
-    question: {
-      type: "text",
-      prompt: "In one sentence, what would a good outcome look like?",
-      required: false
-    }
-  }
-];
-
-/** When the agent asks its question, based on the transcript so far. */
-export const AGENT_QUESTION_AT = 120;
 
 // --- Usage and cost ---
 //
