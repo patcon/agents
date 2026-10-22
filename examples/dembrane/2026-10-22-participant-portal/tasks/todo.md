@@ -11,12 +11,12 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 **Acceptance criteria:**
 - [x] Utterances said while a text question shows become its `suggested`, in order; those said before it showed, or while another question showed, don't count; two separate stretches on screen both count.
 - [x] `dictate: false`, or no utterances while showing, gives no `suggested`; radio, checkbox and number questions get no dictated `suggested`, and Jev's suggestions are unchanged.
-- [ ] With recording on, speaking while the tags question shows fills its field with the "Filled in from what was said" badge, and nothing is saved until Submit.
+- [x] With recording on, speaking while the tags question shows fills its field with the "Filled in from what was said" badge, and nothing is saved until Submit.
 
 **Verification:**
 - [x] `pnpm test`: the 7 new fold tests and the 12 existing ones pass
 - [x] `pnpm exec tsc --noEmit` passes
-- [ ] By hand with `pnpm run start`: the tags question fills as you speak, stops changing once edited, and shows the answer once submitted
+- [x] By hand with `pnpm run start`: the tags question fills as you speak, stops changing once edited, and shows the answer once submitted
 
 **Dependencies:** None
 
@@ -52,21 +52,21 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 ## Checkpoint: the draft
 
 - [x] Tests, typecheck and `pnpm check-plans` pass
-- [ ] Hand check from task 1 done
-- [ ] Review with the user before phase 2
+- [x] Hand check from task 1 done
+- [x] Review with the user before phase 2
 
 ## Task 3: Interim text shows greyed in the text field on screen
 
 **Description:** `App` passes `voice.interimTranscript` to `QuestionStage`. `QuestionStage` passes it on to `CardInput` as `interim` only when the question has dictation on, is text, is `view.onScreen`, recording is on, it's unanswered, and the card hasn't been edited. `CardInput` keeps `/interim` in card state, as it does `/likelihood`. `TextInput` draws it as a greyed line directly under the text, inside the same bordered box. `cards.ts` documents `/interim` beside `/likelihood`.
 
 **Acceptance criteria:**
-- [ ] While someone speaks with a text question on screen, the interim text shows greyed under the draft, and is gone once the utterance is final and has joined the draft.
-- [ ] It doesn't show once the field has been edited, once the question is answered, for `dictate: false`, or for non-text questions.
-- [ ] ~~It's never part of the value: submitting mid-sentence saves only the draft.~~ Submitting mid-sentence saves the draft with the greyed words as they stand.
+- [x] While someone speaks with a text question on screen, the interim text shows greyed ~~under the draft~~ inline after the draft (task 3a), and is gone once the utterance is final and has joined the draft.
+- [x] It doesn't show once the field has been edited, once the question is answered, for `dictate: false`, or for non-text questions.
+- [x] ~~It's never part of the value: submitting mid-sentence saves only the draft.~~ Submitting mid-sentence saves the draft with the greyed words as they stand.
 
 **Verification:**
 - [x] `pnpm exec tsc --noEmit` and `pnpm test` pass
-- [ ] By hand with `pnpm run start`: each criterion above, and no visible doubling when interim text turns final
+- [x] By hand with `pnpm run start`: each criterion above, and no visible doubling when interim text turns final
 
 **Dependencies:** Task 1
 
@@ -82,13 +82,13 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 **Description:** Replaces task 3's wrapper box and greyed line under the text (`70e9714b`, `819959c1`). `TextInput` stacks a display `<div>` over the real `<textarea>` in one grid cell, with identical height (about 8 lines), font, padding, line height, wrapping and `scrollbar-gutter: stable`. While dictation fills the field, the div shows the draft followed by the interim text, greyed, inline; `cursor: text`. It follows new text while scrolled to the bottom. The page tells the card whether dictation is filling it (`/dictating` in card state), since only the page knows whether its text has been changed.
 
 **Acceptance criteria:**
-- [ ] While dictating, the interim text shows greyed right after the last word, and the field's height never changes.
-- [ ] New text keeps the display scrolled to the bottom, unless the person scrolled up.
-- [ ] Without dictation (off, answered, or its text changed), the field is a plain textarea of the same height.
+- [x] While dictating, the interim text shows greyed right after the last word, and the field's height never changes.
+- [x] New text keeps the display scrolled to the bottom, unless the person scrolled up.
+- [x] Without dictation (off, answered, or its text changed), the field is a plain textarea of the same height.
 
 **Verification:**
 - [x] `pnpm exec tsc --noEmit` and `pnpm test` pass
-- [ ] By hand: the criteria above, with a long enough dictation to pass the fold
+- [x] By hand: the criteria above, with a long enough dictation to pass the fold
 
 **Dependencies:** Task 3
 
@@ -104,14 +104,14 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 **Description:** On pointer-down on the display, or focus by Tab, `TextInput` hides the div and focuses the textarea in the same event, carrying over the scroll position and placing the caret: where pressed (`caretPositionFromPoint`, falling back to `caretRangeFromPoint`), at the end of the draft for a press on the interim text, at the end for Tab. ~~Taking over stops dictation for the field, as an edit did: the page records the draft as theirs.~~ Only changing the text stops dictation; while focused and unchanged, dictation keeps adding with the caret and scroll kept, and leaving brings the display back. Turning the caret result into an offset is a pure function in `src/cards/caret.ts`, tested beside it.
 
 **Acceptance criteria:**
-- [ ] Pressing anywhere in the display gives a focused textarea with no text moving, the caret where pressed.
-- [ ] ~~After taking over, the badge goes, new speech doesn't change the field, and it stays a textarea after clicking away.~~ Clicking in and out without typing keeps the badge and brings the display back; while focused, new speech is added without moving the caret. After typing, the badge goes, new speech doesn't change the field, and it stays a textarea.
-- [ ] Tab into the field gives a focused textarea with the caret at the end.
+- [x] Pressing anywhere in the display gives a focused textarea with no text moving, the caret where pressed.
+- [x] ~~After taking over, the badge goes, new speech doesn't change the field, and it stays a textarea after clicking away.~~ Clicking in and out without typing keeps the badge and brings the display back; while focused, new speech is added without moving the caret. After typing, the badge goes, new speech doesn't change the field, and it stays a textarea.
+- [x] Tab into the field gives a focused textarea with the caret at the end.
 
 **Verification:**
 - [x] `pnpm test`, including `src/cards/caret.test.ts`
 - [x] `pnpm exec tsc --noEmit` passes
-- [ ] By hand: the criteria above, on desktop, and on a phone if one's handy (the keyboard should open)
+- [x] By hand: the criteria above, on desktop, and on a phone if one's handy (the keyboard should open)
 
 **Dependencies:** Task 3a
 
@@ -141,5 +141,5 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 
 ## Checkpoint: complete
 
-- [ ] Every success criterion in `design/spec-text-dictation.md` is met
-- [ ] Review with the user
+- [x] Every success criterion in `design/spec-text-dictation.md` is met
+- [x] Review with the user

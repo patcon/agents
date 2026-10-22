@@ -35,9 +35,9 @@ README "Dictation" section: after all of the above
 
 ### Checkpoint: the draft
 
-- [ ] `pnpm test` and `pnpm exec tsc --noEmit` pass; `pnpm check-plans` passes
-- [ ] By hand: speaking while the tags question is on screen fills its field, with the badge
-- [ ] Review with the user before phase 2
+- [x] `pnpm test` and `pnpm exec tsc --noEmit` pass; `pnpm check-plans` passes
+- [x] By hand: speaking while the tags question is on screen fills its field, with the badge
+- [x] Review with the user before phase 2
 
 ### Phase 2: interim text and docs
 
@@ -48,8 +48,8 @@ README "Dictation" section: after all of the above
 
 ### Checkpoint: complete
 
-- [ ] Every success criterion in the spec is met
-- [ ] Review with the user
+- [x] Every success criterion in the spec is met
+- [x] Review with the user
 
 ## Risks and mitigations
 

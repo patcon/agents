@@ -1,6 +1,6 @@
 # Spec: dictation into text fields
 
-Status: approved. Module `text-dictation`, the first of three in [`capability-map.md`](capability-map.md); `planner` and `projects` come after, and are out of scope here.
+Status: ~~approved~~ built, and checked by hand on 2026-10-22. Module `text-dictation`, the first of three in [`capability-map.md`](capability-map.md); `planner` and `projects` come after, and are out of scope here.
 
 ## Objective
 
@@ -123,15 +123,15 @@ Then a check by hand with `pnpm run start`: record, open the tags question, spea
 
 ## Success criteria
 
-- [ ] With recording on, final utterances said while a text question shows appear in its field, in order, within the time it takes the utterance to arrive in the log.
-- [ ] While someone is speaking, their interim text shows greyed ~~in the field~~ inline after the draft in the field on screen, and is replaced by normal text once final. ~~It's never saved~~ Submit saves it as it stands, and it doesn't show once the field's text is changed ~~taken over~~, while the textarea has focus, or once it's answered.
-- [ ] Text fields are about 8 lines tall, and don't change height as text arrives or speech starts and stops. The display follows new text unless the person has scrolled up.
-- [ ] Pressing the field swaps in a textarea with no text moving, focused, with the caret where they pressed; tabbing to it puts the caret at the end.
-- [ ] The field shows "Filled in from what was said" until the person ~~edits it~~ ~~takes it over~~ changes its text. After ~~an edit~~ that, new speech no longer changes the field; clicking in and out without changing it doesn't count.
-- [ ] Nothing is saved until the person presses Submit or Skip.
-- [ ] Once answered, the field shows the answer, not the dictation.
-- [ ] `"dictate": false` on a prompt turns it off for that question; the plan schema accepts the field and `pnpm check-plans` passes.
-- [ ] The six fold tests pass, and the existing tests still pass.
+- [x] With recording on, final utterances said while a text question shows appear in its field, in order, within the time it takes the utterance to arrive in the log.
+- [x] While someone is speaking, their interim text shows greyed ~~in the field~~ inline after the draft in the field on screen, and is replaced by normal text once final. ~~It's never saved~~ Submit saves it as it stands, and it doesn't show once the field's text is changed ~~taken over~~, while the textarea has focus, or once it's answered.
+- [x] Text fields are about 8 lines tall, and don't change height as text arrives or speech starts and stops. The display follows new text unless the person has scrolled up.
+- [x] Pressing the field swaps in a textarea with no text moving, focused, with the caret where they pressed; tabbing to it puts the caret at the end.
+- [x] The field shows "Filled in from what was said" until the person ~~edits it~~ ~~takes it over~~ changes its text. After ~~an edit~~ that, new speech no longer changes the field; clicking in and out without changing it doesn't count.
+- [x] Nothing is saved until the person presses Submit or Skip.
+- [x] Once answered, the field shows the answer, not the dictation.
+- [x] `"dictate": false` on a prompt turns it off for that question; the plan schema accepts the field and `pnpm check-plans` passes.
+- [x] The six fold tests pass, and the existing tests still pass.
 
 ## Decisions
 
