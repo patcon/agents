@@ -109,8 +109,8 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 - [ ] Tab into the field gives a focused textarea with the caret at the end.
 
 **Verification:**
-- [ ] `pnpm test`, including `src/cards/caret.test.ts`
-- [ ] `pnpm exec tsc --noEmit` passes
+- [x] `pnpm test`, including `src/cards/caret.test.ts`
+- [x] `pnpm exec tsc --noEmit` passes
 - [ ] By hand: the criteria above, on desktop, and on a phone if one's handy (the keyboard should open)
 
 **Dependencies:** Task 3a

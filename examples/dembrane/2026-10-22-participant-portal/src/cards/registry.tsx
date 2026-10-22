@@ -1,14 +1,24 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
+import { flushSync } from "react-dom";
 import {
   JSONUIProvider,
   Renderer,
   createStateStore,
   defineRegistry,
   useBoundProp,
+  useStateStore,
   useStateValue
 } from "@json-render/react";
 import { Input } from "@cloudflare/kumo";
 import { cardCatalog, defaultCard } from "./cards";
+import { caretHitAt, draftOffset } from "./caret";
 import { AUTO_SELECT, type AnswerValue, type Question } from "../shared";
 
 // How each card component looks. The catalog in cards.ts says what props
@@ -155,6 +165,7 @@ const { registry } = defineRegistry(cardCatalog, {
 
     TextInput: ({ props, bindings }) => {
       const prompt = useStateValue<string>("/question/prompt");
+      const store = useStateStore();
       const dictating = useStateValue<boolean | null>("/dictating") ?? false;
       const interim = useStateValue<string | null>("/interim");
       const [value, setValue] = useBoundProp<AnswerValue>(
@@ -169,6 +180,7 @@ const { registry } = defineRegistry(cardCatalog, {
           onChange={(v) => setValue(v)}
           dictating={dictating}
           interim={interim ?? undefined}
+          onTakeOver={() => store.set("/dictating", false)}
         />
       );
     },
@@ -212,7 +224,8 @@ const FIELD_TEXT =
  * A text field that dictation can fill. A textarea can't grey out part of its
  * own text, so while dictation fills it, a display layer over the textarea
  * shows the draft with what's being said now greyed after it, and follows
- * new text down unless the person has scrolled up.
+ * new text down unless the person has scrolled up. Pressing it, or tabbing
+ * to it, swaps in the textarea and takes the field over from dictation.
  */
 function DictationField({
   label,
@@ -220,7 +233,8 @@ function DictationField({
   value,
   onChange,
   dictating,
-  interim
+  interim,
+  onTakeOver
 }: {
   label?: string;
   placeholder?: string;
@@ -228,30 +242,66 @@ function DictationField({
   onChange: (value: string) => void;
   dictating: boolean;
   interim?: string;
+  /** The person has taken the field over: dictation stops filling it. */
+  onTakeOver: () => void;
 }) {
   const display = useRef<HTMLDivElement>(null);
+  const textarea = useRef<HTMLTextAreaElement>(null);
   const atBottom = useRef(true);
+  const [takenOver, setTakenOver] = useState(false);
+  const showDisplay = dictating && !takenOver;
+
+  // The textarea is swapped in within the event, so it can take focus there
+  // (a phone only opens its keyboard then), with the caret and scroll
+  // position where they were on the display.
+  const takeOver = (caret: number) => {
+    const scrollTop = display.current?.scrollTop ?? 0;
+    flushSync(() => setTakenOver(true));
+    onTakeOver();
+    const el = textarea.current;
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    el.setSelectionRange(caret, caret);
+    el.scrollTop = scrollTop;
+  };
 
   useLayoutEffect(() => {
     const el = display.current;
     if (el && atBottom.current) el.scrollTop = el.scrollHeight;
-  }, [value, interim, dictating]);
+  }, [value, interim, showDisplay]);
 
   return (
     <div className="grid rounded-lg bg-kumo-control ring ring-kumo-line focus-within:ring-[1.5px] focus-within:ring-kumo-focus/50">
       <textarea
+        ref={textarea}
         aria-label={label}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={`${FIELD_TEXT} resize-none border-0 bg-transparent text-kumo-default outline-none placeholder:text-kumo-subtle ${
-          dictating ? "invisible" : ""
+          showDisplay ? "invisible" : ""
         }`}
       />
-      {dictating && (
+      {showDisplay && (
         <div
           ref={display}
+          role="textbox"
+          aria-multiline
           aria-label={label}
+          tabIndex={0}
+          onMouseDown={(e) => {
+            // Not the browser's own focus: the textarea takes it instead.
+            e.preventDefault();
+            const el = e.currentTarget;
+            takeOver(
+              draftOffset(caretHitAt(e.clientX, e.clientY), {
+                display: el,
+                draft: value ? el.firstChild : null,
+                length: value.length
+              })
+            );
+          }}
+          onFocus={() => takeOver(value.length)}
           onScroll={(e) => {
             const el = e.currentTarget;
             atBottom.current =
@@ -291,7 +341,8 @@ export function CardInput({
   dictating = false,
   interim,
   readOnly = false,
-  onChange
+  onChange,
+  onTakeOver
 }: {
   question: Question;
   value: AnswerValue;
@@ -303,6 +354,8 @@ export function CardInput({
   /** Shows the answer without letting it change. */
   readOnly?: boolean;
   onChange: (value: AnswerValue) => void;
+  /** The person has taken over a field dictation was filling. */
+  onTakeOver?: () => void;
 }) {
   const spec = question.card ?? defaultCard(question);
   // One store per question, seeded with its current draft.
@@ -320,6 +373,10 @@ export function CardInput({
 
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const onTakeOverRef = useRef(onTakeOver);
+  onTakeOverRef.current = onTakeOver;
+  const dictatingRef = useRef(dictating);
+  dictatingRef.current = dictating;
   const valueRef = useRef(value);
   valueRef.current = value;
 
@@ -344,6 +401,11 @@ export function CardInput({
       store.subscribe(() => {
         const next = store.get("/value") as AnswerValue;
         if (next !== valueRef.current) onChangeRef.current(next);
+        // A field turns /dictating off when the person takes it over.
+        if (dictatingRef.current && store.get("/dictating") === false) {
+          dictatingRef.current = false;
+          onTakeOverRef.current?.();
+        }
       }),
     [store]
   );

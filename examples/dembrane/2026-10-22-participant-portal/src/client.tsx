@@ -353,6 +353,13 @@ function QuestionStage({
           interim={dictating ? interim : undefined}
           readOnly={locked}
           onChange={(v) => setDrafts((d) => ({ ...d, [question.id]: v }))}
+          // Taking a dictated field over makes its draft theirs, as an edit
+          // does, so dictation stops filling it.
+          onTakeOver={() =>
+            setDrafts((d) =>
+              question.id in d ? d : { ...d, [question.id]: value }
+            )
+          }
         />
 
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-kumo-line">
