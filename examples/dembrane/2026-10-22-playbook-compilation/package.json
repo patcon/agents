@@ -14,7 +14,9 @@
     "check-plans": "node scripts/check-plans.mjs",
     "try-jev": "node scripts/try-jev.mjs",
     "test": "vitest run",
-    "decompile-plan": "tsx scripts/decompile-plan.ts"
+    "decompile-plan": "tsx scripts/decompile-plan.ts",
+    "compile-playbook": "tsx scripts/compile-playbook.ts",
+    "compare-plans": "tsx scripts/compare-plans.ts"
   },
   "dependencies": {
     "@ai-sdk/react": "^4.0.0",
