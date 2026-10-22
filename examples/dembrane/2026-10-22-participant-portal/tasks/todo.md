@@ -65,7 +65,7 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 - [ ] It's never part of the value: submitting mid-sentence saves only the draft.
 
 **Verification:**
-- [ ] `pnpm exec tsc --noEmit` and `pnpm test` pass
+- [x] `pnpm exec tsc --noEmit` and `pnpm test` pass
 - [ ] By hand with `pnpm run start`: each criterion above, and no visible doubling when interim text turns final
 
 **Dependencies:** Task 1

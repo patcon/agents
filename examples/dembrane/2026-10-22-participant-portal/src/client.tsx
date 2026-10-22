@@ -236,6 +236,7 @@ function QuestionStage({
   activeIndex,
   pendingAhead,
   disabled,
+  interim,
   onBack,
   onNext,
   onAnswer,
@@ -245,6 +246,8 @@ function QuestionStage({
   activeIndex: number;
   pendingAhead: number;
   disabled: boolean;
+  /** What's being said now, before the transcriber makes it final. */
+  interim?: string;
   onBack: () => void;
   onNext: () => void;
   onAnswer: (value: AnswerValue, skipped: boolean) => Promise<void>;
@@ -266,6 +269,14 @@ function QuestionStage({
       : entry.answer && !entry.answer.skipped
         ? entry.answer.value
         : (entry.suggested ?? defaultValue(question));
+
+  // While dictation fills an untouched text question, what's being said now
+  // shows greyed after the draft, until it's final and joins it.
+  const dictating =
+    question.type === "text" &&
+    question.dictate !== false &&
+    !entry.answer &&
+    !(question.id in drafts);
 
   // A final question's answer stands once given.
   const locked =
@@ -338,6 +349,7 @@ function QuestionStage({
           question={question}
           value={value}
           likelihood={entry.answer ? undefined : entry.likelihood}
+          interim={dictating ? interim : undefined}
           readOnly={locked}
           onChange={(v) => setDrafts((d) => ({ ...d, [question.id]: v }))}
         />
@@ -811,6 +823,11 @@ function App() {
             activeIndex={activeIndex}
             pendingAhead={pendingAhead}
             disabled={connection !== "connected"}
+            interim={
+              view.status === "recording" && view.onScreen === current
+                ? voice.interimTranscript || undefined
+                : undefined
+            }
             onBack={() => goTo(activeIndex - 1)}
             onNext={() => goTo(activeIndex + 1)}
             onAnswer={answer}

@@ -155,17 +155,32 @@ const { registry } = defineRegistry(cardCatalog, {
 
     TextInput: ({ props, bindings }) => {
       const prompt = useStateValue<string>("/question/prompt");
+      const interim = useStateValue<string | null>("/interim");
       const [value, setValue] = useBoundProp<AnswerValue>(
         props.value as unknown as AnswerValue,
         bindings?.value
       );
+      // The box carries the textarea's border, so what's being said now can
+      // show greyed inside it, under the draft. A textarea can't grey out
+      // part of its own text.
       return (
-        <InputArea
-          aria-label={prompt}
-          placeholder={props.placeholder ?? undefined}
-          value={typeof value === "string" ? value : ""}
-          onValueChange={(v) => setValue(v)}
-        />
+        <div className="flex flex-col rounded-lg bg-kumo-control ring ring-kumo-line focus-within:ring-[1.5px] focus-within:ring-kumo-focus/50">
+          <InputArea
+            aria-label={prompt}
+            placeholder={props.placeholder ?? undefined}
+            value={typeof value === "string" ? value : ""}
+            onValueChange={(v) => setValue(v)}
+            className="bg-transparent ring-0 focus:ring-0"
+          />
+          {interim && (
+            <p
+              aria-live="polite"
+              className="px-3 pb-2 text-sm italic text-kumo-subtle"
+            >
+              {interim}
+            </p>
+          )}
+        </div>
       );
     },
 
@@ -199,20 +214,23 @@ const { registry } = defineRegistry(cardCatalog, {
 
 /**
  * A question's card, drafting its answer. The card gets its own state model
- * with the question at /question, the draft at /value and Jev's likelihoods
- * at /likelihood; `value` and `onChange` keep /value in step with the drafts
- * the page holds.
+ * with the question at /question, the draft at /value, Jev's likelihoods
+ * at /likelihood and what's being said now at /interim; `value` and
+ * `onChange` keep /value in step with the drafts the page holds.
  */
 export function CardInput({
   question,
   value,
   likelihood,
+  interim,
   readOnly = false,
   onChange
 }: {
   question: Question;
   value: AnswerValue;
   likelihood?: Record<string, number>;
+  /** What's being said now, shown greyed in a text field. Never the value. */
+  interim?: string;
   /** Shows the answer without letting it change. */
   readOnly?: boolean;
   onChange: (value: AnswerValue) => void;
@@ -220,7 +238,13 @@ export function CardInput({
   const spec = question.card ?? defaultCard(question);
   // One store per question, seeded with its current draft.
   const store = useMemo(
-    () => createStateStore({ question, value, likelihood: likelihood ?? null }),
+    () =>
+      createStateStore({
+        question,
+        value,
+        likelihood: likelihood ?? null,
+        interim: interim ?? null
+      }),
     [question.id]
   );
 
@@ -236,6 +260,10 @@ export function CardInput({
   useEffect(() => {
     store.set("/likelihood", likelihood ?? null);
   }, [store, likelihood]);
+
+  useEffect(() => {
+    store.set("/interim", interim ?? null);
+  }, [store, interim]);
 
   useEffect(
     () =>

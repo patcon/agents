@@ -12,6 +12,8 @@ import type { Question } from "../shared";
 //   /value     the answer being drafted (bound with `$bindState`)
 //   /likelihood  Jev's likelihood for each option, which option rows show
 //              on their own; a card doesn't refer to it
+//   /interim   what's being said now, before it's final, which text inputs
+//              show greyed on their own; never part of the value
 // The prop schemas only accept those paths, so a card can't read or write
 // anything else.
 //
