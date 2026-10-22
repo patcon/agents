@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CONSENT, CardSpecSchema, cardIssues } from "./cards.ts";
 import type { AnswerValue, Question } from "./shared";
 
 // A plan is what a markdown playbook compiles to: a flat, typed list of
@@ -75,10 +76,9 @@ export const PlanItemSchema = z.discriminatedUnion("kind", [
     kind: z.literal("section"),
     payload: z.strictObject({ title: z.string().min(1) })
   }),
-  ItemBase.extend({
-    kind: z.literal("consent"),
-    payload: z.strictObject({ text: z.string().min(1), version: z.string() })
-  }),
+  ItemBase.extend({ kind: z.literal("consent") }).describe(
+    "The platform's consent card. A plan places it but can't change it."
+  ),
   ItemBase.extend({
     kind: z.literal("discussion"),
     payload: z.strictObject({
@@ -97,7 +97,10 @@ export const PlanItemSchema = z.discriminatedUnion("kind", [
         .describe(
           "The setting the answer writes, and how conditions refer to it"
         ),
-      question: QuestionSpecSchema
+      question: QuestionSpecSchema,
+      card: CardSpecSchema.optional().describe(
+        "How the question is shown, as a json-render spec. A default card for its type when absent."
+      )
     })
   }),
   ItemBase.extend({
@@ -186,7 +189,7 @@ type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
 true satisfies Same<z.infer<typeof AnswerValueSchema>, AnswerValue>;
 true satisfies Same<
   z.infer<typeof QuestionSpecSchema>,
-  Omit<Question, "id" | "source">
+  Omit<Question, "id" | "source" | "card">
 >;
 
 // --- Releasing ---
@@ -266,14 +269,20 @@ export function dueItems(
 export function questionFor(item: PlanItem): Question | undefined {
   switch (item.kind) {
     case "prompt":
-      return { ...item.payload.question, id: item.id, source: "plan" };
+      return {
+        ...item.payload.question,
+        id: item.id,
+        card: item.payload.card,
+        source: "plan"
+      };
     case "consent":
       return {
         id: item.id,
         type: "radio",
-        prompt: item.payload.text,
+        prompt: CONSENT.prompt,
         options: ["I agree"],
         required: true,
+        card: CONSENT.card,
         source: "plan"
       };
     // Sections only group; the rest have no card yet.
@@ -369,6 +378,9 @@ export function lintPlan(plan: Plan): LintMessage[] {
     if (!consent.locked) {
       report("consent-locked", "error", "consent must be locked", consent.id);
     }
+    for (const issue of cardIssues(CONSENT.card)) {
+      report("card-valid", "error", `the platform's consent card: ${issue}`, consent.id);
+    }
   }
 
   const prompts = new Map<string, Extract<PlanItem, { kind: "prompt" }>>();
@@ -381,6 +393,11 @@ export function lintPlan(plan: Plan): LintMessage[] {
     const { type, options } = item.payload.question;
     if ((type === "radio" || type === "checkbox") && !options?.length) {
       report("choices-have-options", "error", `a ${type} prompt needs options`, item.id);
+    }
+    if (item.payload.card) {
+      for (const issue of cardIssues(item.payload.card)) {
+        report("card-valid", "error", issue, item.id);
+      }
     }
   }
 

@@ -136,7 +136,7 @@ The catalog is defined in `src/shared.ts` so both sides use the same one. The se
 
 - **Who is the group?** Today each session is its own Durable Object with one person in it. If the group is people in separate sessions, they need a way to join the same `GroupAgent`, such as a room code in the URL. That also decides what the host sees.
 - **When does a colour grey out for others?** This RFC assumes as soon as someone picks it. The other choice is only once they submit, which is the "claim on Submit only" alternative above.
-- **Do custom components bind cleanly?** We haven't checked how a custom json-render component writes to a `$bindState` value. `ClaimableChoice` depends on it.
+- **Do custom components bind cleanly?** Yes. A custom component reads and writes its `$bindState` value with `useBoundProp(props.value, bindings?.value)`; `2026-10-21-portal-admin-setup` does this for every input in `src/card-registry.tsx`. Note that a catalog's own `validate()` doesn't check props once it has more than one component, so that prototype validates cards with a schema built from the catalog's prop schemas (`CardSpecSchema` in `src/cards.ts`).
 
 ## The decision
 

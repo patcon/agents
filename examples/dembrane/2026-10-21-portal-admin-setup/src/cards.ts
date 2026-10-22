@@ -169,3 +169,47 @@ export function defaultCard(question: Question): CardSpec {
   })();
   return { root: "input", elements: { input: { ...input, children: [] } } };
 }
+
+// --- Platform cards ---
+//
+// Defined here, not in a plan: a plan places them but can't change them.
+// The question's card goes into the log, so the log records the exact
+// wording each person agreed to.
+
+export const CONSENT = {
+  version: "2026-10-22",
+  prompt: "Before we start: may we record this session?",
+  card: {
+    root: "consent",
+    elements: {
+      consent: {
+        type: "Stack",
+        props: { gap: "md" },
+        children: ["what", "why", "agree"]
+      },
+      what: {
+        type: "Prose",
+        props: {
+          text: "This session is recorded and transcribed while you talk through your portal settings."
+        },
+        children: []
+      },
+      why: {
+        type: "Prose",
+        props: {
+          text: "We use the recording only to fill in those settings from what you say. You can stop recording at any time."
+        },
+        children: []
+      },
+      agree: {
+        type: "RadioGroup",
+        props: {
+          options: ["I agree"],
+          columns: null,
+          value: { $bindState: "/value" }
+        },
+        children: []
+      }
+    }
+  } satisfies CardSpec
+};

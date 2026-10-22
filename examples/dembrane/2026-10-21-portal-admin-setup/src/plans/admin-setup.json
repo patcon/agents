@@ -3,16 +3,7 @@
   "schemaVersion": 1,
   "source": { "playbook": "portal-admin-setup", "version": "0.1.0" },
   "items": [
-    {
-      "id": "consent",
-      "order": "a0",
-      "kind": "consent",
-      "locked": true,
-      "payload": {
-        "version": "0.1.0",
-        "text": "This session is recorded and transcribed so we can fill in your portal settings from what you say."
-      }
-    },
+    { "id": "consent", "order": "a0", "kind": "consent", "locked": true },
 
     { "id": "basics", "order": "a1", "kind": "section", "payload": { "title": "Basics" } },
     {
@@ -27,6 +18,20 @@
           "prompt": "Which language will participants speak?",
           "options": ["English", "Dutch", "German", "French", "Spanish", "Italian", "Ukrainian", "Czech"],
           "required": true
+        },
+        "card": {
+          "root": "languages",
+          "elements": {
+            "languages": {
+              "type": "RadioGroup",
+              "props": {
+                "options": { "$state": "/question/options" },
+                "columns": 2,
+                "value": { "$bindState": "/value" }
+              },
+              "children": []
+            }
+          }
         }
       }
     },
