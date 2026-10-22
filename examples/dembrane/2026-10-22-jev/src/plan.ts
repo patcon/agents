@@ -300,7 +300,7 @@ export function questionFor(item: PlanItem): Question | undefined {
         id: item.id,
         type: "checkbox",
         prompt: CONSENT.prompt,
-        options: ["I agree"],
+        options: ["Yes, I agree to be recorded"],
         required: true,
         card: CONSENT.card,
         source: "plan"

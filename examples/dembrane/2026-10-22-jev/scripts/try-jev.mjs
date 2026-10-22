@@ -90,7 +90,7 @@ const CASES = [
   {
     name: "nl-consent",
     lines: [["consent", "Ja hoor, dat is prima, neem maar op."]],
-    expect: { consent: ["I agree"] }
+    expect: { consent: ["Yes, I agree to be recorded"] }
   },
   {
     name: "nl-bare-ja",

@@ -206,7 +206,7 @@ export const CONSENT = {
       agree: {
         type: "CheckboxGroup",
         props: {
-          options: ["I agree"],
+          options: ["Yes, I agree to be recorded"],
           columns: null,
           value: { $bindState: "/value" }
         },
