@@ -12,7 +12,11 @@ const GENAI_PRICES =
   "https://raw.githubusercontent.com/pydantic/genai-prices/main/prices/providers/google.yml";
 
 // Which model each var names, and whether its input is audio.
-const MODELS = { STT_MODEL: { audio: true }, AGENT_MODEL: { audio: false } };
+const MODELS = {
+  STT_MODEL: { audio: true },
+  AGENT_MODEL: { audio: false },
+  COMPILE_MODEL: { audio: false }
+};
 
 const today = new Date().toISOString().slice(0, 10);
 

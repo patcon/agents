@@ -7,6 +7,9 @@ import {
 
 export type TokenUsage = { inputTokens: number; outputTokens: number };
 
+/** One turn of a conversation with the model, for asking again after an answer. */
+export type Turn = { role: "user" | "model"; text: string };
+
 /**
  * Vertex AI credentials: tokens from the service account key if it's set,
  * reused until they're about to expire, or else the fixed access token,
@@ -27,19 +30,31 @@ export function googleAccessToken(env: Env): VertexOptions["accessToken"] {
 
 /**
  * Asks a Gemini model on Vertex AI for an answer that fits a JSON schema, and
- * returns it parsed, with the tokens it used. Throws on any failure, with
- * Vertex's own words where it gave some.
+ * returns it parsed, with the tokens it used. `prompt` is the user's turn, or
+ * the whole conversation so far. Throws on any failure, with Vertex's own
+ * words where it gave some, and when `signal` aborts.
  */
 export async function generateJson(
   env: Env,
-  request: { system: string; prompt: string; schema: object }
+  request: {
+    model: string;
+    system: string;
+    prompt: string | Turn[];
+    schema: object;
+    temperature?: number;
+    signal?: AbortSignal;
+  }
 ): Promise<{ json: unknown; usage: TokenUsage }> {
   const accessToken = await resolveAccessToken(
     googleAccessToken(env),
     "Gemini"
   );
   const location = "global";
-  const url = `https://${vertexHost(location)}/v1beta1/projects/${env.GOOGLE_CLOUD_PROJECT}/locations/${location}/publishers/google/models/${env.AGENT_MODEL}:generateContent`;
+  const url = `https://${vertexHost(location)}/v1beta1/projects/${env.GOOGLE_CLOUD_PROJECT}/locations/${location}/publishers/google/models/${request.model}:generateContent`;
+  const turns =
+    typeof request.prompt === "string"
+      ? [{ role: "user", text: request.prompt }]
+      : request.prompt;
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -48,12 +63,14 @@ export async function generateJson(
     },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: request.system }] },
-      contents: [{ role: "user", parts: [{ text: request.prompt }] }],
+      contents: turns.map(({ role, text }) => ({ role, parts: [{ text }] })),
       generationConfig: {
         responseMimeType: "application/json",
-        responseJsonSchema: request.schema
+        responseJsonSchema: request.schema,
+        temperature: request.temperature
       }
-    })
+    }),
+    signal: request.signal
   });
   if (!res.ok) {
     throw new Error(`Gemini answered ${res.status}: ${await res.text()}`);

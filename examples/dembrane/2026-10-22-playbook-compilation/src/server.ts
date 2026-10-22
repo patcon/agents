@@ -580,6 +580,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
     ].join("\n");
 
     const { json, usage } = await generateJson(this.env, {
+      model: this.env.AGENT_MODEL,
       system:
         "You help run a spoken interview. Read what the speaker said and ask exactly one " +
         "short, specific follow-up question. Pick the input type that fits the question, " +
