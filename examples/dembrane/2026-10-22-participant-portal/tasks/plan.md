@@ -30,8 +30,8 @@ README "Dictation" section: after all of the above
 
 ### Phase 1: the draft
 
-- [ ] Task 1: Text questions get a draft from what was said while they showed
-- [ ] Task 2: Plan prompts can turn dictation off with `"dictate": false`
+- [x] Task 1: Text questions get a draft from what was said while they showed
+- [x] Task 2: Plan prompts can turn dictation off with `"dictate": false`
 
 ### Checkpoint: the draft
 
@@ -41,10 +41,10 @@ README "Dictation" section: after all of the above
 
 ### Phase 2: interim text and docs
 
-- [ ] Task 3: Interim text shows greyed in the text field on screen
-- [ ] Task 3a: A display layer shows the draft with interim text inline (replaces task 3's line under the text)
-- [ ] Task 3b: Pressing the display swaps in the textarea, caret where pressed
-- [ ] Task 4: The README describes dictation
+- [x] Task 3: Interim text shows greyed in the text field on screen
+- [x] Task 3a: A display layer shows the draft with interim text inline (replaces task 3's line under the text)
+- [x] Task 3b: Pressing the display swaps in the textarea, caret where pressed
+- [x] Task 4: The README describes dictation
 
 ### Checkpoint: complete
 

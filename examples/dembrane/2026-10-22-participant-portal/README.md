@@ -2,7 +2,7 @@
 
 A continuous voice session that walks a host through setting up their project's portal. The setup questions come from a plan compiled from a playbook (`src/plan/admin-setup.json`); more can come on demand from the host and from an agent. Everything is stored as an append-only `UIMessage` log in one Durable Object.
 
-A copy of `2026-10-22-playbook-compilation`, with `src/` grouped by concern. Like that one, it compiles its plan from a markdown playbook with Gemini, and checks the result against the hand-made plan (see [Playbooks](#playbooks-srccompilecompilets)). The running session still uses the hand-made plan. Like `2026-10-22-jev`, it has [Jev](https://docs.typesafe.ai), TypeSafe's System One model, listen along: every card with options shows how likely each option is to be what the speaker chose, and fills in the likely ones.
+A copy of `2026-10-22-playbook-compilation`, with `src/` grouped by concern. Like that one, it compiles its plan from a markdown playbook with Gemini, and checks the result against the hand-made plan (see [Playbooks](#playbooks-srccompilecompilets)). The running session still uses the hand-made plan. Like `2026-10-22-jev`, it has [Jev](https://docs.typesafe.ai), TypeSafe's System One model, listen along: every card with options shows how likely each option is to be what the speaker chose, and fills in the likely ones. Text questions are filled in by [dictation](#dictation-srccardsregistrytsx): what's said while one is showing becomes its draft.
 
 ## Run it
 
@@ -24,7 +24,7 @@ Every event is a new `UIMessage` with its own id. Nothing is edited in place. `m
 
 ```ts
 type LogMeta =
-  | { kind: "utterance"; subjectId: string; at: number }
+  | { kind: "utterance"; subjectId: string; at: number; onScreen?: string | null }
   | { kind: "question"; subjectId: string; at: number }
   | { kind: "answer"; subjectId: string; at: number }
   | { kind: "trigger"; subjectId: string; at: number }
@@ -78,6 +78,25 @@ On the page, each option has a bar behind it as wide as its likelihood, which gr
 The model is pinned in `wrangler.jsonc` (`jev-1.13.0`), and Jev's input tokens show in the log drawer's cost estimate ($0.042 per million; output is free).
 
 `pnpm try-jev` runs short Dutch and English transcripts past Jev with every option question in the admin setup plan, and prints the likelihoods: `pnpm try-jev nl` for just the Dutch ones, `JEV_MODEL=jev-1.14.0 pnpm try-jev` to try another model.
+
+### Dictation (`src/cards/registry.tsx`)
+
+What's said while a text question is on screen is written into its field as a draft. It's never submitted for the person: they edit it, and press Submit. Spec: [`design/spec-text-dictation.md`](design/spec-text-dictation.md).
+
+The draft is built in `foldLog()`: a text question's `suggested` is every utterance said while it was on screen, in order, joined by spaces. The page already shows `suggested` as the draft with the "Filled in from what was said" badge, so nothing new is logged. A plan prompt can turn it off with `"dictate": false`, as it can turn Jev off with `"assess": false`. A skipped question counts as unanswered, for dictation and Jev both (`isOpen()` in `src/shared.ts`).
+
+An utterance counts for the question on screen when it was started, not when it was finished. The server notes the question at its first interim text, and saves it on the utterance's log entry as `onScreen`. So pressing Submit or Skip mid-sentence doesn't hand the end of the sentence to the next question.
+
+On the page, `TextInput` draws the field in two layers in one box. While dictation fills it, a display layer shows the draft with the transcriber's interim text greyed inline after it, and follows new text down unless the person has scrolled up. Pressing it swaps in the real textarea underneath within the same event, with the caret where they pressed (`src/cards/caret.ts`, using `document.caretPositionFromPoint`) and the scroll position kept. Both layers lay text out identically (`FIELD_TEXT`), so nothing moves. Fields are a fixed eight lines tall, so they don't jump as text arrives.
+
+| While the textarea has focus | |
+| --- | --- |
+| They haven't typed | Dictation keeps adding, with their caret and scroll put back. Interim text is in the textarea as plain text, and the final words replace it. Leaving brings the display back. |
+| They've typed | The text is theirs: the badge goes, dictation stops, and it stays a textarea. |
+
+Pressing Submit mid-sentence saves what's on screen, greyed words included. Cards read whether dictation fills them from `/dictating` and the interim text from `/interim` in their state, as they read Jev's likelihoods from `/likelihood`.
+
+Tests sit beside what they test (`src/shared.test.ts`, `src/plan/plan.test.ts`, `src/cards/caret.test.ts`); `pnpm test` runs them along with `tests/compile.test.ts`.
 
 ### Playbooks (`src/compile/compile.ts`)
 

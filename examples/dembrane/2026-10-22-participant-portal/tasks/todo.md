@@ -127,10 +127,10 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 **Description:** Add a short "Dictation" subsection after "Jev" in `README.md`: what fills a text field and when, the interim text, `"dictate": false`, and that nothing is submitted for the person. Note that tests now also live beside their source.
 
 **Acceptance criteria:**
-- [ ] The section matches what was built, and links the spec.
+- [x] The section matches what was built, and links the spec.
 
 **Verification:**
-- [ ] Read it against the code once tasks 1 to 3b are in
+- [x] Read it against the code once tasks 1 to 3b are in
 
 **Dependencies:** Tasks 1, 2, 3, 3a, 3b
 
