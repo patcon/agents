@@ -52,12 +52,9 @@ const CASES = [
   {
     name: "nl-name-yes-email-ahead",
     lines: [
-      ["default_conversation_ask_for_participant_name", "Ja, namen mogen ze invullen. Maar e-mailadressen hoeven we echt niet te hebben."]
+      ["default_conversation_ask_for_participant_details", "Ja, namen mogen ze invullen. Maar e-mailadressen hoeven we echt niet te hebben."]
     ],
-    expect: {
-      default_conversation_ask_for_participant_name: "Yes",
-      default_conversation_ask_for_participant_email: "No"
-    }
+    expect: { default_conversation_ask_for_participant_details: ["A name"] }
   },
   {
     name: "nl-undecided",
@@ -67,10 +64,10 @@ const CASES = [
   {
     name: "nl-on-screen-overrides",
     lines: [
-      ["default_conversation_ask_for_participant_name", "Nee, namen niet. En anonimiseren lijkt me trouwens ook niet nodig."],
+      ["default_conversation_ask_for_participant_details", "Nee, namen niet. En anonimiseren lijkt me trouwens ook niet nodig."],
       ["anonymize_transcripts", "Nou, nu ik het zo zie, eigenlijk toch wel. Laten we het anonimiseren."]
     ],
-    expect: { default_conversation_ask_for_participant_name: "No", anonymize_transcripts: "Yes" }
+    expect: { default_conversation_ask_for_participant_details: [], anonymize_transcripts: "Yes" }
   },
   {
     name: "nl-checkbox",
@@ -108,12 +105,9 @@ const CASES = [
   {
     name: "en-name-yes-email-ahead",
     lines: [
-      ["default_conversation_ask_for_participant_name", "Yes, they can fill in their names. But we really don't need email addresses."]
+      ["default_conversation_ask_for_participant_details", "Yes, they can fill in their names. But we really don't need email addresses."]
     ],
-    expect: {
-      default_conversation_ask_for_participant_name: "Yes",
-      default_conversation_ask_for_participant_email: "No"
-    }
+    expect: { default_conversation_ask_for_participant_details: ["A name"] }
   },
   {
     name: "en-checkbox",

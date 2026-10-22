@@ -36,38 +36,23 @@
       }
     },
     {
-      "id": "default_conversation_ask_for_participant_name",
+      "id": "default_conversation_ask_for_participant_details",
       "order": "a1",
       "parentId": "basics",
       "kind": "prompt",
       "payload": {
-        "key": "default_conversation_ask_for_participant_name",
+        "key": "default_conversation_ask_for_participant_details",
         "question": {
-          "type": "radio",
-          "prompt": "Should the portal ask participants for their name?",
-          "options": ["Yes", "No"],
-          "required": true
-        }
-      }
-    },
-    {
-      "id": "default_conversation_ask_for_participant_email",
-      "order": "a2",
-      "parentId": "basics",
-      "kind": "prompt",
-      "payload": {
-        "key": "default_conversation_ask_for_participant_email",
-        "question": {
-          "type": "radio",
-          "prompt": "Should the portal ask participants for their email?",
-          "options": ["Yes", "No"],
-          "required": true
+          "type": "checkbox",
+          "prompt": "What must be provided before each portal conversation?",
+          "options": ["A name", "An email"],
+          "required": false
         }
       }
     },
     {
       "id": "is_project_notification_subscription_allowed",
-      "order": "a3",
+      "order": "a2",
       "parentId": "basics",
       "kind": "prompt",
       "payload": {
@@ -82,7 +67,7 @@
     },
     {
       "id": "default_conversation_tutorial_slug",
-      "order": "a4",
+      "order": "a3",
       "parentId": "basics",
       "kind": "prompt",
       "payload": {
@@ -97,7 +82,7 @@
     },
     {
       "id": "tags",
-      "order": "a5",
+      "order": "a4",
       "parentId": "basics",
       "kind": "prompt",
       "payload": {
@@ -313,7 +298,7 @@
     { "id": "consent:advanced", "when": { "kind": "answered", "item": "consent" }, "cue": "advanced" },
     {
       "id": "answer:is_project_notification_subscription_allowed",
-      "when": { "kind": "answer", "key": "default_conversation_ask_for_participant_email", "equals": "Yes" },
+      "when": { "kind": "includes", "key": "default_conversation_ask_for_participant_details", "option": "An email" },
       "cue": "is_project_notification_subscription_allowed"
     },
     {
