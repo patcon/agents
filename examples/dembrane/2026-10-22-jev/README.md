@@ -40,7 +40,7 @@ type LogMeta =
 | Source   | How it appends                                                    |
 | -------- | ----------------------------------------------------------------- |
 | Voice    | `onTranscript()` appends an `utterance`                           |
-| Plan     | `begin()` and `answer()` append the questions the plan releases   |
+| Plan     | `open()` and `answer()` append the questions the plan releases    |
 | Host     | `@callable() pushHostQuestion()`                                  |
 | Person   | `@callable() answer(questionId, value, skipped)`                  |
 
@@ -49,6 +49,8 @@ The agent is woken without a human message: a `trigger` entry is appended with `
 ```ts
 await this.saveMessages((messages) => [...messages, triggerEntry]);
 ```
+
+Consent comes before recording. The page calls `open()` as soon as it connects, which starts the plan and puts up the consent card, while nothing is recorded yet. `foldLog()` derives `consented` from the card's latest answer: true only when every option is ticked. There's no separate entry for it. Start stays disabled, and `begin()` and `setPaused(false)` refuse, until it's true. Answering the card again without the tick takes consent back: `answer()` appends `paused`, and the page stops the mic. The consent card is never assessed by Jev, since it has to be ticked by hand.
 
 ### Client (`src/client.tsx`)
 

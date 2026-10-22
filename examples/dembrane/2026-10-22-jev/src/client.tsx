@@ -639,6 +639,11 @@ function App() {
     }
   }, [current, seen]);
 
+  // Opening the session puts up the consent card. Recording waits for it.
+  useEffect(() => {
+    if (connection === "connected") agent.call("open").catch(() => {});
+  }, [agent, connection]);
+
   // What's said while a question is on screen is heard as an answer to it.
   useEffect(() => {
     if (current && connection === "connected") {
@@ -704,6 +709,11 @@ function App() {
       await voice.start();
     });
   const finish = () => run(() => agent.call("finish"));
+
+  // The server pauses when consent is taken back; the mic stops with it.
+  useEffect(() => {
+    if (!view.consented && voice.isListening) voice.stop();
+  }, [view.consented, voice]);
 
   const finished = view.status === "finished";
   const canFinish = view.status === "paused" && !voice.isListening;
@@ -806,9 +816,7 @@ function App() {
               {view.status === "idle" ? "Ready when you are" : "Keep talking"}
             </Text>
             <Text size="xs" variant="secondary">
-              {view.status === "idle"
-                ? "Press Start to begin recording. Questions will appear here."
-                : "Questions will appear here as they come up."}
+              Questions will appear here as they come up.
             </Text>
           </Surface>
         )}
@@ -828,9 +836,11 @@ function App() {
               <span className="text-xs text-kumo-subtle truncate">
                 {voice.isListening
                   ? voice.interimTranscript || "Listening…"
-                  : view.status === "idle"
-                    ? "Not recording"
-                    : "Paused"}
+                  : !view.consented
+                    ? "Agree to recording to start"
+                    : view.status === "idle"
+                      ? "Not recording"
+                      : "Paused"}
               </span>
               <div className="h-1.5 w-full rounded-full bg-kumo-tint overflow-hidden">
                 <div
@@ -845,7 +855,7 @@ function App() {
               <Button
                 variant="primary"
                 onClick={begin}
-                disabled={busy || connection !== "connected"}
+                disabled={busy || connection !== "connected" || !view.consented}
                 icon={<MicrophoneIcon size={16} weight="bold" />}
               >
                 Start
@@ -863,7 +873,7 @@ function App() {
               <Button
                 variant="primary"
                 onClick={resume}
-                disabled={busy || connection !== "connected"}
+                disabled={busy || connection !== "connected" || !view.consented}
                 icon={<PlayIcon size={16} weight="bold" />}
               >
                 Resume

@@ -19,6 +19,8 @@ export type Question = {
   card?: CardSpec;
   /** False keeps Jev from judging its options. */
   assess?: boolean;
+  /** The platform's consent card: recording waits for every option ticked. */
+  consent?: true;
   source: "plan" | "host" | "agent";
 };
 
@@ -208,6 +210,8 @@ export type LogView = {
   /** The question on screen now, as the last device to move put it. */
   onScreen: string | null;
   lastAssessment?: Assessment;
+  /** Whether the consent card's latest answer allows recording. */
+  consented: boolean;
 };
 
 export function textOf(message: LogMessage) {
@@ -225,7 +229,8 @@ export function foldLog(messages: readonly LogMessage[]): LogView {
     status: "idle",
     utterances: [],
     questions: [],
-    onScreen: null
+    onScreen: null,
+    consented: false
   };
   const questions = new Map<string, QuestionView>();
 
@@ -275,6 +280,12 @@ export function foldLog(messages: readonly LogMessage[]): LogView {
       });
     }
   }
+
+  const consent = view.questions.find((q) => q.question.consent);
+  const agreed = consent?.answer?.skipped ? null : consent?.answer?.value;
+  view.consented =
+    Array.isArray(agreed) &&
+    (consent?.question.options ?? []).every((option) => agreed.includes(option));
 
   return view;
 }

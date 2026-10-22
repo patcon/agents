@@ -85,11 +85,6 @@ const CASES = [
     expect: { default_conversation_tutorial_slug: "Basic" }
   },
   {
-    name: "nl-consent",
-    lines: [["consent", "Ja hoor, dat is prima, neem maar op."]],
-    expect: { consent: ["Yes, I agree to be recorded"] }
-  },
-  {
     name: "nl-bare-ja",
     lines: [
       ["is_project_notification_subscription_allowed", "Ehm, ja."],

@@ -314,6 +314,9 @@ export function questionFor(item: PlanItem): Question | undefined {
         options: ["Yes, I agree to be recorded"],
         required: true,
         card: CONSENT.card,
+        // Ticked by hand: nothing is recorded until it is.
+        assess: false,
+        consent: true,
         source: "plan"
       };
     // Sections only group; the rest have no card yet.

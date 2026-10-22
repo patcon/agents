@@ -410,17 +410,28 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
 
   // --- Session controls (called from the client) ---
 
+  /**
+   * A page opened the session: the plan starts, which puts up the consent
+   * card. Opening it again releases nothing new.
+   */
+  @callable()
+  async open() {
+    await this.#releasePlan({ kind: "start" });
+  }
+
+  /** Recording starts only once the consent card allows it. */
   @callable()
   async begin() {
-    if (this.#view().status !== "idle") return;
+    const { status, consented } = this.#view();
+    if (status !== "idle" || !consented) return;
     await this.#appendStatus("recording");
-    await this.#releasePlan({ kind: "start" });
   }
 
   @callable()
   async setPaused(paused: boolean) {
-    const { status } = this.#view();
+    const { status, consented } = this.#view();
     if (status !== "recording" && status !== "paused") return;
+    if (!paused && !consented) return;
     await this.#appendStatus(paused ? "paused" : "recording");
   }
 
@@ -456,6 +467,11 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
       ]
     });
     await this.#releasePlan({ kind: "answer" });
+    // Taking consent back stops the recording.
+    const view = this.#view();
+    if (!view.consented && view.status === "recording") {
+      await this.#appendStatus("paused");
+    }
   }
 
   /**
