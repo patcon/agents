@@ -678,7 +678,7 @@ function App() {
           />
           <span className="truncate">
             <Text size="sm" bold>
-              2026-10-21
+              portal-admin-setup
             </Text>
           </span>
           <ConnectionIndicator status={connection} />

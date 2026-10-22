@@ -742,7 +742,7 @@ function App() {
           />
           <span className="truncate">
             <Text size="sm" bold>
-              2026-10-22-jev
+              jev
             </Text>
           </span>
           <ConnectionIndicator status={connection} />
