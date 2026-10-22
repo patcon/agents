@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef } from "react";
 import {
   JSONUIProvider,
   Renderer,
@@ -7,7 +7,7 @@ import {
   useBoundProp,
   useStateValue
 } from "@json-render/react";
-import { Input, InputArea } from "@cloudflare/kumo";
+import { Input } from "@cloudflare/kumo";
 import { cardCatalog, defaultCard } from "./cards";
 import { AUTO_SELECT, type AnswerValue, type Question } from "../shared";
 
@@ -155,33 +155,21 @@ const { registry } = defineRegistry(cardCatalog, {
 
     TextInput: ({ props, bindings }) => {
       const prompt = useStateValue<string>("/question/prompt");
+      const dictating = useStateValue<boolean | null>("/dictating") ?? false;
       const interim = useStateValue<string | null>("/interim");
       const [value, setValue] = useBoundProp<AnswerValue>(
         props.value as unknown as AnswerValue,
         bindings?.value
       );
-      // The box carries the textarea's border, so what's being said now can
-      // show greyed inside it, under the draft. A textarea can't grey out
-      // part of its own text.
       return (
-        <div className="flex flex-col rounded-lg bg-kumo-control ring ring-kumo-line focus-within:ring-[1.5px] focus-within:ring-kumo-focus/50">
-          <InputArea
-            aria-label={prompt}
-            placeholder={props.placeholder ?? undefined}
-            value={typeof value === "string" ? value : ""}
-            onValueChange={(v) => setValue(v)}
-            className="bg-transparent ring-0 focus:ring-0"
-          />
-          {/* Kept while listening, even empty, so the layout doesn't jump */}
-          {interim !== null && (
-            <p
-              aria-live="polite"
-              className="min-h-7 px-3 pb-2 text-sm italic text-kumo-subtle"
-            >
-              {interim}
-            </p>
-          )}
-        </div>
+        <DictationField
+          label={prompt}
+          placeholder={props.placeholder ?? undefined}
+          value={typeof value === "string" ? value : ""}
+          onChange={(v) => setValue(v)}
+          dictating={dictating}
+          interim={interim ?? undefined}
+        />
       );
     },
 
@@ -213,16 +201,94 @@ const { registry } = defineRegistry(cardCatalog, {
   }
 });
 
+// The display layer and the textarea lay their text out identically, so
+// swapping one for the other moves nothing: same box, font, padding, line
+// height and wrapping, and room for a scrollbar whether or not there is one.
+const FIELD_TEXT =
+  "col-start-1 row-start-1 h-52 w-full overflow-y-auto [scrollbar-gutter:stable] " +
+  "px-3 py-2 text-sm leading-6 [font-family:inherit] whitespace-pre-wrap break-words";
+
+/**
+ * A text field that dictation can fill. A textarea can't grey out part of its
+ * own text, so while dictation fills it, a display layer over the textarea
+ * shows the draft with what's being said now greyed after it, and follows
+ * new text down unless the person has scrolled up.
+ */
+function DictationField({
+  label,
+  placeholder,
+  value,
+  onChange,
+  dictating,
+  interim
+}: {
+  label?: string;
+  placeholder?: string;
+  value: string;
+  onChange: (value: string) => void;
+  dictating: boolean;
+  interim?: string;
+}) {
+  const display = useRef<HTMLDivElement>(null);
+  const atBottom = useRef(true);
+
+  useLayoutEffect(() => {
+    const el = display.current;
+    if (el && atBottom.current) el.scrollTop = el.scrollHeight;
+  }, [value, interim, dictating]);
+
+  return (
+    <div className="grid rounded-lg bg-kumo-control ring ring-kumo-line focus-within:ring-[1.5px] focus-within:ring-kumo-focus/50">
+      <textarea
+        aria-label={label}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`${FIELD_TEXT} resize-none border-0 bg-transparent text-kumo-default outline-none placeholder:text-kumo-subtle ${
+          dictating ? "invisible" : ""
+        }`}
+      />
+      {dictating && (
+        <div
+          ref={display}
+          aria-label={label}
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            atBottom.current =
+              el.scrollHeight - el.scrollTop - el.clientHeight < 4;
+          }}
+          className={`${FIELD_TEXT} cursor-text text-kumo-default`}
+        >
+          {value}
+          {/* A textarea shows a trailing line break; a div needs a nudge. */}
+          {value.endsWith("\n") && "\u200b"}
+          {interim ? (
+            <span className="italic text-kumo-subtle">
+              {value ? " " : ""}
+              {interim}
+            </span>
+          ) : (
+            !value &&
+            placeholder && <span className="text-kumo-subtle">{placeholder}</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * A question's card, drafting its answer. The card gets its own state model
  * with the question at /question, the draft at /value, Jev's likelihoods
- * at /likelihood and what's being said now at /interim; `value` and
- * `onChange` keep /value in step with the drafts the page holds.
+ * at /likelihood, whether dictation fills it at /dictating and what's being
+ * said now at /interim; `value` and `onChange` keep /value in step with the
+ * drafts the page holds.
  */
 export function CardInput({
   question,
   value,
   likelihood,
+  dictating = false,
   interim,
   readOnly = false,
   onChange
@@ -230,10 +296,9 @@ export function CardInput({
   question: Question;
   value: AnswerValue;
   likelihood?: Record<string, number>;
-  /**
-   * What's being said now, shown greyed in a text field; empty while
-   * listening to silence. Never the value.
-   */
+  /** Whether dictation fills the draft, which text fields show it doing. */
+  dictating?: boolean;
+  /** What's being said now, shown greyed in a text field. Never the value. */
   interim?: string;
   /** Shows the answer without letting it change. */
   readOnly?: boolean;
@@ -247,6 +312,7 @@ export function CardInput({
         question,
         value,
         likelihood: likelihood ?? null,
+        dictating,
         interim: interim ?? null
       }),
     [question.id]
@@ -264,6 +330,10 @@ export function CardInput({
   useEffect(() => {
     store.set("/likelihood", likelihood ?? null);
   }, [store, likelihood]);
+
+  useEffect(() => {
+    store.set("/dictating", dictating);
+  }, [store, dictating]);
 
   useEffect(() => {
     store.set("/interim", interim ?? null);

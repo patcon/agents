@@ -246,10 +246,7 @@ function QuestionStage({
   activeIndex: number;
   pendingAhead: number;
   disabled: boolean;
-  /**
-   * What's being said now, before the transcriber makes it final. Empty
-   * while listening to silence, so the field keeps room for it.
-   */
+  /** What's being said now, before the transcriber makes it final. */
   interim?: string;
   onBack: () => void;
   onNext: () => void;
@@ -352,6 +349,7 @@ function QuestionStage({
           question={question}
           value={value}
           likelihood={entry.answer ? undefined : entry.likelihood}
+          dictating={dictating}
           interim={dictating ? interim : undefined}
           readOnly={locked}
           onChange={(v) => setDrafts((d) => ({ ...d, [question.id]: v }))}
@@ -828,7 +826,7 @@ function App() {
             disabled={connection !== "connected"}
             interim={
               view.status === "recording" && view.onScreen === current
-                ? (voice.interimTranscript ?? "")
+                ? voice.interimTranscript || undefined
                 : undefined
             }
             onBack={() => goTo(activeIndex - 1)}

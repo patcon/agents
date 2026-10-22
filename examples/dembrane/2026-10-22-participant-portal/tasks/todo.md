@@ -87,7 +87,7 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 - [ ] Without dictation (off, answered, or taken over), the field is a plain textarea of the same height.
 
 **Verification:**
-- [ ] `pnpm exec tsc --noEmit` and `pnpm test` pass
+- [x] `pnpm exec tsc --noEmit` and `pnpm test` pass
 - [ ] By hand: the criteria above, with a long enough dictation to pass the fold
 
 **Dependencies:** Task 3
