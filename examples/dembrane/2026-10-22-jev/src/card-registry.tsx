@@ -207,11 +207,14 @@ export function CardInput({
   question,
   value,
   likelihood,
+  readOnly = false,
   onChange
 }: {
   question: Question;
   value: AnswerValue;
   likelihood?: Record<string, number>;
+  /** Shows the answer without letting it change. */
+  readOnly?: boolean;
   onChange: (value: AnswerValue) => void;
 }) {
   const spec = question.card ?? defaultCard(question);
@@ -245,7 +248,10 @@ export function CardInput({
 
   return (
     <JSONUIProvider registry={registry} store={store}>
-      <Renderer spec={spec} registry={registry} />
+      {/* A disabled fieldset disables every input the card draws. */}
+      <fieldset disabled={readOnly} className="contents">
+        <Renderer spec={spec} registry={registry} />
+      </fieldset>
     </JSONUIProvider>
   );
 }

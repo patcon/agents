@@ -21,6 +21,8 @@ export type Question = {
   assess?: boolean;
   /** The platform's consent card: recording waits for every option ticked. */
   consent?: true;
+  /** Once answered, it can't be revised. A skip doesn't count. */
+  final?: true;
   source: "plan" | "host" | "agent";
 };
 

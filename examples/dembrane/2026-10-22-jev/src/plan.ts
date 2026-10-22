@@ -319,13 +319,13 @@ export function questionFor(item: PlanItem): Question | undefined {
         type: "checkbox",
         prompt: CONSENT.prompt,
         options: ["Yes, I agree to be recorded"],
-        // Not required, so it can be answered unticked: that's how consent
-        // is declined, or taken back. Recording waits for the tick either way.
-        required: false,
+        required: true,
         card: CONSENT.card,
-        // Ticked by hand: nothing is recorded until it is.
+        // Ticked by hand: nothing is recorded until it is. Once given,
+        // consent stands; taking it back would be deleting the session.
         assess: false,
         consent: true,
+        final: true,
         source: "plan"
       };
     // Sections only group; the rest have no card yet.

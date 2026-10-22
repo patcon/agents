@@ -458,6 +458,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
       (q) => q.question.id === questionId
     );
     if (!entry) throw new Error(`Unknown question ${questionId}`);
+    if (entry.question.final && entry.answer && !entry.answer.skipped) return;
     if (sameAnswer(entry.answer, { value, skipped })) return;
     await this.#append({
       id: newId("msg"),
@@ -471,11 +472,6 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
       ]
     });
     await this.#releasePlan({ kind: "answer" });
-    // Taking consent back stops the recording.
-    const view = this.#view();
-    if (!view.consented && view.status === "recording") {
-      await this.#appendStatus("paused");
-    }
   }
 
   /**

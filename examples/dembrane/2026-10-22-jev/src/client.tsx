@@ -265,6 +265,10 @@ function QuestionStage({
         ? entry.answer.value
         : (entry.suggested ?? defaultValue(question));
 
+  // A final question's answer stands once given.
+  const locked =
+    !!question.final && !!entry.answer && !entry.answer.skipped;
+
   const submit = async (skipped: boolean) => {
     setSaving(true);
     try {
@@ -320,6 +324,7 @@ function QuestionStage({
           <Badge variant="outline">{SOURCE_LABEL[question.source]}</Badge>
           <AnswerStatusBadge entry={entry} />
           {filled && <Badge variant="info">Filled in from what was said</Badge>}
+          {locked && <Badge variant="outline">Can't be changed</Badge>}
         </div>
 
         <p className="text-lg sm:text-xl font-semibold text-kumo-strong leading-snug">
@@ -330,6 +335,7 @@ function QuestionStage({
           question={question}
           value={value}
           likelihood={entry.answer ? undefined : entry.likelihood}
+          readOnly={locked}
           onChange={(v) => setDrafts((d) => ({ ...d, [question.id]: v }))}
         />
 
@@ -349,6 +355,7 @@ function QuestionStage({
               disabled={
                 disabled ||
                 saving ||
+                locked ||
                 !isAnswerable(question, value) ||
                 sameAnswer(entry.answer, { value, skipped: false })
               }
@@ -710,11 +717,6 @@ function App() {
       await voice.start();
     });
   const finish = () => run(() => agent.call("finish"));
-
-  // The server pauses when consent is taken back; the mic stops with it.
-  useEffect(() => {
-    if (!view.consented && voice.isListening) voice.stop();
-  }, [view.consented, voice]);
 
   const finished = view.status === "finished";
   const canFinish = view.status === "paused" && !voice.isListening;
