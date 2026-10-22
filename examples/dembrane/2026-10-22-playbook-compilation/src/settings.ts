@@ -38,6 +38,7 @@ export const SETTINGS: Setting[] = [
     ]
   },
   {
+    // Echo stores this as two booleans, default_conversation_ask_for_participant_name and _email.
     key: "default_conversation_ask_for_participant_details",
     means: "Details a participant must give before a conversation starts",
     value: "any of",
