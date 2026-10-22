@@ -9,13 +9,13 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 **Description:** Add `dictate?: boolean` to `Question`. After `foldLog()`'s loop, give each text question with dictation on a `suggested` value: the utterances said while it was on screen, in order, joined by single spaces. Update `suggested`'s doc comment. Write the tests first, in a new `src/shared.test.ts`, and widen Vitest's `include` to find it.
 
 **Acceptance criteria:**
-- [ ] Utterances said while a text question shows become its `suggested`, in order; those said before it showed, or while another question showed, don't count; two separate stretches on screen both count.
-- [ ] `dictate: false`, or no utterances while showing, gives no `suggested`; radio, checkbox and number questions get no dictated `suggested`, and Jev's suggestions are unchanged.
+- [x] Utterances said while a text question shows become its `suggested`, in order; those said before it showed, or while another question showed, don't count; two separate stretches on screen both count.
+- [x] `dictate: false`, or no utterances while showing, gives no `suggested`; radio, checkbox and number questions get no dictated `suggested`, and Jev's suggestions are unchanged.
 - [ ] With recording on, speaking while the tags question shows fills its field with the "Filled in from what was said" badge, and nothing is saved until Submit.
 
 **Verification:**
-- [ ] `pnpm test`: the 6 new fold tests and the 12 existing ones pass
-- [ ] `pnpm exec tsc --noEmit` passes
+- [x] `pnpm test`: the 7 new fold tests and the 12 existing ones pass
+- [x] `pnpm exec tsc --noEmit` passes
 - [ ] By hand with `pnpm run start`: the tags question fills as you speak, stops changing once edited, and shows the answer once submitted
 
 **Dependencies:** None

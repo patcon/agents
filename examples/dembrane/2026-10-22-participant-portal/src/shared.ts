@@ -19,6 +19,8 @@ export type Question = {
   card?: CardSpec;
   /** False keeps Jev from judging its options. */
   assess?: boolean;
+  /** False keeps what's said from filling in a text question. */
+  dictate?: boolean;
   /** The platform's consent card: recording waits for every option ticked. */
   consent?: true;
   /** Once answered, it can't be revised. A skip doesn't count. */
@@ -194,7 +196,10 @@ export type QuestionView = {
   answerCount: number;
   /** How likely Jev thinks each option is, from its latest assessment. */
   likelihood?: Record<string, number>;
-  /** What Jev's likelihoods fill into the draft, if anything. */
+  /**
+   * What was said fills into the draft, if anything: Jev's picks for
+   * options, the words themselves for text.
+   */
   suggested?: AnswerValue;
 };
 
@@ -281,6 +286,14 @@ export function foldLog(messages: readonly LogMessage[]): LogView {
         onScreen: view.onScreen
       });
     }
+  }
+
+  // A text question's draft is what was said while it showed.
+  for (const entry of view.questions) {
+    const { question } = entry;
+    if (question.type !== "text" || question.dictate === false) continue;
+    const said = view.utterances.filter((u) => u.onScreen === question.id);
+    if (said.length) entry.suggested = said.map((u) => u.text).join(" ");
   }
 
   const consent = view.questions.find((q) => q.question.consent);
