@@ -5,5 +5,8 @@ import agents from "agents/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [agents(), react(), cloudflare(), tailwindcss()]
+  plugins: [agents(), react(), cloudflare(), tailwindcss()],
+  // packages/voice-google is used as source and only peers on agents, so its
+  // imports of agents resolve from this app (deploys install it on its own)
+  resolve: { dedupe: ["agents"] }
 });
