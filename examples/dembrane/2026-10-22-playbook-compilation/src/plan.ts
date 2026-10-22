@@ -203,6 +203,31 @@ export const PlanSchema = z
 
 export type Plan = z.infer<typeof PlanSchema>;
 
+/**
+ * A JSON Schema that Gemini on Vertex AI enforces when it's given as
+ * `responseJsonSchema`. Vertex accepts the full schema but ignores `oneOf`
+ * and `const`, so a model writes kinds that don't exist; it enforces `anyOf`
+ * and `enum`. Long `pattern`s, like the date-time ones Zod writes, stall the
+ * answer. Zod still checks whatever comes back.
+ */
+export function toLlmSchema(schema: unknown): unknown {
+  if (Array.isArray(schema)) return schema.map(toLlmSchema);
+  if (!schema || typeof schema !== "object") return schema;
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(schema)) {
+    if (key === "pattern" || key === "format") continue;
+    if (key === "oneOf") out.anyOf = toLlmSchema(value);
+    else if (key === "const") out.enum = [value];
+    // `properties` names fields, which may be called anything
+    else if (key === "properties") {
+      out.properties = Object.fromEntries(
+        Object.entries(value as object).map(([name, field]) => [name, toLlmSchema(field)])
+      );
+    } else out[key] = toLlmSchema(value);
+  }
+  return out;
+}
+
 // Fails to compile if the schemas drift from the types in shared.ts.
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
 true satisfies Same<z.infer<typeof AnswerValueSchema>, AnswerValue>;
