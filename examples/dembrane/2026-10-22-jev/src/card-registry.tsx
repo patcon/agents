@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef } from "react";
 import {
   JSONUIProvider,
   Renderer,
@@ -37,15 +37,10 @@ function Option({
   children: React.ReactNode;
 }) {
   const likelihood = useStateValue<Record<string, number> | null>("/likelihood");
+  // Zero until Jev has a likelihood, so the first one grows from nothing,
+  // while a card that loads with one shows it straight away.
   const p = likelihood?.[option] ?? 0;
-  // Starts at zero and follows a frame later, so a first likelihood grows
-  // from nothing, even on a card that arrives with one.
-  const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => setWidth(p));
-    return () => cancelAnimationFrame(frame);
-  }, [p]);
-  const likely = width >= AUTO_SELECT.select;
+  const likely = p >= AUTO_SELECT.select;
   return (
     <label className={`${optionClass(checked)} relative isolate overflow-hidden`}>
       <span
@@ -53,7 +48,7 @@ function Option({
         className={`absolute inset-y-0 left-0 -z-10 bg-kumo-brand/15 transition-all duration-700 ease-out ${
           likely ? "" : "opacity-60 blur-[3px]"
         }`}
-        style={{ width: `${Math.round(width * 100)}%` }}
+        style={{ width: `${Math.round(p * 100)}%` }}
       />
       {children}
     </label>

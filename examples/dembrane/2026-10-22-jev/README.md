@@ -69,7 +69,7 @@ The page calls `show(questionId)` whenever a question comes on screen, which app
 
 Each run appends an `assessment` entry with Jev's raw probabilities, the model version, the last utterance it saw, the question on screen, and for each question the utterances said while it was showing (`heardOnScreen`). `foldLog()` turns the latest one into a `likelihood` per option and a `suggested` answer, so thresholds can change without calling Jev again. An option is filled in at 80% and stays filled until it drops below 30% (`AUTO_SELECT` in `src/shared.ts`).
 
-On the page, each option has a bar behind it as wide as its likelihood, growing from zero the first time. Below the auto-select threshold it's dim and blurred; above it, crisp. Cards read the likelihoods from `/likelihood` in their state, so custom cards get bars too. Until someone touches a card, an unanswered question shows Jev's suggestion as its draft, with a "Filled in from what was said" badge; it's never submitted for them. A plan can turn Jev off for a prompt with `"assess": false`.
+On the page, each option has a bar behind it as wide as its likelihood, which grows from zero when Jev's first likelihood arrives. Below the auto-select threshold it's dim and blurred; above it, crisp. Cards read the likelihoods from `/likelihood` in their state, so custom cards get bars too. Until someone touches a card, an unanswered question shows Jev's suggestion as its draft, with a "Filled in from what was said" badge; it's never submitted for them. A plan can turn Jev off for a prompt with `"assess": false`.
 
 The model is pinned in `wrangler.jsonc` (`jev-1.13.0`), and Jev's input tokens show in the log drawer's cost estimate ($0.042 per million; output is free).
 
