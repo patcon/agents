@@ -16,7 +16,7 @@ const args = process.argv.slice(2);
 const runsAt = args.indexOf("--runs");
 const runs = runsAt === -1 ? 1 : Number(args[runsAt + 1]);
 const [playbookPath] = args.filter(
-  (a, i) => !a.startsWith("--") && i !== runsAt + 1
+  (a, i) => !a.startsWith("--") && (runsAt === -1 || i !== runsAt + 1)
 );
 if (!playbookPath || !Number.isInteger(runs) || runs < 1) {
   console.error("Usage: pnpm compile-playbook <playbook.md> [--runs N]");
