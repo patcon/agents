@@ -9,7 +9,7 @@ Rebuild the hand-made `src/plans/admin-setup.json` from a plain markdown playboo
 This is a parallel reconstruction: the hand-made plan is the evidence, and we arrive at it again from another source, a playbook a host could have written. Where the two disagree, either the playbook, the prompt or the plan format is missing something.
 
 ```
-plans/admin-setup.json ──decompile (Gemini)──▶ src/playbooks/admin-setup.strict.md
+plans/admin-setup.json ──decompile (Gemini)──▶ src/playbooks/admin-setup.decompiled.md
                                                      │
                                         compile (Gemini + lint loop)
                                                      ▼
@@ -26,7 +26,7 @@ Paths below are relative to `examples/dembrane/2026-10-22-playbook-compilation/`
 - Prototype names drop the date: the landing page already shows each folder's date beside its link, and the link text comes from `<title>`. So each prototype's `<title>` and the header in its `src/client.tsx` become the descriptive part of its folder name: `jev`, `portal-admin-setup`, `playbook-compilation`. `2026-10-20-portal-queued-interactions` already has a descriptive title (`Portal: Queued Interactions`) and no dated header.
 - These are their own commits, before any compiler work.
 
-## The playbook (`src/playbooks/admin-setup.strict.md`)
+## The playbook (`src/playbooks/admin-setup.decompiled.md`)
 
 Markdown a host would write. Headings for sections, a line or two per question, conditions in plain words ("only if Explore is on"), and layout hints in plain words ("languages in two columns").
 
@@ -88,8 +88,8 @@ A semantic diff. Flatten both plans to reading order, match prompts by `key` and
 
 ## Scripts
 
-- `pnpm decompile-plan src/plans/admin-setup.json`: writes `src/playbooks/admin-setup.strict.md`. Its own raw prompt (`src/prompts/decompile-plan.md`), told not to mention keys. ~~The output gets tidied by hand.~~ What it writes is a strict playbook (`*.strict.md`): ours, worded as closely as the plan, and left as generated. One a host writes comes later.
-- `pnpm compile-playbook src/playbooks/admin-setup.strict.md`: writes `src/plans/admin-setup.compiled.json`, prints lint, attempts and tokens, then compares against the plan with the same `source.playbook`. `--runs N` compiles N times in parallel and reports how often each difference shows up, since one clean run doesn't mean the prompt is enough.
+- `pnpm decompile-plan src/plans/admin-setup.json`: writes `src/playbooks/admin-setup.decompiled.md`. Its own raw prompt (`src/prompts/decompile-plan.md`), told not to mention keys. ~~The output gets tidied by hand.~~ What it writes is a decompiled playbook (`*.decompiled.md`): ours, worded as closely as the plan, and left as generated. One a host writes comes later.
+- `pnpm compile-playbook src/playbooks/admin-setup.decompiled.md`: writes `src/plans/admin-setup.compiled.json`, prints lint, attempts and tokens, then compares against the plan with the same `source.playbook`. `--runs N` compiles N times in parallel and reports how often each difference shows up, since one clean run doesn't mean the prompt is enough.
 
 ## Order of work
 
@@ -100,6 +100,6 @@ One commit per step, no amends.
 2. `gemini.ts`: temperature, multi-turn, model argument; `COMPILE_MODEL`.
 3. `settings.ts` catalog.
 4. `compile.ts`, prompt template loader, `compare-plans.ts`; a stub-`generate` test of the retry loop.
-5. `decompile-plan` and its prompt. Generate ~~and tidy~~ `src/playbooks/admin-setup.strict.md`.
+5. `decompile-plan` and its prompt. Generate ~~and tidy~~ `src/playbooks/admin-setup.decompiled.md`.
 6. `compile-playbook` and its prompt. Iterate on the prompt until the comparison is clean, or record what stays different.
 7. README section. Then the RFC, and this file goes.

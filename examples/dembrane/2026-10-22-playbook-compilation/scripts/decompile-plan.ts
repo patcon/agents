@@ -1,9 +1,9 @@
 // Turns a plan back into the markdown playbook a host would have written for
-// it, with COMPILE_MODEL. It's not the main use: what it writes is a strict
+// it, with COMPILE_MODEL. It's not the main use: what it writes is a decompiled
 // playbook, ours rather than a host's, worded as closely as the plan.
 //
 // Usage: pnpm decompile-plan src/plans/admin-setup.json [--force]
-// Writes src/playbooks/<the plan's file name>.strict.md, and won't overwrite
+// Writes src/playbooks/<the plan's file name>.decompiled.md, and won't overwrite
 // one unless --force says to.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -23,7 +23,7 @@ const plan = PlanSchema.parse(JSON.parse(readFileSync(planPath, "utf8")));
 const out = join(
   root,
   "src/playbooks",
-  `${basename(planPath, ".json")}.strict.md`
+  `${basename(planPath, ".json")}.decompiled.md`
 );
 if (existsSync(out) && !force) {
   console.error(`${relative(root, out)} exists; --force overwrites it`);
