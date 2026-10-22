@@ -188,7 +188,8 @@ function isAnswerable(question: Question, value: AnswerValue) {
     case "radio":
       return typeof value === "string" && value.length > 0;
     case "checkbox":
-      return Array.isArray(value) && value.length > 0;
+      // Ticking none is an answer, unless the question needs at least one.
+      return Array.isArray(value) && (!question.required || value.length > 0);
     case "text":
       return typeof value === "string" && value.trim().length > 0;
     case "number":
