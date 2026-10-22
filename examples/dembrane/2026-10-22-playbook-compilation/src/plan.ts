@@ -152,10 +152,14 @@ export const ConditionSchema = z.discriminatedUnion("kind", [
     .describe("A checkbox answer has this option among those picked"),
   z
     .strictObject({ kind: z.literal("answered"), item: z.string() })
-    .describe("Once the item's question is answered, whatever the answer; a skip doesn't count"),
+    .describe(
+      "Once the item's question is answered, whatever the answer; a skip doesn't count"
+    ),
   z
     .strictObject({ kind: z.literal("consented") })
-    .describe("Recording is allowed: every option of the consent card is ticked"),
+    .describe(
+      "Recording is allowed: every option of the consent card is ticked"
+    ),
   z.strictObject({ kind: z.literal("manual") }).describe("The host cues it"),
   z.strictObject({
     kind: z.literal("any"),
@@ -168,7 +172,11 @@ export const ConditionSchema = z.discriminatedUnion("kind", [
 export type Condition = z.infer<typeof ConditionSchema>;
 
 export const TriggerSchema = z
-  .strictObject({ id: z.string().min(1), when: ConditionSchema, cue: z.string() })
+  .strictObject({
+    id: z.string().min(1),
+    when: ConditionSchema,
+    cue: z.string()
+  })
   .describe("Cueing a section cues every child that has no trigger of its own");
 
 export type Trigger = z.infer<typeof TriggerSchema>;
@@ -221,11 +229,22 @@ export function toLlmSchema(schema: unknown): unknown {
     // `properties` names fields, which may be called anything
     else if (key === "properties") {
       out.properties = Object.fromEntries(
-        Object.entries(value as object).map(([name, field]) => [name, toLlmSchema(field)])
+        Object.entries(value as object).map(([name, field]) => [
+          name,
+          toLlmSchema(field)
+        ])
       );
     } else out[key] = toLlmSchema(value);
   }
   return out;
+}
+
+/** The schema a model answers with when it writes a plan. */
+export function planLlmSchema(): object {
+  const schema = z.toJSONSchema(PlanSchema);
+  // The plan's own `$schema` field is for editors, not the model.
+  const { $schema: _editorsOnly, ...properties } = schema.properties ?? {};
+  return toLlmSchema({ ...schema, properties }) as object;
 }
 
 // Fails to compile if the schemas drift from the types in shared.ts.
@@ -414,9 +433,19 @@ export function lintPlan(plan: Plan): LintMessage[] {
     if (item.parentId === undefined) continue;
     const parent = byId.get(item.parentId);
     if (!parent) {
-      report("parent-exists", "error", `parent "${item.parentId}" doesn't exist`, item.id);
+      report(
+        "parent-exists",
+        "error",
+        `parent "${item.parentId}" doesn't exist`,
+        item.id
+      );
     } else if (parent.kind !== "section") {
-      report("parent-is-section", "error", `parent "${parent.id}" is a ${parent.kind}`, item.id);
+      report(
+        "parent-is-section",
+        "error",
+        `parent "${parent.id}" is a ${parent.kind}`,
+        item.id
+      );
     }
   }
 
@@ -437,17 +466,31 @@ export function lintPlan(plan: Plan): LintMessage[] {
 
   const consents = plan.items.filter((item) => item.kind === "consent");
   if (consents.length !== 1) {
-    report("one-consent", "error", `expected one consent item, found ${consents.length}`);
+    report(
+      "one-consent",
+      "error",
+      `expected one consent item, found ${consents.length}`
+    );
   }
   for (const consent of consents) {
     if (ordered[0]?.id !== consent.id) {
-      report("consent-first", "error", "consent must come before everything else", consent.id);
+      report(
+        "consent-first",
+        "error",
+        "consent must come before everything else",
+        consent.id
+      );
     }
     if (!consent.locked) {
       report("consent-locked", "error", "consent must be locked", consent.id);
     }
     for (const issue of cardIssues(CONSENT.card)) {
-      report("card-valid", "error", `the platform's consent card: ${issue}`, consent.id);
+      report(
+        "card-valid",
+        "error",
+        `the platform's consent card: ${issue}`,
+        consent.id
+      );
     }
   }
 
@@ -455,12 +498,22 @@ export function lintPlan(plan: Plan): LintMessage[] {
   for (const item of plan.items) {
     if (item.kind !== "prompt") continue;
     if (prompts.has(item.payload.key)) {
-      report("unique-keys", "error", `key "${item.payload.key}" is used twice`, item.id);
+      report(
+        "unique-keys",
+        "error",
+        `key "${item.payload.key}" is used twice`,
+        item.id
+      );
     }
     prompts.set(item.payload.key, item);
     const { type, options } = item.payload.question;
     if ((type === "radio" || type === "checkbox") && !options?.length) {
-      report("choices-have-options", "error", `a ${type} prompt needs options`, item.id);
+      report(
+        "choices-have-options",
+        "error",
+        `a ${type} prompt needs options`,
+        item.id
+      );
     }
     if (item.payload.card) {
       for (const issue of cardIssues(item.payload.card)) {
@@ -472,8 +525,16 @@ export function lintPlan(plan: Plan): LintMessage[] {
   for (const item of plan.items) {
     const d = item.duration;
     if (!d) continue;
-    if ((d.min !== undefined && d.min > d.pref) || (d.max !== undefined && d.max < d.pref)) {
-      report("duration-in-range", "error", "pref must be between min and max", item.id);
+    if (
+      (d.min !== undefined && d.min > d.pref) ||
+      (d.max !== undefined && d.max < d.pref)
+    ) {
+      report(
+        "duration-in-range",
+        "error",
+        "pref must be between min and max",
+        item.id
+      );
     }
   }
 
@@ -487,45 +548,92 @@ export function lintPlan(plan: Plan): LintMessage[] {
 
     const target = byId.get(trigger.cue);
     if (!target) {
-      report("trigger-target-exists", "error", `trigger "${trigger.id}" cues "${trigger.cue}", which doesn't exist`);
+      report(
+        "trigger-target-exists",
+        "error",
+        `trigger "${trigger.id}" cues "${trigger.cue}", which doesn't exist`
+      );
       continue;
     }
     cued.add(target.id);
 
     for (const condition of conditionsIn(trigger.when)) {
       if (condition.kind === "relative" && !byId.has(condition.item)) {
-        report("condition-refers-to-item", "error", `trigger "${trigger.id}" waits on "${condition.item}", which doesn't exist`, target.id);
+        report(
+          "condition-refers-to-item",
+          "error",
+          `trigger "${trigger.id}" waits on "${condition.item}", which doesn't exist`,
+          target.id
+        );
       }
       if (condition.kind === "answered") {
         const source = byId.get(condition.item);
         if (!source || questionFor(source) === undefined) {
-          report("condition-refers-to-item", "error", `trigger "${trigger.id}" waits on an answer to "${condition.item}", which asks no question`, target.id);
-        } else if ((position.get(source.id) ?? 0) > (position.get(target.id) ?? 0)) {
-          report("condition-comes-first", "warning", `"${target.id}" comes before "${source.id}", the item it waits on`, target.id);
+          report(
+            "condition-refers-to-item",
+            "error",
+            `trigger "${trigger.id}" waits on an answer to "${condition.item}", which asks no question`,
+            target.id
+          );
+        } else if (
+          (position.get(source.id) ?? 0) > (position.get(target.id) ?? 0)
+        ) {
+          report(
+            "condition-comes-first",
+            "warning",
+            `"${target.id}" comes before "${source.id}", the item it waits on`,
+            target.id
+          );
         }
       }
       // Consent comes first in time, not just in order: nothing else is
       // asked until it's answered.
       if (condition.kind === "start" && target.kind !== "consent") {
-        report("consent-before-all", "error", `only consent can be cued at the start; "${target.id}" should wait for it`, target.id);
+        report(
+          "consent-before-all",
+          "error",
+          `only consent can be cued at the start; "${target.id}" should wait for it`,
+          target.id
+        );
       }
-      if (condition.kind !== "answer" && condition.kind !== "includes") continue;
+      if (condition.kind !== "answer" && condition.kind !== "includes")
+        continue;
       const source = prompts.get(condition.key);
       if (!source) {
-        report("condition-refers-to-key", "error", `trigger "${trigger.id}" waits on key "${condition.key}", which no prompt has`, target.id);
+        report(
+          "condition-refers-to-key",
+          "error",
+          `trigger "${trigger.id}" waits on key "${condition.key}", which no prompt has`,
+          target.id
+        );
         continue;
       }
       const { type, options } = source.payload.question;
       const option =
         condition.kind === "includes" ? condition.option : condition.equals;
       if (typeof option === "string" && options && !options.includes(option)) {
-        report("condition-is-an-option", "error", `"${option}" isn't an option of "${condition.key}"`, target.id);
+        report(
+          "condition-is-an-option",
+          "error",
+          `"${option}" isn't an option of "${condition.key}"`,
+          target.id
+        );
       }
       if (condition.kind === "includes" && type !== "checkbox") {
-        report("includes-is-checkbox", "error", `trigger "${trigger.id}" checks what "${condition.key}" includes, but it's a ${type} prompt`, target.id);
+        report(
+          "includes-is-checkbox",
+          "error",
+          `trigger "${trigger.id}" checks what "${condition.key}" includes, but it's a ${type} prompt`,
+          target.id
+        );
       }
       if ((position.get(source.id) ?? 0) > (position.get(target.id) ?? 0)) {
-        report("condition-comes-first", "warning", `"${target.id}" comes before "${source.id}", the prompt it depends on`, target.id);
+        report(
+          "condition-comes-first",
+          "warning",
+          `"${target.id}" comes before "${source.id}", the prompt it depends on`,
+          target.id
+        );
       }
     }
   }
@@ -538,7 +646,12 @@ export function lintPlan(plan: Plan): LintMessage[] {
       isCued(byId.get(item.parentId)!));
   for (const item of ordered) {
     if (!isCued(item)) {
-      report("reachable", "warning", "no trigger cues it or a section it's in", item.id);
+      report(
+        "reachable",
+        "warning",
+        "no trigger cues it or a section it's in",
+        item.id
+      );
     }
   }
 

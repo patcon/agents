@@ -10,7 +10,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import { z } from "zod";
-import { PlanSchema, lintPlan, toLlmSchema } from "../src/plan.ts";
+import { PlanSchema, lintPlan, planLlmSchema } from "../src/plan.ts";
 
 const src = join(dirname(fileURLToPath(import.meta.url)), "..", "src");
 
@@ -21,19 +21,18 @@ writeFileSync(
 );
 console.log("wrote src/plan.schema.json");
 
-// The plan's own `$schema` field is for editors, not the model.
-const { $schema, ...llmProperties } = schema.properties;
 writeFileSync(
   join(src, "plan.llm.schema.json"),
-  `${JSON.stringify(toLlmSchema({ ...schema, properties: llmProperties }), null, 2)}\n`
+  `${JSON.stringify(planLlmSchema(), null, 2)}\n`
 );
 console.log("wrote src/plan.llm.schema.json");
 
 // Zod writes a `pattern` alongside each `format`, so formats can stay
 // annotations rather than needing ajv-formats.
-const validate = new Ajv2020({ allErrors: true, validateFormats: false }).compile(
-  schema
-);
+const validate = new Ajv2020({
+  allErrors: true,
+  validateFormats: false
+}).compile(schema);
 
 let failed = false;
 for (const file of readdirSync(join(src, "plans")).filter((f) =>
