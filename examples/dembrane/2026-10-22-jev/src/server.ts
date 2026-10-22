@@ -16,6 +16,7 @@ import {
   askJev,
   assessmentRequest,
   isAssessable,
+  likelihoodOf,
   readAssessment
 } from "./jev";
 import { VertexLiveSTT } from "@dembrane/voice-google";
@@ -37,6 +38,7 @@ import {
   type Assessment,
   type LogMessage,
   type LogView,
+  type Preview,
   type Question,
   type SessionStatus,
   type Usage
@@ -99,6 +101,8 @@ const USAGE_FLUSH_MS = 5_000;
 const ASSESS_AFTER_QUESTION_MS = 100;
 /** How much of the transcript Jev sees, from the end. */
 const ASSESS_UTTERANCES = 40;
+/** How much of the transcript Jev sees in a preview, before what's being said. */
+const PREVIEW_UTTERANCES = 10;
 
 /**
  * One conversation, one Durable Object.
@@ -156,6 +160,10 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
     };
     const session = stt.createSession({
       ...options,
+      onInterim: (text) => {
+        options?.onInterim?.(text);
+        this.#previewSoon(text);
+      },
       onUtterance: (text) => {
         this.#addUsage({ transcriptChars: text.length });
         options?.onUtterance?.(text);
@@ -232,6 +240,8 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
 
   async onTranscript(text: string, _connection: Connection) {
     if (this.#view().status !== "recording") return;
+    // The utterance covers whatever interim text is still waiting.
+    this.#interim = undefined;
     await this.#append({
       id: newId("utt"),
       role: "user",
@@ -327,6 +337,74 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
         this.#assessAgain = false;
         this.#assessSoon(0);
       }
+    }
+  }
+
+  // --- Jev, while someone's speaking ---
+  //
+  // As the transcriber's interim text grows, Jev judges the question on
+  // screen against it. One preview is in flight at a time, and the next
+  // takes the latest text, so previews follow speech as fast as Jev answers.
+  // They're sent to clients but not logged: they move the bars, and fill
+  // nothing in, until the utterance arrives and a full run confirms them.
+
+  /** The latest interim text that no preview has seen yet. */
+  #interim?: string;
+  #previewing = false;
+
+  #previewSoon(text: string) {
+    if (!this.#jevOn()) return;
+    this.#interim = text;
+    if (!this.#previewing) void this.#previewLatest();
+  }
+
+  async #previewLatest() {
+    this.#previewing = true;
+    try {
+      while (this.#interim !== undefined) {
+        const text = this.#interim;
+        this.#interim = undefined;
+        await this.#preview(text);
+      }
+    } finally {
+      this.#previewing = false;
+    }
+  }
+
+  async #preview(text: string) {
+    try {
+      await this.#tail;
+      const view = this.#view();
+      if (view.status !== "recording") return;
+      const question = view.questions.find(
+        (q) => q.question.id === view.onScreen && !q.answer
+      )?.question;
+      if (!question || !isAssessable(question)) return;
+      const said = view.utterances.slice(-PREVIEW_UTTERANCES);
+      const after = said.at(-1)?.id ?? null;
+      const response = await askJev(
+        this.env.TYPESAFE_API_KEY,
+        assessmentRequest(this.env.JEV_MODEL, [question], [
+          ...said,
+          { id: "interim", text, onScreen: question.id }
+        ])
+      );
+      this.#addUsage({
+        jevCalls: 1,
+        jevInputTokens: response.usage.input_tokens
+      });
+      // An utterance that arrived meanwhile has a full run of its own coming.
+      if ((this.#view().utterances.at(-1)?.id ?? null) !== after) return;
+      const judged = readAssessment([question], response)[question.id];
+      if (!judged) return;
+      const preview: Preview = {
+        questionId: question.id,
+        after,
+        likelihood: likelihoodOf(judged)
+      };
+      this.broadcast(JSON.stringify({ type: "jev-preview", preview }));
+    } catch (error) {
+      console.error("Jev preview failed", error);
     }
   }
 

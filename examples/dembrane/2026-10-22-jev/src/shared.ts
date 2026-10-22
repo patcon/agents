@@ -63,6 +63,27 @@ export type Assessment = {
   >;
 };
 
+/**
+ * What Jev makes of the question on screen while it's still being answered,
+ * from the transcriber's interim text. Sent to clients, never logged.
+ */
+export type Preview = {
+  questionId: string;
+  /** The last utterance before the interim text, if any. */
+  after: string | null;
+  likelihood: Record<string, number>;
+};
+
+/**
+ * Whether `preview` still says more than the log does: no assessment has
+ * seen past the utterance it came after.
+ */
+export function isCurrent(view: LogView, preview: Preview) {
+  const position = (id: string | null | undefined) =>
+    id ? view.utterances.findIndex((u) => u.id === id) : -1;
+  return position(view.lastAssessment?.seenUpTo) <= position(preview.after);
+}
+
 export type LogDataParts = {
   question: Question;
   answer: Answer;

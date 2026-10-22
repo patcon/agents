@@ -41,11 +41,13 @@ import {
   costOf,
   foldLog,
   formatAnswer,
+  isCurrent,
   priceChangesAfter,
   rateOn,
   sameAnswer,
   type AnswerValue,
   type LogMessage,
+  type Preview,
   type Question,
   type QuestionView,
   type Usage
@@ -579,12 +581,22 @@ function CostEstimate({ usage }: { usage: Usage }) {
 function App() {
   const sessionId = useMemo(getSessionId, []);
   const [connection, setConnection] = useState<ConnectionStatus>("connecting");
+  const [preview, setPreview] = useState<Preview | null>(null);
 
   const agent = useAgent<Usage>({
     agent: "ConversationAgent",
     name: sessionId,
     onOpen: useCallback(() => setConnection("connected"), []),
-    onClose: useCallback(() => setConnection("disconnected"), [])
+    onClose: useCallback(() => setConnection("disconnected"), []),
+    onMessage: useCallback((event: MessageEvent) => {
+      if (typeof event.data !== "string") return;
+      try {
+        const message = JSON.parse(event.data);
+        if (message?.type === "jev-preview") setPreview(message.preview);
+      } catch {
+        // Not ours.
+      }
+    }, [])
   });
   const { messages: rawMessages } = useAgentChat({ agent });
   const messages = rawMessages as LogMessage[];
@@ -595,7 +607,20 @@ function App() {
   // Navigation: which question is on screen, and which ones have been seen.
   const [activeId, setActiveId] = useState<string | null>(null);
   const [seen, setSeen] = useState<Set<string>>(() => new Set());
-  const { questions } = view;
+  // A preview's likelihoods stand in for the logged ones until an
+  // assessment sees past it. They only move the bars: what's filled in
+  // still comes from the log.
+  const questions = useMemo(
+    () =>
+      preview && isCurrent(view, preview)
+        ? view.questions.map((q) =>
+            q.question.id === preview.questionId
+              ? { ...q, likelihood: preview.likelihood }
+              : q
+          )
+        : view.questions,
+    [view, preview]
+  );
   const activeIndex = Math.max(
     0,
     questions.findIndex((q) => q.question.id === activeId)
