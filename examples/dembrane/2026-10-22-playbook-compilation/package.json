@@ -12,7 +12,8 @@
     "google-token": "node scripts/google-token.mjs",
     "update-prices": "node scripts/update-prices.mjs",
     "check-plans": "node scripts/check-plans.mjs",
-    "try-jev": "node scripts/try-jev.mjs"
+    "try-jev": "node scripts/try-jev.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@ai-sdk/react": "^4.0.0",
@@ -40,6 +41,7 @@
     "ajv": "^8.20.0",
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
+    "vitest": "4.1.11",
     "vite": "^8.1.0",
     "wrangler": "^4.145.0",
     "yaml": "^2.9.0"
