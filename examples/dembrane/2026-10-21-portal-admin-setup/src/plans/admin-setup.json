@@ -1,0 +1,340 @@
+{
+  "$schema": "../plan.schema.json",
+  "schemaVersion": 1,
+  "source": { "playbook": "portal-admin-setup", "version": "0.1.0" },
+  "items": [
+    {
+      "id": "consent",
+      "order": "a0",
+      "kind": "consent",
+      "locked": true,
+      "payload": {
+        "version": "0.1.0",
+        "text": "This session is recorded and transcribed so we can fill in your portal settings from what you say."
+      }
+    },
+
+    { "id": "basics", "order": "a1", "kind": "section", "payload": { "title": "Basics" } },
+    {
+      "id": "language",
+      "order": "a0",
+      "parentId": "basics",
+      "kind": "prompt",
+      "payload": {
+        "key": "language",
+        "question": {
+          "type": "radio",
+          "prompt": "Which language will participants speak?",
+          "options": ["English", "Dutch", "German", "French", "Spanish", "Italian", "Ukrainian", "Czech"],
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "default_conversation_ask_for_participant_name",
+      "order": "a1",
+      "parentId": "basics",
+      "kind": "prompt",
+      "payload": {
+        "key": "default_conversation_ask_for_participant_name",
+        "question": {
+          "type": "radio",
+          "prompt": "Should the portal ask participants for their name?",
+          "options": ["Yes", "No"],
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "default_conversation_ask_for_participant_email",
+      "order": "a2",
+      "parentId": "basics",
+      "kind": "prompt",
+      "payload": {
+        "key": "default_conversation_ask_for_participant_email",
+        "question": {
+          "type": "radio",
+          "prompt": "Should the portal ask participants for their email?",
+          "options": ["Yes", "No"],
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "is_project_notification_subscription_allowed",
+      "order": "a3",
+      "parentId": "basics",
+      "kind": "prompt",
+      "payload": {
+        "key": "is_project_notification_subscription_allowed",
+        "question": {
+          "type": "radio",
+          "prompt": "Can participants ask to be emailed when the report is ready?",
+          "options": ["Yes", "No"],
+          "required": false
+        }
+      }
+    },
+    {
+      "id": "default_conversation_tutorial_slug",
+      "order": "a4",
+      "parentId": "basics",
+      "kind": "prompt",
+      "payload": {
+        "key": "default_conversation_tutorial_slug",
+        "question": {
+          "type": "radio",
+          "prompt": "Which tutorial should participants see first?",
+          "options": ["None", "Basic", "Advanced"],
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "tags",
+      "order": "a5",
+      "parentId": "basics",
+      "kind": "prompt",
+      "payload": {
+        "key": "tags",
+        "question": {
+          "type": "text",
+          "prompt": "Which tags can participants pick from? Separate them with commas.",
+          "required": false
+        }
+      }
+    },
+
+    { "id": "features", "order": "a2", "kind": "section", "payload": { "title": "Participant features" } },
+    {
+      "id": "is_get_reply_enabled",
+      "order": "a0",
+      "parentId": "features",
+      "kind": "prompt",
+      "payload": {
+        "key": "is_get_reply_enabled",
+        "question": {
+          "type": "radio",
+          "prompt": "Should participants be able to use Explore?",
+          "options": ["Yes", "No"],
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "get_reply_mode",
+      "order": "a1",
+      "parentId": "features",
+      "kind": "prompt",
+      "payload": {
+        "key": "get_reply_mode",
+        "question": {
+          "type": "radio",
+          "prompt": "Which Explore mode?",
+          "options": ["Summarize", "Brainstorm", "Custom"],
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "get_reply_prompt",
+      "order": "a2",
+      "parentId": "features",
+      "kind": "prompt",
+      "payload": {
+        "key": "get_reply_prompt",
+        "question": {
+          "type": "text",
+          "prompt": "What should Explore's custom reply prompt say?",
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "is_verify_enabled",
+      "order": "a3",
+      "parentId": "features",
+      "kind": "prompt",
+      "payload": {
+        "key": "is_verify_enabled",
+        "question": {
+          "type": "radio",
+          "prompt": "Should participants be able to use Verify?",
+          "options": ["Yes", "No"],
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "verification_topics",
+      "order": "a4",
+      "parentId": "features",
+      "kind": "prompt",
+      "payload": {
+        "key": "verification_topics",
+        "question": {
+          "type": "checkbox",
+          "prompt": "Which topics should Verify check? Pick at least one.",
+          "options": ["Actions", "Agreements", "Disagreements", "Gems", "Moments", "Truths"],
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "is_verify_on_finish_enabled",
+      "order": "a5",
+      "parentId": "features",
+      "kind": "prompt",
+      "payload": {
+        "key": "is_verify_on_finish_enabled",
+        "question": {
+          "type": "radio",
+          "prompt": "Remind participants to verify when they finish?",
+          "options": ["Yes", "No"],
+          "required": false
+        }
+      }
+    },
+
+    { "id": "content", "order": "a3", "kind": "section", "payload": { "title": "Portal content" } },
+    {
+      "id": "default_conversation_title",
+      "order": "a0",
+      "parentId": "content",
+      "kind": "prompt",
+      "payload": {
+        "key": "default_conversation_title",
+        "question": {
+          "type": "text",
+          "prompt": "What's the portal page's title?",
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "default_conversation_description",
+      "order": "a1",
+      "parentId": "content",
+      "kind": "prompt",
+      "payload": {
+        "key": "default_conversation_description",
+        "question": {
+          "type": "text",
+          "prompt": "What should the portal page say?",
+          "required": false
+        }
+      }
+    },
+    {
+      "id": "default_conversation_finish_text",
+      "order": "a2",
+      "parentId": "content",
+      "kind": "prompt",
+      "payload": {
+        "key": "default_conversation_finish_text",
+        "question": {
+          "type": "text",
+          "prompt": "What should participants see when they're done?",
+          "required": false
+        }
+      }
+    },
+
+    { "id": "advanced", "order": "a4", "kind": "section", "payload": { "title": "Advanced" } },
+    {
+      "id": "default_conversation_transcript_prompt",
+      "order": "a0",
+      "parentId": "advanced",
+      "kind": "prompt",
+      "payload": {
+        "key": "default_conversation_transcript_prompt",
+        "question": {
+          "type": "text",
+          "prompt": "Any key terms the transcriber should know? Separate them with commas.",
+          "required": false
+        }
+      }
+    },
+    {
+      "id": "anonymize_transcripts",
+      "order": "a1",
+      "parentId": "advanced",
+      "kind": "prompt",
+      "payload": {
+        "key": "anonymize_transcripts",
+        "question": {
+          "type": "radio",
+          "prompt": "Anonymize transcripts?",
+          "options": ["Yes", "No"],
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "enable_ai_title_and_tags",
+      "order": "a2",
+      "parentId": "advanced",
+      "kind": "prompt",
+      "payload": {
+        "key": "enable_ai_title_and_tags",
+        "question": {
+          "type": "radio",
+          "prompt": "Generate conversation titles and tags automatically?",
+          "options": ["Yes", "No"],
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "conversation_title_prompt",
+      "order": "a3",
+      "parentId": "advanced",
+      "kind": "prompt",
+      "payload": {
+        "key": "conversation_title_prompt",
+        "question": {
+          "type": "text",
+          "prompt": "How should titles be written? (optional custom prompt)",
+          "required": false
+        }
+      }
+    }
+  ],
+  "triggers": [
+    { "id": "start:consent", "when": { "kind": "start" }, "cue": "consent" },
+    { "id": "start:basics", "when": { "kind": "start" }, "cue": "basics" },
+    { "id": "start:features", "when": { "kind": "start" }, "cue": "features" },
+    { "id": "start:content", "when": { "kind": "start" }, "cue": "content" },
+    { "id": "start:advanced", "when": { "kind": "start" }, "cue": "advanced" },
+    {
+      "id": "answer:is_project_notification_subscription_allowed",
+      "when": { "kind": "answer", "key": "default_conversation_ask_for_participant_email", "equals": "Yes" },
+      "cue": "is_project_notification_subscription_allowed"
+    },
+    {
+      "id": "answer:get_reply_mode",
+      "when": { "kind": "answer", "key": "is_get_reply_enabled", "equals": "Yes" },
+      "cue": "get_reply_mode"
+    },
+    {
+      "id": "answer:get_reply_prompt",
+      "when": { "kind": "answer", "key": "get_reply_mode", "equals": "Custom" },
+      "cue": "get_reply_prompt"
+    },
+    {
+      "id": "answer:verification_topics",
+      "when": { "kind": "answer", "key": "is_verify_enabled", "equals": "Yes" },
+      "cue": "verification_topics"
+    },
+    {
+      "id": "answer:is_verify_on_finish_enabled",
+      "when": { "kind": "answer", "key": "is_verify_enabled", "equals": "Yes" },
+      "cue": "is_verify_on_finish_enabled"
+    },
+    {
+      "id": "answer:conversation_title_prompt",
+      "when": { "kind": "answer", "key": "enable_ai_title_and_tags", "equals": "Yes" },
+      "cue": "conversation_title_prompt"
+    }
+  ]
+}
