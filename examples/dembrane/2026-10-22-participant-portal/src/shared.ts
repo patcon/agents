@@ -42,7 +42,16 @@ export type SessionStatus = "idle" | "recording" | "paused" | "finished";
 // the last one wins when the log is folded.
 
 export type LogMeta =
-  | { kind: "utterance"; subjectId: string; at: number }
+  | {
+      kind: "utterance";
+      subjectId: string;
+      at: number;
+      /**
+       * The question on screen when it was started, if the server noted one.
+       * Without it, the one on screen when it was appended.
+       */
+      onScreen?: string | null;
+    }
   | { kind: "question"; subjectId: string; at: number }
   | { kind: "answer"; subjectId: string; at: number }
   | { kind: "trigger"; subjectId: string; at: number }
@@ -288,7 +297,7 @@ export function foldLog(messages: readonly LogMessage[]): LogView {
         id: message.id,
         text: textOf(message),
         at: meta.at,
-        onScreen: view.onScreen
+        onScreen: meta.onScreen !== undefined ? meta.onScreen : view.onScreen
       });
     }
   }

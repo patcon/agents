@@ -166,6 +166,9 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
       ...options,
       onInterim: (text) => {
         options?.onInterim?.(text);
+        if (text && this.#startedOn === undefined) {
+          this.#startedOn = this.#view().onScreen;
+        }
         this.#previewSoon(text);
       },
       onUtterance: (text) => {
@@ -258,14 +261,29 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
 
   // --- Voice ---
 
+  /**
+   * The question on screen when the utterance now being said was started,
+   * from its first interim text. It's what the utterance counts for, even if
+   * they've moved on by the time it's final.
+   */
+  #startedOn?: string | null;
+
   async onTranscript(text: string, _connection: Connection) {
-    if (this.#view().status !== "recording") return;
+    const { status, onScreen } = this.#view();
+    const startedOn = this.#startedOn !== undefined ? this.#startedOn : onScreen;
+    this.#startedOn = undefined;
+    if (status !== "recording") return;
     // The utterance covers whatever interim text is still waiting.
     this.#interim = undefined;
     await this.#append({
       id: newId("utt"),
       role: "user",
-      metadata: { kind: "utterance", subjectId: newId("u"), at: Date.now() },
+      metadata: {
+        kind: "utterance",
+        subjectId: newId("u"),
+        at: Date.now(),
+        onScreen: startedOn
+      },
       parts: [{ type: "text", text }]
     });
     this.#assessSoon(0);
@@ -461,6 +479,8 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
     const { status, consented } = this.#view();
     if (status !== "recording" && status !== "paused") return;
     if (!paused && !consented) return;
+    // A sentence cut off by pausing isn't the start of the next one.
+    this.#startedOn = undefined;
     await this.#appendStatus(paused ? "paused" : "recording");
   }
 

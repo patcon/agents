@@ -660,6 +660,14 @@ function App() {
   );
   const current = questions[activeIndex]?.question.id;
 
+  // What's being said now counts for the question on screen when it was
+  // started, as the server files it, even if they've moved on since.
+  const speaking = !!voice.interimTranscript;
+  const [interimFor, setInterimFor] = useState<string | null | undefined>();
+  if (speaking && interimFor === undefined) setInterimFor(view.onScreen);
+  if (!speaking && interimFor !== undefined) setInterimFor(undefined);
+  const interimOn = interimFor !== undefined ? interimFor : view.onScreen;
+
   useEffect(() => {
     if (activeId === null && questions.length > 0) {
       setActiveId(questions[0].question.id);
@@ -834,8 +842,8 @@ function App() {
             pendingAhead={pendingAhead}
             disabled={connection !== "connected"}
             interim={
-              view.status === "recording" && view.onScreen === current
-                ? voice.interimTranscript || undefined
+              view.status === "recording" && speaking && interimOn === current
+                ? (voice.interimTranscript ?? undefined)
                 : undefined
             }
             onBack={() => goTo(activeIndex - 1)}

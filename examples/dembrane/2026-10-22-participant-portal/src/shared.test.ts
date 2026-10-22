@@ -82,6 +82,23 @@ describe("foldLog() dictation into text questions", () => {
     expect(suggestedFor(log, "tags")).toBe("Housing. And parks.");
   });
 
+  it("counts an utterance for the question showing when it was started, if the server noted one", () => {
+    const finishedAfterMovingOn: LogMessage = {
+      ...said("Housing."),
+      metadata: { kind: "utterance", subjectId: "u-late", at: at(), onScreen: "tags" }
+    };
+    const log = [
+      asked({ id: "tags", type: "text" }),
+      asked({ id: "intro", type: "text" }),
+      shown("tags"),
+      shown("intro"),
+      finishedAfterMovingOn
+    ];
+
+    expect(suggestedFor(log, "tags")).toBe("Housing.");
+    expect(suggestedFor(log, "intro")).toBeUndefined();
+  });
+
   it("drafts nothing when dictation is off", () => {
     const log = [
       asked({ id: "tags", type: "text", dictate: false }),
