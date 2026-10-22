@@ -62,7 +62,7 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 **Acceptance criteria:**
 - [ ] While someone speaks with a text question on screen, the interim text shows greyed under the draft, and is gone once the utterance is final and has joined the draft.
 - [ ] It doesn't show once the field has been edited, once the question is answered, for `dictate: false`, or for non-text questions.
-- [ ] It's never part of the value: submitting mid-sentence saves only the draft.
+- [ ] ~~It's never part of the value: submitting mid-sentence saves only the draft.~~ Submitting mid-sentence saves the draft with the greyed words as they stand.
 
 **Verification:**
 - [x] `pnpm exec tsc --noEmit` and `pnpm test` pass

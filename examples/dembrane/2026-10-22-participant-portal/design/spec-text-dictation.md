@@ -37,7 +37,7 @@ While someone is still talking, the transcriber's interim text (`voice.interimTr
 - the question is the one on screen (`view.onScreen`), and recording is on;
 - the person hasn't ~~edited the card~~ ~~taken over the field (clicked or tabbed into it, below)~~ changed the field's text, and it isn't answered.
 
-It never becomes part of the value: it's only shown, and it's never saved or logged. It reaches the card the way Jev's likelihoods do, through card state: `CardInput` takes an `interim` prop and keeps `/interim` in step, and `TextInput` draws it greyed, after the draft. ~~A textarea can't style part of its text, so `TextInput` shows it as a greyed line directly under the text, inside the same bordered box.~~ A textarea can't style part of its text, so while dictation fills the field, `TextInput` shows it in a display layer instead (below), with the interim text greyed inline right after the last word. Custom cards can read `/interim` too.
+~~It never becomes part of the value: it's only shown, and it's never saved or logged.~~ It isn't part of the draft, and isn't logged as an utterance until it's final. But Submit saves what's on screen: pressed mid-sentence, the greyed words are saved with the draft as they stand (decided 2026-10-22, after Submit was found to drop them). It reaches the card the way Jev's likelihoods do, through card state: `CardInput` takes an `interim` prop and keeps `/interim` in step, and `TextInput` draws it greyed, after the draft. ~~A textarea can't style part of its text, so `TextInput` shows it as a greyed line directly under the text, inside the same bordered box.~~ A textarea can't style part of its text, so while dictation fills the field, `TextInput` shows it in a display layer instead (below), with the interim text greyed inline right after the last word. Custom cards can read `/interim` too.
 
 ### The display layer, and taking over the field
 
@@ -124,7 +124,7 @@ Then a check by hand with `pnpm run start`: record, open the tags question, spea
 ## Success criteria
 
 - [ ] With recording on, final utterances said while a text question shows appear in its field, in order, within the time it takes the utterance to arrive in the log.
-- [ ] While someone is speaking, their interim text shows greyed ~~in the field~~ inline after the draft in the field on screen, and is replaced by normal text once final. It's never saved, and doesn't show once the field's text is changed ~~taken over~~, while the textarea has focus, or once it's answered.
+- [ ] While someone is speaking, their interim text shows greyed ~~in the field~~ inline after the draft in the field on screen, and is replaced by normal text once final. ~~It's never saved~~ Submit saves it as it stands, and it doesn't show once the field's text is changed ~~taken over~~, while the textarea has focus, or once it's answered.
 - [ ] Text fields are about 8 lines tall, and don't change height as text arrives or speech starts and stops. The display follows new text unless the person has scrolled up.
 - [ ] Pressing the field swaps in a textarea with no text moving, focused, with the caret where they pressed; tabbing to it puts the caret at the end.
 - [ ] The field shows "Filled in from what was said" until the person ~~edits it~~ ~~takes it over~~ changes its text. After ~~an edit~~ that, new speech no longer changes the field; clicking in and out without changing it doesn't count.
