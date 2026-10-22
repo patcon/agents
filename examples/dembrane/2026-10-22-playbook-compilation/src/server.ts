@@ -11,6 +11,7 @@ import {
   createUIMessageStreamResponse,
   type UIMessage
 } from "ai";
+import { checkPlan, compilePlaybook } from "./compile";
 import { generateJson, googleAccessToken } from "./gemini";
 import {
   askJev,
@@ -25,9 +26,12 @@ import {
   dueItems,
   lintPlan,
   questionFor,
+  type Plan,
   type PlanEvent
 } from "./plan";
 import adminSetup from "./plans/admin-setup.json";
+import compileSystem from "./prompts/compile-playbook.md?raw";
+import compileRetry from "./prompts/compile-playbook-retry.md?raw";
 import {
   EMPTY_USAGE,
   foldLog,
@@ -194,6 +198,17 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
     return run;
   }
 
+  /**
+   * The plan this session runs: one compiled on /platform-admin, if the page
+   * that opened the session passed one, or else the file's.
+   */
+  #plan?: Plan;
+
+  async #getPlan() {
+    this.#plan ??= (await this.ctx.storage.get<Plan>("plan")) ?? PLAN;
+    return this.#plan;
+  }
+
   #view(): LogView {
     return foldLog(this.messages as LogMessage[]);
   }
@@ -221,6 +236,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
   /** Append a question for each plan item that `event` releases. */
   async #releasePlan(event: PlanEvent) {
     await this.#tail;
+    const plan = await this.#getPlan();
     const { questions, consented } = this.#view();
     const released = new Set(questions.map((q) => q.question.id));
     const answered = {
@@ -228,13 +244,13 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
       items: new Set<string>(),
       consented
     };
-    for (const item of PLAN.items) {
+    for (const item of plan.items) {
       const answer = questions.find((q) => q.question.id === item.id)?.answer;
       if (!answer || answer.skipped) continue;
       answered.items.add(item.id);
       if (item.kind === "prompt") answered.byKey.set(item.payload.key, answer.value);
     }
-    for (const item of dueItems(PLAN, event, answered, released)) {
+    for (const item of dueItems(plan, event, answered, released)) {
       const question = questionFor(item);
       if (question) await this.#appendQuestion(question);
     }
@@ -416,10 +432,19 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
 
   /**
    * A page opened the session: the plan starts, which puts up the consent
-   * card. Opening it again releases nothing new.
+   * card. Opening it again releases nothing new. `plan` is one compiled on
+   * /platform-admin; it's taken only before the first question.
    */
   @callable()
-  async open() {
+  async open(plan?: unknown) {
+    await this.#tail;
+    if (plan !== undefined && !this.#view().questions.length) {
+      const checked = checkPlan(plan);
+      if (checked.plan && !checked.messages.some((m) => m.severity === "error")) {
+        await this.ctx.storage.put("plan", checked.plan);
+        this.#plan = checked.plan;
+      }
+    }
     await this.#releasePlan({ kind: "start" });
   }
 
@@ -621,8 +646,36 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
   }
 }
 
+/**
+ * /platform-admin's Compile button: compiles a playbook the way
+ * `pnpm compile-playbook` does, and answers with what compilePlaybook() gave.
+ */
+async function compileForAdmin(request: Request, env: Env) {
+  const { markdown } = await request.json<{ markdown: string }>();
+  const started = Date.now();
+  try {
+    const compiled = await compilePlaybook(markdown, {
+      name: "platform-admin",
+      prompts: { system: compileSystem, retry: compileRetry },
+      generate: (r) =>
+        generateJson(env, {
+          ...r,
+          model: env.COMPILE_MODEL,
+          thinkingLevel: env.COMPILE_THINKING
+        })
+    });
+    return Response.json({ ...compiled, ms: Date.now() - started });
+  } catch (error) {
+    return Response.json({ error: String(error) }, { status: 500 });
+  }
+}
+
 export default withBasicAuth({
   async fetch(request: Request, env: Env) {
+    const { pathname } = new URL(request.url);
+    if (request.method === "POST" && pathname === "/api/compile-playbook") {
+      return compileForAdmin(request, env);
+    }
     return (await routeAgentRequest(request, env)) || env.ASSETS.fetch(request);
   }
 } satisfies ExportedHandler<Env>);

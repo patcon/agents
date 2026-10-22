@@ -12,6 +12,8 @@ import { useAgent } from "agents/react";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
 import { useVoiceInput } from "agents/voice/react";
 import { CardInput } from "./card-registry";
+import { PlatformAdmin } from "./platform-admin";
+import { activePlanArgs } from "./platform-admin-plan";
 import {
   Badge,
   Button,
@@ -649,7 +651,9 @@ function App() {
 
   // Opening the session puts up the consent card. Recording waits for it.
   useEffect(() => {
-    if (connection === "connected") agent.call("open").catch(() => {});
+    if (connection === "connected") {
+      agent.call("open", activePlanArgs()).catch(() => {});
+    }
   }, [agent, connection]);
 
   // What's said while a question is on screen is heard as an answer to it.
@@ -964,4 +968,6 @@ function App() {
   );
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  location.pathname === "/platform-admin" ? <PlatformAdmin /> : <App />
+);
