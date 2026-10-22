@@ -7,13 +7,15 @@ The goal: portal setup ends with the host describing, out loud, the session they
 | Module id        | Responsibility                                                          | Depends on      |
 | ---------------- | ----------------------------------------------------------------------- | --------------- |
 | `text-dictation` | What's said while a text question is on screen fills its field as a draft | —               |
-| `voice-drafting` | An LLM writes the field's draft from what was said, following the field's hints and the speaker's own asks | `text-dictation` |
+| `voice-drafting` | An LLM writes the field's draft from what was said while it showed, following the field's hints and the speaker's own asks | `text-dictation` |
+| `include-context` | The draft for the question on screen also draws on earlier speech and earlier answers | `voice-drafting` |
+| `prefill`        | Questions arrive already filled, from what was said before they showed | `include-context` |
 | `planner`        | A plan item where the host describes a plan; it compiles, and they approve it | ~~`text-dictation`~~ `voice-drafting` |
 | `projects`       | Project-level storage of the participant plan, roles, and project routes | `planner`       |
 
-Build order: ~~`text-dictation` → `planner` → `projects`~~ `text-dictation` → `voice-drafting` (slice 1.1) → `planner` → `projects`
+Build order: ~~`text-dictation` → `planner` → `projects`~~ ~~`text-dictation` → `voice-drafting` (slice 1.1) → `planner` → `projects`~~ `text-dictation` → `voice-drafting` (1.1) → `include-context` (1.2) → `prefill` (1.3) → `planner` → `projects`. `planner` needs only `voice-drafting`, so it can come before 1.2 and 1.3 if they wait.
 
-`text-dictation`, `voice-drafting` and `planner` work on the single global session, as the prototype does today. Only `projects` touches routing and auth.
+Everything but `projects` works on the single global session, as the prototype does today. Only `projects` touches routing and auth.
 
 ## `text-dictation`
 
@@ -36,7 +38,8 @@ Decided so far:
 - **Verbatim dictation stays as the live layer.** The fold's draft is the latest LLM draft followed by the utterances it hasn't seen yet, verbatim, and the interim text greyed after that. So words show as soon as they're said, and the next draft takes them in. Before the first draft arrives, the field is exactly what `text-dictation` shows today.
 - **Logged.** Each draft is a new log entry (e.g. `kind: "draft"`, `subjectId` the question, with the text, the last utterance it saw and the model), so every device and the server fold the same draft, and it's clear afterwards what the LLM wrote. Adding a log entry kind and an LLM pass were both "ask first" in the `text-dictation` spec; this module is that ask.
 - **Typing stops it, as now.** Once the person changes the text, it's theirs, and drafting stops for that field. Revising around their edits stays a `planner` question.
-- **Only what was said.** The draft may reorganise, condense and fix grammar, but adds nothing they didn't say. The prompt says so; a check (perhaps Jev judging the draft against the transcript, as in `rfc-jev-certainty.md`) can come later.
+- ~~**Only what was said.** The draft may reorganise, condense and fix grammar, but adds nothing they didn't say.~~ **Nothing invented.** The draft may reorganise, condense and fix grammar, but adds nothing that wasn't said in the session. The prompt says so; a check (perhaps Jev judging the draft against the transcript, as in `rfc-jev-certainty.md`) can come later.
+- **Only this question's speech.** The draft is written from the utterances said while this question showed (by the question they were started on). Earlier speech and answers are `include-context`'s; questions not yet shown are `prefill`'s. Keeping them apart means drafts can be judged for how they read before anything has to judge relevance.
 - **In the speaker's language.** The draft follows the language spoken, not the hints' language, unless the hints say otherwise.
 - **Same model and tally as the agent's question.** `gemini-3.8-flash` through `src/models/gemini.ts` with a JSON schema, at low thinking; calls and tokens go in the log drawer's cost estimate. The prompt is a file beside the compiler's prompts.
 - **If it fails,** the verbatim text stays, so nothing is lost.
@@ -45,9 +48,50 @@ To decide in the spec:
 
 - **A no-LLM verbatim path.** Whether a prompt can ask for plain dictation without any LLM call (for cost, or where sending text to a model isn't wanted), e.g. `"draft": "verbatim"`, or whether hints cover it.
 - **Field name:** `draftHints`, or `hints` if cards might use it for more than drafting.
-- **Context:** whether the LLM sees earlier answers in the session, which helps with "same as before" but widens what each call sends.
+- ~~**Context:** whether the LLM sees earlier answers in the session, which helps with "same as before" but widens what each call sends.~~ Now `include-context`.
 - **Showing the work:** a "Drafting…" sign while a rewrite is in flight, and whether the person can see the verbatim transcript beside the draft, to trust it.
 - **Number questions:** whether drafting can fill them from speech ("about fifty, maybe sixty" → 60), or they stay out of scope.
+
+## `include-context`
+
+Slice 1.2. Someone often answers a question before it's asked: a long ramble early on can hold the content a later text field needs. This lets the draft for the question on screen draw on that, and on earlier answers ("same as for the tags").
+
+The pattern has a name in dialogue systems, **slot filling**: pulling a form's field values out of a conversation. Recent systems (FormBharo, 2026, a voice agent for conversational form filling; clinical "Form Fill" systems; zero-shot slot-filling papers) agree on the split this prototype already has: the LLM handles language, and plain code handles state, here the log and `foldLog()`. There's no library to adopt; Jev, Gemini with a JSON schema, and the fold are the pieces.
+
+Decided so far:
+
+- **Only for the question on screen.** When a text question shows, and with each utterance after, its draft can draw on earlier utterances and earlier answers as well as its own speech. Questions not yet shown are `prefill`'s.
+- **Jev decides whether there's anything to draw on.** Each open text question gets a Noul in Jev's existing run, like the `stated` that radio questions get: "has the speaker said anything that answers this?" One request already covers every open question over the last 40 utterances, so this adds a line per question, at Jev's input-only price. A draft call that includes context happens only when it's likely.
+- **What's said while it shows counts for more.** As with Jev's own judgement: speech while the question shows answers it directly; earlier speech counts only where it clearly does. The prompt says which is which.
+- **Arriving with something.** If Jev says earlier speech answers a question, the draft is written as it appears, before anything is said, with a badge like "Filled in from what you said earlier".
+- **Option questions already do this.** Jev reads earlier speech for them today. Nothing changes for them in this slice.
+- **The rules of `voice-drafting` hold:** nothing invented, hints followed, typing stops it, logged, verbatim kept if a call fails.
+
+To decide in the spec:
+
+- **Jev's threshold** for drafting with context, and whether it keeps hysteresis like `AUTO_SELECT`.
+- **Which sentences to send.** Jev says whether, not where. Start with the recent transcript (about 4,000 input tokens per call). If that's too costly, an embedding model can score each utterance against each question's prompt, both embedded once, and send only the closest few: a little arithmetic in memory for a few dozen utterances, no vector database.
+- **How far back:** the whole session, or a window.
+- **Which earlier answers** go in: all of them, or those Jev or embeddings pick.
+- **Whether TypeSafe documents an extraction pattern** for this; load the `typesafe-ai` skill, starting from the System One concepts page.
+
+## `prefill`
+
+Slice 1.3. Look ahead: questions not yet shown are filled from what's been said, so they arrive ready, and the person only has to confirm or correct.
+
+Decided so far:
+
+- **Upcoming plan prompts too.** Jev's run also covers prompts the plan hasn't released yet, which the plan already knows. They have no question in the log yet, so prefills are held against the plan item and become the question's draft when it's released.
+- **Option questions: Jev only.** For radio and checkbox, the prefill is Jev's pick, as for a question on screen today; no LLM call at all, only Jev's input tokens.
+- **Text questions: a draft only when Jev says so,** and at most once per batch of new speech for each, written as `include-context` writes one. Questions nobody has talked about cost nothing.
+- **Same badges and rules** as `include-context`: "Filled in from what you said earlier", never submitted for them, typing stops it.
+
+To decide in the spec:
+
+- **A budget:** a cap on prefill draft calls per session, and how calls are spread when many questions qualify at once.
+- **When to prefill:** after every utterance, or batched (on a pause, or when a section is about to be released).
+- **Conditions:** a prompt that may never be released (its trigger depends on an answer) is still worth prefilling only if it's likely to come; whether to look at trigger conditions.
+- **Visibility:** whether the person sees anything about upcoming prefills (e.g. a count on Next), or only meets them on arrival.
 
 ## `planner`
 
@@ -77,6 +121,8 @@ Carried over from `text-dictation`:
 - ~~Show interim text inline after the last word instead of on a line below, if the field gets long enough for it to matter.~~ Done in `text-dictation`.
 - ~~Maybe an LLM pass that tidies dictated text as it arrives, broadcast like `jev-preview` rather than logged.~~ Now `voice-drafting`, and logged.
 - A `rows` prop on `TextInput` for a taller field than the default eight lines.
+
+Benefits from `include-context` and `prefill` (a host often describes their participants' session before reaching this step), but doesn't need them.
 
 Open: where an approved plan is kept until `projects` exists. Probably in the conversation's log only, read by `/platform-admin`'s swap-in or a dev route.
 
