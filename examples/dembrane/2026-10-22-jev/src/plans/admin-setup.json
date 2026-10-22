@@ -292,10 +292,10 @@
   ],
   "triggers": [
     { "id": "start:consent", "when": { "kind": "start" }, "cue": "consent" },
-    { "id": "consent:basics", "when": { "kind": "answered", "item": "consent" }, "cue": "basics" },
-    { "id": "consent:features", "when": { "kind": "answered", "item": "consent" }, "cue": "features" },
-    { "id": "consent:content", "when": { "kind": "answered", "item": "consent" }, "cue": "content" },
-    { "id": "consent:advanced", "when": { "kind": "answered", "item": "consent" }, "cue": "advanced" },
+    { "id": "consent:basics", "when": { "kind": "consented" }, "cue": "basics" },
+    { "id": "consent:features", "when": { "kind": "consented" }, "cue": "features" },
+    { "id": "consent:content", "when": { "kind": "consented" }, "cue": "content" },
+    { "id": "consent:advanced", "when": { "kind": "consented" }, "cue": "advanced" },
     {
       "id": "answer:is_project_notification_subscription_allowed",
       "when": { "kind": "includes", "key": "default_conversation_ask_for_participant_details", "option": "An email" },

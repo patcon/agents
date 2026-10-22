@@ -1206,6 +1206,20 @@
           "properties": {
             "kind": {
               "type": "string",
+              "const": "consented"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "description": "Recording is allowed: every option of the consent card is ticked"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
               "const": "manual"
             }
           },

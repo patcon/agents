@@ -153,6 +153,9 @@ export const ConditionSchema = z.discriminatedUnion("kind", [
   z
     .strictObject({ kind: z.literal("answered"), item: z.string() })
     .describe("Once the item's question is answered, whatever the answer; a skip doesn't count"),
+  z
+    .strictObject({ kind: z.literal("consented") })
+    .describe("Recording is allowed: every option of the consent card is ticked"),
   z.strictObject({ kind: z.literal("manual") }).describe("The host cues it"),
   z.strictObject({
     kind: z.literal("any"),
@@ -222,6 +225,8 @@ export type Answered = {
   byKey: AnswersByKey;
   /** Ids of every item whose question has an answer. */
   items: ReadonlySet<string>;
+  /** Whether the consent card allows recording. */
+  consented: boolean;
 };
 
 function sameValue(a: AnswerValue | undefined, b: AnswerValue) {
@@ -255,6 +260,8 @@ function holds(
     }
     case "answered":
       return answered.items.has(condition.item);
+    case "consented":
+      return answered.consented;
     case "any":
       return condition.of.some((c) => holds(c, event, answered));
     // Not yet: these need timers, or a host control.
@@ -312,7 +319,9 @@ export function questionFor(item: PlanItem): Question | undefined {
         type: "checkbox",
         prompt: CONSENT.prompt,
         options: ["Yes, I agree to be recorded"],
-        required: true,
+        // Not required, so it can be answered unticked: that's how consent
+        // is declined, or taken back. Recording waits for the tick either way.
+        required: false,
         card: CONSENT.card,
         // Ticked by hand: nothing is recorded until it is.
         assess: false,

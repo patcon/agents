@@ -221,9 +221,13 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
   /** Append a question for each plan item that `event` releases. */
   async #releasePlan(event: PlanEvent) {
     await this.#tail;
-    const { questions } = this.#view();
+    const { questions, consented } = this.#view();
     const released = new Set(questions.map((q) => q.question.id));
-    const answered = { byKey: new Map<string, AnswerValue>(), items: new Set<string>() };
+    const answered = {
+      byKey: new Map<string, AnswerValue>(),
+      items: new Set<string>(),
+      consented
+    };
     for (const item of PLAN.items) {
       const answer = questions.find((q) => q.question.id === item.id)?.answer;
       if (!answer || answer.skipped) continue;

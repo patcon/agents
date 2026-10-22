@@ -50,7 +50,7 @@ The agent is woken without a human message: a `trigger` entry is appended with `
 await this.saveMessages((messages) => [...messages, triggerEntry]);
 ```
 
-Consent comes before recording. The page calls `open()` as soon as it connects, which starts the plan and puts up the consent card, while nothing is recorded yet. `foldLog()` derives `consented` from the card's latest answer: true only when every option is ticked. There's no separate entry for it. Start stays disabled, and `begin()` and `setPaused(false)` refuse, until it's true. Answering the card again without the tick takes consent back: `answer()` appends `paused`, and the page stops the mic. The consent card is never assessed by Jev, since it has to be ticked by hand.
+Consent comes before recording. The page calls `open()` as soon as it connects, which starts the plan and puts up the consent card, while nothing is recorded yet. `foldLog()` derives `consented` from the card's latest answer: true only when every option is ticked. There's no separate entry for it. Start stays disabled, and `begin()` and `setPaused(false)` refuse, until it's true. The plan's sections wait on it too, with a `consented` trigger condition, so declining releases nothing. The card isn't required, so it can be answered unticked: that declines, or, answered again later, takes consent back: `answer()` appends `paused`, and the page stops the mic. The consent card is never assessed by Jev, since it has to be ticked by hand.
 
 ### Client (`src/client.tsx`)
 
