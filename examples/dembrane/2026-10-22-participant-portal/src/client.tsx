@@ -278,6 +278,12 @@ function QuestionStage({
     !entry.answer &&
     !(question.id in drafts);
 
+  // Submitting mid-sentence saves what's on screen, the greyed words too.
+  const submitted =
+    dictating && interim && typeof value === "string"
+      ? (value ? `${value} ${interim}` : interim)
+      : value;
+
   // A final question's answer stands once given.
   const locked =
     !!question.final && !!entry.answer && !entry.answer.skipped;
@@ -285,7 +291,7 @@ function QuestionStage({
   const submit = async (skipped: boolean) => {
     setSaving(true);
     try {
-      await onAnswer(skipped ? null : value, skipped);
+      await onAnswer(skipped ? null : submitted, skipped);
     } finally {
       setSaving(false);
     }
@@ -372,8 +378,8 @@ function QuestionStage({
                 disabled ||
                 saving ||
                 locked ||
-                !isAnswerable(question, value) ||
-                sameAnswer(entry.answer, { value, skipped: false })
+                !isAnswerable(question, submitted) ||
+                sameAnswer(entry.answer, { value: submitted, skipped: false })
               }
               icon={<CheckIcon size={16} />}
             >

@@ -379,7 +379,7 @@ export function CardInput({
   likelihood?: Record<string, number>;
   /** Whether dictation fills the draft, which text fields show it doing. */
   dictating?: boolean;
-  /** What's being said now, shown greyed in a text field. Never the value. */
+  /** What's being said now, shown greyed in a text field; not in the draft. */
   interim?: string;
   /** Shows the answer without letting it change. */
   readOnly?: boolean;
