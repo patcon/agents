@@ -10,7 +10,7 @@ Every plan follows these rules:
 - `order` sorts siblings as strings: a0, a1, a2, and so on.
 - Ids are short, unique and lowercase. A prompt's id is its key.
 - `required` is true unless the playbook says a question is optional.
-- Leave out `card` unless the playbook asks for a layout. A card reads the question's options with `{"$state": "/question/options"}` rather than repeating them.
+- Leave out `card` unless the playbook asks for a layout. A card is only what goes between the question and its Submit button, which show on their own: for a layout of options, a single input element, with nothing around it. It reads the question's options with `{"$state": "/question/options"}` rather than repeating them.
 
 Each prompt writes one of the platform's settings. Use their keys, and for a choice, their options exactly as written:
 
