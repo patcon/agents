@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   JSONUIProvider,
   Renderer,
@@ -9,7 +9,7 @@ import {
 } from "@json-render/react";
 import { Input, InputArea } from "@cloudflare/kumo";
 import { cardCatalog, defaultCard } from "./cards";
-import type { AnswerValue, Question } from "./shared";
+import { AUTO_SELECT, type AnswerValue, type Question } from "./shared";
 
 // How each card component looks. The catalog in cards.ts says what props
 // they take; props arrive here with `$state` and `$bindState` already
@@ -24,7 +24,8 @@ const GAP = { sm: "gap-2", md: "gap-3", lg: "gap-5" } as const;
 
 /**
  * An option, with a bar behind it as wide as Jev thinks it likely that the
- * speaker chose it. Cards read the likelihoods from /likelihood.
+ * speaker chose it: dim and blurred below the auto-select threshold, solid
+ * with an edge above it. Cards read the likelihoods from /likelihood.
  */
 function Option({
   option,
@@ -36,25 +37,27 @@ function Option({
   children: React.ReactNode;
 }) {
   const likelihood = useStateValue<Record<string, number> | null>("/likelihood");
-  const p = likelihood?.[option];
+  const p = likelihood?.[option] ?? 0;
+  // Starts at zero and follows a frame later, so a first likelihood grows
+  // from nothing, even on a card that arrives with one.
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setWidth(p));
+    return () => cancelAnimationFrame(frame);
+  }, [p]);
+  const likely = width >= AUTO_SELECT.select;
   return (
     <label className={`${optionClass(checked)} relative isolate overflow-hidden`}>
-      {p !== undefined && (
-        <span
-          aria-hidden
-          className="absolute inset-y-0 left-0 -z-10 bg-kumo-brand/15 transition-[width] duration-500"
-          style={{ width: `${Math.round(p * 100)}%` }}
-        />
-      )}
+      <span
+        aria-hidden
+        className={`absolute inset-y-0 left-0 -z-10 transition-all duration-700 ease-out ${
+          likely
+            ? "bg-kumo-brand/30 border-r-2 border-kumo-brand"
+            : "bg-kumo-brand/15 opacity-60 blur-[3px]"
+        }`}
+        style={{ width: `${Math.round(width * 100)}%` }}
+      />
       {children}
-      {p !== undefined && (
-        <span
-          className="ml-auto text-[11px] tabular-nums text-kumo-subtle"
-          title="How likely Jev thinks it is that this was said"
-        >
-          {Math.round(p * 100)}%
-        </span>
-      )}
     </label>
   );
 }
