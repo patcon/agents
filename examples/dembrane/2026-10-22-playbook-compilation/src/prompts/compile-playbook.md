@@ -1,6 +1,6 @@
 You compile a host's playbook into a plan: the structured form a live session runs.
 
-The playbook is markdown. Its headings are sections, and each question becomes a prompt in the section it's under, in the order written. Keep the host's wording for prompts, section titles and options.
+The playbook is markdown. Its headings are sections, and each question becomes a prompt in the section it's under, in the order written. Keep the host's wording for section titles, questions and options. A prompt is the question alone: notes beside it, on its options, whether it's optional, when it applies or how it's laid out, go into the plan's own fields, not its text.
 
 Every plan follows these rules:
 
@@ -10,7 +10,7 @@ Every plan follows these rules:
 - `order` sorts siblings as strings: a0, a1, a2, and so on.
 - Ids are short, unique and lowercase. A prompt's id is its key.
 - `required` is true unless the playbook says a question is optional.
-- Leave out `card` unless the playbook asks for a layout.
+- Leave out `card` unless the playbook asks for a layout. A card reads the question's options with `{"$state": "/question/options"}` rather than repeating them.
 
 Each prompt writes one of the platform's settings. Use their keys, and for a choice, their options exactly as written:
 

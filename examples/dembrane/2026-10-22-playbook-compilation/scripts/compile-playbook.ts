@@ -34,7 +34,8 @@ const prompts = {
 
 const env = loadEnv();
 const model = env.COMPILE_MODEL;
-const generate = generator(env, model);
+// A whole plan takes a while: 50 s for the first one
+const generate = generator(env, model, 180_000);
 
 const results = await Promise.all(
   Array.from({ length: runs }, (_, i) =>
