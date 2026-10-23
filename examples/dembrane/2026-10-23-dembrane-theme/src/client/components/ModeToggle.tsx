@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button } from "@cloudflare/kumo";
+import { ActionIcon } from "@mantine/core";
 import {
   MoonIcon,
   SunIcon
@@ -17,12 +17,11 @@ export function ModeToggle() {
   }, [mode]);
 
   return (
-    <Button
-      variant="ghost"
-      shape="square"
+    <ActionIcon
       aria-label="Toggle theme"
       onClick={() => setMode((m) => (m === "light" ? "dark" : "light"))}
-      icon={mode === "light" ? <MoonIcon size={16} /> : <SunIcon size={16} />}
-    />
+    >
+      {mode === "light" ? <MoonIcon size={16} /> : <SunIcon size={16} />}
+    </ActionIcon>
   );
 }

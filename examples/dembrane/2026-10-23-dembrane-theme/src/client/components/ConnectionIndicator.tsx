@@ -18,7 +18,7 @@ export function ConnectionIndicator({ status }: { status: ConnectionStatus }) {
   return (
     <output className="flex items-center gap-2" aria-label={label}>
       <span className={`size-2 rounded-full ${dot}`} />
-      <span className="hidden sm:inline text-xs text-kumo-subtle">{label}</span>
+      <span className="hidden sm:inline text-xs text-app-muted">{label}</span>
     </output>
   );
 }

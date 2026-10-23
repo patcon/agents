@@ -1,14 +1,13 @@
 import "@mantine/core/styles.layer.css";
 import "./styles.css";
 import { createRoot } from "react-dom/client";
-import { MantineProvider } from "@mantine/core";
+import { ActionIcon, Button, MantineProvider, Paper, Text } from "@mantine/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAgent } from "agents/react";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
 import { useVoiceInput } from "agents/voice/react";
 import { PlatformAdmin } from "./platform-admin/page";
 import { activePlanArgs } from "./platform-admin/plan-storage";
-import { Button, Surface, Text } from "@cloudflare/kumo";
 import {
   BugIcon,
   CheckCircleIcon,
@@ -224,60 +223,53 @@ function App() {
   }, [drawer, view.utterances.length, voice.interimTranscript]);
 
   return (
-    <div className="min-h-dvh bg-kumo-base flex flex-col">
-      <header className="sticky top-0 z-30 bg-kumo-base border-b border-kumo-line px-4 py-2.5 flex items-center justify-between gap-2">
+    <div className="min-h-dvh bg-app-bg flex flex-col">
+      <header className="sticky top-0 z-30 bg-app-bg border-b border-app-quiet px-4 py-2.5 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <MicrophoneIcon
             size={20}
             weight="bold"
-            className="text-kumo-brand shrink-0"
+            className="text-app-action shrink-0"
           />
-          <span className="truncate">
-            <Text size="sm" bold>
-              dembrane-theme
-            </Text>
-          </span>
+          <Text size="sm" truncate>
+            dembrane-theme
+          </Text>
           <ConnectionIndicator status={connection} />
         </div>
         <div className="flex items-center gap-1">
           <Button
-            variant="secondary"
-            size="sm"
+            size="xs"
             onClick={() => setDrawer("transcript")}
-            icon={<TextAlignLeftIcon size={16} />}
+            leftSection={<TextAlignLeftIcon size={16} />}
             aria-label="Open transcript"
           >
             <span className="hidden sm:inline">Transcript</span>
-            <span className="tabular-nums text-kumo-subtle">
+            <span className="tabular-nums text-app-muted">
               {view.utterances.length}
             </span>
           </Button>
-          <Button
-            variant="ghost"
-            shape="square"
-            size="sm"
+          <ActionIcon
             onClick={() => setDrawer("debug")}
-            icon={<BugIcon size={16} />}
             aria-label="Open message log"
-          />
+          >
+            <BugIcon size={16} />
+          </ActionIcon>
           <ModeToggle />
         </div>
       </header>
 
       <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-4">
-        <Surface className="p-4 rounded-xl ring ring-kumo-line">
+        <Paper className="p-4">
           <div className="flex gap-3">
             <InfoIcon
               size={20}
               weight="bold"
-              className="text-kumo-brand shrink-0 mt-0.5"
+              className="text-app-action shrink-0 mt-0.5"
             />
             <div>
-              <Text size="sm" bold>
-                One conversation, one append-only log
-              </Text>
+              <Text size="sm">One conversation, one append-only log</Text>
               <span className="mt-1 block">
-                <Text size="xs" variant="secondary">
+                <Text size="xs" c="dimmed">
                   Start talking, and answer the questions as they appear. Every
                   utterance, question, answer and status change is a new
                   UIMessage; changing an answer appends a revision. Open the bug
@@ -286,7 +278,7 @@ function App() {
               </span>
             </div>
           </div>
-        </Surface>
+        </Paper>
 
 
         {finished ? (
@@ -311,30 +303,30 @@ function App() {
             onTakeOver={takeOver}
           />
         ) : (
-          <Surface className="rounded-xl ring ring-dashed ring-kumo-line p-8 flex flex-col items-center text-center gap-2">
-            <CheckCircleIcon size={28} className="text-kumo-subtle" />
-            <Text size="sm" bold>
+          <Paper className="p-8 flex flex-col items-center text-center gap-2">
+            <CheckCircleIcon size={28} className="text-app-muted" />
+            <Text size="sm">
               {view.status === "idle" ? "Ready when you are" : "Keep talking"}
             </Text>
-            <Text size="xs" variant="secondary">
+            <Text size="xs" c="dimmed">
               Questions will appear here as they come up.
             </Text>
-          </Surface>
+          </Paper>
         )}
 
         {voice.error && (
-          <Surface className="p-3 rounded-xl ring ring-kumo-danger bg-kumo-danger-tint">
+          <Paper className="p-3 bg-app-danger-tint" style={{ "--app-rule-color": "var(--app-danger)" } as React.CSSProperties}>
             <Text size="xs">{voice.error}</Text>
-          </Surface>
+          </Paper>
         )}
       </main>
 
       {/* Recording controls, pinned to the bottom for thumbs */}
       {!finished && (
-        <div className="sticky bottom-0 z-30 bg-kumo-base border-t border-kumo-line px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="sticky bottom-0 z-30 bg-app-bg border-t border-app-quiet px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="max-w-2xl mx-auto flex items-center gap-3">
             <div className="flex-1 min-w-0 flex flex-col gap-1">
-              <span className="text-xs text-kumo-subtle truncate">
+              <span className="text-xs text-app-muted truncate">
                 {voice.isListening
                   ? voice.interimTranscript || "Listening…"
                   : !view.consented
@@ -343,9 +335,9 @@ function App() {
                       ? "Not recording"
                       : "Paused"}
               </span>
-              <div className="h-1.5 w-full rounded-full bg-kumo-tint overflow-hidden">
+              <div className="h-1.5 w-full rounded-full bg-app-action-tint overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-kumo-brand transition-all duration-75"
+                  className="h-full rounded-full bg-app-action transition-all duration-75"
                   style={{
                     width: `${voice.isListening ? Math.min(voice.audioLevel * 500, 100) : 0}%`
                   }}
@@ -354,38 +346,36 @@ function App() {
             </div>
             {view.status === "idle" ? (
               <Button
-                variant="primary"
+                variant="filled"
                 onClick={begin}
                 disabled={busy || connection !== "connected" || !view.consented}
-                icon={<MicrophoneIcon size={16} weight="bold" />}
+                leftSection={<MicrophoneIcon size={16} weight="bold" />}
               >
                 Start
               </Button>
             ) : voice.isListening ? (
               <Button
-                variant="secondary"
                 onClick={pause}
                 disabled={busy}
-                icon={<PauseIcon size={16} weight="bold" />}
+                leftSection={<PauseIcon size={16} weight="bold" />}
               >
                 Pause
               </Button>
             ) : (
               <Button
-                variant="primary"
+                variant="filled"
                 onClick={resume}
                 disabled={busy || connection !== "connected" || !view.consented}
-                icon={<PlayIcon size={16} weight="bold" />}
+                leftSection={<PlayIcon size={16} weight="bold" />}
               >
                 Resume
               </Button>
             )}
             <Button
-              variant="secondary"
               onClick={finish}
               disabled={busy || !canFinish}
               title={canFinish ? undefined : "Pause recording to finish"}
-              icon={<FlagCheckeredIcon size={16} weight="bold" />}
+              leftSection={<FlagCheckeredIcon size={16} weight="bold" />}
             >
               Finish
             </Button>
@@ -399,19 +389,19 @@ function App() {
         title="Transcript"
       >
         {view.utterances.length === 0 && !voice.interimTranscript ? (
-          <Text size="xs" variant="secondary">
+          <Text size="xs" c="dimmed">
             Nothing transcribed yet.
           </Text>
         ) : (
           <ol className="flex flex-col gap-3">
             {view.utterances.map((u) => (
               <li key={u.id} className="flex gap-3">
-                <span className="text-xs tabular-nums text-kumo-subtle w-10 shrink-0 pt-0.5">
+                <span className="text-xs tabular-nums text-app-muted w-10 shrink-0 pt-0.5">
                   {view.startedAt
                     ? formatClock((u.at - view.startedAt) / 1000)
                     : ""}
                 </span>
-                <span className="text-sm text-kumo-default leading-relaxed">
+                <span className="text-sm text-app-text leading-relaxed">
                   {u.text}
                 </span>
               </li>
@@ -419,7 +409,7 @@ function App() {
             {voice.interimTranscript && (
               <li className="flex gap-3">
                 <span className="w-10 shrink-0" />
-                <span className="text-sm text-kumo-subtle italic">
+                <span className="text-sm text-app-muted italic">
                   {voice.interimTranscript}
                 </span>
               </li>
@@ -434,21 +424,19 @@ function App() {
         onClose={closeDrawer}
         title={`Message log · ${messages.length}`}
       >
-        <div className="flex flex-wrap items-center gap-2 pb-3 mb-3 border-b border-kumo-line">
-          <span className="text-xs text-kumo-subtle mr-auto">
+        <div className="flex flex-wrap items-center gap-2 pb-3 mb-3 border-b border-app-quiet">
+          <span className="text-xs text-app-muted mr-auto">
             Simulate interaction
           </span>
           <Button
-            variant="secondary"
-            size="sm"
+            size="xs"
             onClick={() => agent.call("pushHostQuestion")}
             disabled={finished || view.status === "idle"}
           >
             From host
           </Button>
           <Button
-            variant="secondary"
-            size="sm"
+            size="xs"
             onClick={() => agent.call("askAgentNow")}
             disabled={finished || view.status === "idle"}
           >

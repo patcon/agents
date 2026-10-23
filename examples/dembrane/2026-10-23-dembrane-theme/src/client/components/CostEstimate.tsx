@@ -79,9 +79,9 @@ export function CostEstimate({ usage }: { usage: Usage }) {
   );
 
   return (
-    <section className="pb-3 mb-3 border-b border-kumo-line">
+    <section className="pb-3 mb-3 border-b border-app-quiet">
       <table className="w-full text-xs tabular-nums">
-        <thead className="text-kumo-subtle">
+        <thead className="text-app-muted">
           <tr>
             <th className="text-left font-normal">Cost estimate</th>
             {dates.map((d, i) => (
@@ -91,12 +91,12 @@ export function CostEstimate({ usage }: { usage: Usage }) {
             ))}
           </tr>
         </thead>
-        <tbody className="text-kumo-default">
+        <tbody className="text-app-text">
           {rows.map((row) => (
             <tr key={row.label}>
               <td className="py-1">
                 {row.label}
-                <div className="text-[11px] text-kumo-subtle">{row.detail}</div>
+                <div className="text-[11px] text-app-muted">{row.detail}</div>
               </td>
               {row.costs.map((cost, i) => (
                 <td key={dates[i]} className="text-right pl-3 align-top py-1">
@@ -115,7 +115,7 @@ export function CostEstimate({ usage }: { usage: Usage }) {
           </tr>
         </tbody>
       </table>
-      <p className="mt-2 text-[11px] text-kumo-subtle">
+      <p className="mt-2 text-[11px] text-app-muted">
         From list prices; <code>pnpm update-prices</code> refreshes them.
         Transcription counts every second streamed, silence included.
       </p>

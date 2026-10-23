@@ -1,4 +1,4 @@
-import { Badge } from "@cloudflare/kumo";
+import { Badge } from "@mantine/core";
 import {
   type QuestionView
 } from "../../shared";
@@ -8,13 +8,13 @@ export function AnswerStatusBadge({ entry }: { entry: QuestionView }) {
   if (!answer) return null;
   if (answer.skipped) {
     return question.required ? (
-      <Badge variant="warning">Required · skipped</Badge>
+      <Badge color="yellow">Required · skipped</Badge>
     ) : (
-      <Badge variant="secondary">Skipped</Badge>
+      <Badge color="gray">Skipped</Badge>
     );
   }
   return (
-    <Badge variant="success">
+    <Badge color="green">
       {entry.answerCount > 1
         ? `Answered · rev ${entry.answerCount}`
         : "Answered"}

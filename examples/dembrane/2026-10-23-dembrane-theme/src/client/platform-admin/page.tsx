@@ -5,7 +5,7 @@
 // to open(), so nothing is shared between browsers.
 
 import { useMemo, useState, type ReactNode } from "react";
-import { Badge, Button, Surface, Text } from "@cloudflare/kumo";
+import { Badge, Button, Paper, Text } from "@mantine/core";
 import type { Compiled } from "../../shared/compile/compile";
 import { comparePlans } from "../../shared/compile/compare-plans";
 import { PlanSchema, type Plan } from "../../shared/plan/plan";
@@ -62,7 +62,7 @@ function JsonDiff({ from, to }: { from: Plan; to: Plan }) {
     [from, to]
   );
   if (lines.every((l) => l.op === " ")) {
-    return <Text size="xs" variant="secondary">The JSON is the same.</Text>;
+    return <Text size="xs" c="dimmed">The JSON is the same.</Text>;
   }
   // Unchanged lines more than CONTEXT away from a change fold away.
   const near = lines.map((_, i) =>
@@ -76,7 +76,7 @@ function JsonDiff({ from, to }: { from: Plan; to: Plan }) {
       let end = i;
       while (end < lines.length && !near[end]) end++;
       rows.push(
-        <div key={i} className="text-kumo-subtle">
+        <div key={i} className="text-app-muted">
           {`  … ${end - i} unchanged lines`}
         </div>
       );
@@ -89,9 +89,9 @@ function JsonDiff({ from, to }: { from: Plan; to: Plan }) {
         key={i}
         className={
           op === "+"
-            ? "bg-kumo-success-tint"
+            ? "bg-app-success-tint"
             : op === "-"
-              ? "bg-kumo-danger-tint"
+              ? "bg-app-danger-tint"
               : undefined
         }
       >
@@ -100,7 +100,7 @@ function JsonDiff({ from, to }: { from: Plan; to: Plan }) {
     );
   }
   return (
-    <pre className="text-xs leading-5 overflow-x-auto rounded-lg ring ring-kumo-line p-3">
+    <pre className="text-xs leading-5 overflow-x-auto border-y border-app-quiet p-3">
       {rows}
     </pre>
   );
@@ -148,35 +148,35 @@ export function PlatformAdmin() {
   );
 
   return (
-    <div className="min-h-full bg-kumo-base text-kumo-default">
+    <div className="min-h-full bg-app-bg text-app-text">
       <div className="max-w-4xl mx-auto p-4 sm:p-6 flex flex-col gap-6">
         <header className="flex flex-wrap items-center gap-3">
-          <Text as="h1" size="lg" bold>
+          <Text component="h1" size="lg">
             Platform admin
           </Text>
           <span className="mr-auto" />
           {active ? (
             <>
-              <Badge variant="warning">
+              <Badge color="yellow">
                 New sessions here use a compiled plan (
                 {new Date(active.at).toLocaleTimeString()})
               </Badge>
-              <Button variant="secondary" size="sm" onClick={() => save(null)}>
+              <Button size="sm" onClick={() => save(null)}>
                 Reset to file
               </Button>
             </>
           ) : (
-            <Badge variant="secondary">
+            <Badge color="gray">
               Sessions use src/shared/plan/admin-setup.json
             </Badge>
           )}
-          <a href="/" className="text-sm text-kumo-brand">
+          <a href="/" className="text-sm text-app-action">
             New session →
           </a>
         </header>
 
-        <Surface className="rounded-xl ring ring-kumo-line p-4 flex flex-col gap-3">
-          <Text size="sm" variant="secondary">
+        <Paper className="p-4 flex flex-col gap-3">
+          <Text size="sm" c="dimmed">
             Playbook
           </Text>
           <textarea
@@ -184,39 +184,39 @@ export function PlatformAdmin() {
             onChange={(e) => setMarkdown(e.target.value)}
             spellCheck={false}
             rows={20}
-            className="w-full font-mono text-xs leading-5 rounded-lg ring ring-kumo-line bg-kumo-base p-3"
+            className="w-full font-mono text-xs leading-5 border-x border-app-control bg-app-surface p-3"
           />
           <div className="flex flex-wrap gap-2">
             <Button
-              variant="primary"
+              variant="filled"
               onClick={compile}
               disabled={compiling || !markdown.trim()}
             >
               {compiling ? "Compiling… (about 20 s)" : "Compile"}
             </Button>
             <Button
-              variant="ghost"
+              variant="subtle"
               onClick={() => setMarkdown(decompiledPlaybook)}
               disabled={compiling || markdown === decompiledPlaybook}
             >
               Back to the file's playbook
             </Button>
           </div>
-        </Surface>
+        </Paper>
 
         {result && "error" in result && (
-          <Surface className="rounded-xl ring ring-kumo-line p-4">
+          <Paper className="p-4">
             <Text size="sm">Compiling failed: {result.error}</Text>
-          </Surface>
+          </Paper>
         )}
 
         {result && !("error" in result) && (
-          <Surface className="rounded-xl ring ring-kumo-line p-4 flex flex-col gap-4">
+          <Paper className="p-4 flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={compiled ? "success" : "warning"}>
+              <Badge color={compiled ? "green" : "yellow"}>
                 {compiled ? "Compiled" : "Gave up"}
               </Badge>
-              <Text size="xs" variant="secondary">
+              <Text size="xs" c="dimmed">
                 {result.attempts.length} attempt
                 {result.attempts.length === 1 ? "" : "s"} ·{" "}
                 {(result.ms / 1000).toFixed(1)} s ·{" "}
@@ -226,7 +226,7 @@ export function PlatformAdmin() {
               <span className="mr-auto" />
               {compiled && (
                 <Button
-                  variant="primary"
+                  variant="filled"
                   size="sm"
                   onClick={() =>
                     save({ plan: compiled, playbook: markdown, at: Date.now() })
@@ -251,7 +251,7 @@ export function PlatformAdmin() {
             {compiled && (
               <>
                 <div className="flex flex-col gap-2">
-                  <Text size="sm" bold>
+                  <Text size="sm" fw={600}>
                     What a session would do differently
                   </Text>
                   {differences.length ? (
@@ -259,7 +259,7 @@ export function PlatformAdmin() {
                       {differences.map((d, i) => (
                         <li key={i}>
                           <Badge
-                            variant={d.kind === "differs" ? "warning" : "outline"}
+                            color={d.kind === "differs" ? "yellow" : "gray"}
                           >
                             {d.kind}
                           </Badge>{" "}
@@ -269,7 +269,7 @@ export function PlatformAdmin() {
                       ))}
                     </ul>
                   ) : (
-                    <Text size="xs" variant="secondary">
+                    <Text size="xs" c="dimmed">
                       Nothing: it asks the same questions, in the same way.
                     </Text>
                   )}
@@ -277,7 +277,7 @@ export function PlatformAdmin() {
                 <details className="flex flex-col gap-2">
                   <summary className="cursor-pointer text-sm">
                     Raw JSON diff, against the plan in use{" "}
-                    <span className="text-xs text-kumo-subtle">
+                    <span className="text-xs text-app-muted">
                       (ids and card element names are the compiler's own pick,
                       so they differ even when nothing above does)
                     </span>
@@ -288,7 +288,7 @@ export function PlatformAdmin() {
                 </details>
               </>
             )}
-          </Surface>
+          </Paper>
         )}
       </div>
     </div>

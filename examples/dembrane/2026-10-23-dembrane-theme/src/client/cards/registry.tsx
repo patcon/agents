@@ -15,7 +15,7 @@ import {
   useBoundProp,
   useStateValue
 } from "@json-render/react";
-import { Input } from "@cloudflare/kumo";
+import { NumberInput } from "@mantine/core";
 import { cardCatalog, defaultCard } from "../../shared/cards/cards";
 import { caretHitAt, draftOffset } from "./caret";
 import { AUTO_SELECT, type AnswerValue, type Question } from "../../shared";
@@ -24,10 +24,9 @@ import { AUTO_SELECT, type AnswerValue, type Question } from "../../shared";
 // they take; props arrive here with `$state` and `$bindState` already
 // resolved, so the casts below only undo the catalog's expression types.
 
-const optionClass = (checked: boolean) =>
-  `flex items-center gap-3 rounded-lg px-3 py-3 ring cursor-pointer transition-colors ${
-    checked ? "ring-kumo-brand bg-kumo-tint" : "ring-kumo-line hover:bg-kumo-tint"
-  }`;
+// An option is something you do, so it takes rules.css's full box: blue on
+// the action tint when checked.
+const optionClass = "app-do flex items-center gap-3 px-3 py-3 transition-colors";
 
 const GAP = { sm: "gap-2", md: "gap-3", lg: "gap-5" } as const;
 
@@ -51,10 +50,13 @@ function Option({
   const p = likelihood?.[option] ?? 0;
   const likely = p >= AUTO_SELECT.select;
   return (
-    <label className={`${optionClass(checked)} relative isolate overflow-hidden`}>
+    <label
+      className={`${optionClass} relative isolate overflow-hidden`}
+      data-selected={checked || undefined}
+    >
       <span
         aria-hidden
-        className={`absolute inset-y-0 left-0 -z-10 bg-kumo-brand/15 transition-all duration-700 ease-out ${
+        className={`absolute inset-y-0 left-0 -z-10 bg-app-action/15 transition-all duration-700 ease-out ${
           likely ? "" : "opacity-60 blur-[3px]"
         }`}
         style={{ width: `${Math.round(p * 100)}%` }}
@@ -89,7 +91,7 @@ const { registry } = defineRegistry(cardCatalog, {
     ),
 
     Prose: ({ props }) => (
-      <div className="flex flex-col gap-2 text-sm text-kumo-default leading-relaxed">
+      <div className="flex flex-col gap-2 text-sm text-app-text leading-relaxed">
         {String(props.text)
           .split(/\n\s*\n/)
           .map((paragraph, i) => (
@@ -114,11 +116,11 @@ const { registry } = defineRegistry(cardCatalog, {
                 <input
                   type="radio"
                   name={name}
-                  className="accent-[var(--color-kumo-brand)] size-4"
+                  className="accent-app-action size-4"
                   checked={value === option}
                   onChange={() => setValue(option)}
                 />
-                <span className="text-sm text-kumo-default">{option}</span>
+                <span className="text-sm text-app-text">{option}</span>
               </Option>
             ))}
           </OptionGrid>
@@ -143,7 +145,7 @@ const { registry } = defineRegistry(cardCatalog, {
                 <Option key={option} option={option} checked={checked}>
                   <input
                     type="checkbox"
-                    className="accent-[var(--color-kumo-brand)] size-4"
+                    className="accent-app-action size-4"
                     checked={checked}
                     onChange={() =>
                       setValue(
@@ -153,7 +155,7 @@ const { registry } = defineRegistry(cardCatalog, {
                       )
                     }
                   />
-                  <span className="text-sm text-kumo-default">{option}</span>
+                  <span className="text-sm text-app-text">{option}</span>
                 </Option>
               );
             })}
@@ -192,8 +194,7 @@ const { registry } = defineRegistry(cardCatalog, {
       const min = (props.min as number | null) ?? undefined;
       const max = (props.max as number | null) ?? undefined;
       return (
-        <Input
-          type="number"
+        <NumberInput
           inputMode="numeric"
           aria-label={prompt}
           min={min}
@@ -201,10 +202,8 @@ const { registry } = defineRegistry(cardCatalog, {
           placeholder={
             min !== undefined && max !== undefined ? `${min}–${max}` : "Enter a number"
           }
-          value={typeof value === "number" ? String(value) : ""}
-          onChange={(e) =>
-            setValue(e.target.value === "" ? null : Number(e.target.value))
-          }
+          value={typeof value === "number" ? value : ""}
+          onChange={(v) => setValue(v === "" ? null : Number(v))}
         />
       );
     }
@@ -310,7 +309,7 @@ function DictationField({
 
   return (
     <div
-      className={`grid ${fieldHeight(short)} rounded-lg bg-kumo-control ring ring-kumo-line focus-within:ring-[1.5px] focus-within:ring-kumo-focus/50`}
+      className={`grid ${fieldHeight(short)} bg-app-surface border-x border-app-control focus-within:border-app-action`}
     >
       <Field
         ref={textarea}
@@ -328,7 +327,7 @@ function DictationField({
         onScroll={(e) => onScroll(e.currentTarget)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className={`${FIELD_TEXT} ${short ? LINE_TEXT : LINES_TEXT} h-full resize-none border-0 bg-transparent text-kumo-default outline-none placeholder:text-kumo-subtle ${
+        className={`${FIELD_TEXT} ${short ? LINE_TEXT : LINES_TEXT} h-full resize-none border-0 bg-transparent text-app-text outline-none placeholder:text-app-muted ${
           showDisplay ? "invisible" : ""
         }`}
       />
@@ -355,19 +354,19 @@ function DictationField({
           }}
           onFocus={() => swapIn(value.length)}
           onScroll={(e) => onScroll(e.currentTarget)}
-          className={`${FIELD_TEXT} ${short ? LINE_TEXT : LINES_TEXT} h-full cursor-text text-kumo-default`}
+          className={`${FIELD_TEXT} ${short ? LINE_TEXT : LINES_TEXT} h-full cursor-text text-app-text`}
         >
           {value}
           {/* A textarea shows a trailing line break; a div needs a nudge. */}
           {value.endsWith("\n") && "\u200b"}
           {interim ? (
-            <span ref={interimText} className="italic text-kumo-subtle">
+            <span ref={interimText} className="italic text-app-muted">
               {separator}
               {interim}
             </span>
           ) : (
             !value &&
-            placeholder && <span className="text-kumo-subtle">{placeholder}</span>
+            placeholder && <span className="text-app-muted">{placeholder}</span>
           )}
         </div>
       )}

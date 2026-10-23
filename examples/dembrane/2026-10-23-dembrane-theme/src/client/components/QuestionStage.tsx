@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { CardInput } from "../cards/registry";
-import { Badge, Button, Surface } from "@cloudflare/kumo";
+import { Badge, Button, Paper } from "@mantine/core";
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -150,7 +150,7 @@ export function QuestionStage({
         <div
           key={i}
           aria-hidden
-          className="absolute inset-x-0 top-0 h-full rounded-xl ring ring-kumo-line bg-kumo-elevated"
+          className="absolute inset-x-0 top-0 h-full border border-app-quiet bg-app-surface"
           style={{
             transform: `translateY(${(i + 1) * 8}px) scale(${1 - (i + 1) * 0.03})`,
             zIndex: -1 - i,
@@ -159,22 +159,22 @@ export function QuestionStage({
         />
       ))}
 
-      <Surface className="relative rounded-xl ring ring-kumo-line p-4 sm:p-6 flex flex-col gap-4">
+      <Paper className="relative p-4 sm:p-6 flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-kumo-subtle tabular-nums">
+          <span className="text-xs text-app-muted tabular-nums">
             Question {activeIndex + 1} of {questions.length}
           </span>
-          <Badge variant={question.required ? "primary" : "outline"}>
+          <Badge color={question.required ? "primary" : "gray"}>
             {question.required ? "Required" : "Optional"}
           </Badge>
-          <Badge variant="outline">{SOURCE_LABEL[question.source]}</Badge>
+          <Badge color="gray">{SOURCE_LABEL[question.source]}</Badge>
           <AnswerStatusBadge entry={entry} />
-          {filled && <Badge variant="info">Filled in from what was said</Badge>}
-          {dictating && drafting && <Badge variant="outline">Drafting…</Badge>}
-          {locked && <Badge variant="outline">Can't be changed</Badge>}
+          {filled && <Badge color="primary">Filled in from what was said</Badge>}
+          {dictating && drafting && <Badge color="gray">Drafting…</Badge>}
+          {locked && <Badge color="gray">Can't be changed</Badge>}
         </div>
 
-        <p className="text-lg sm:text-xl font-semibold text-kumo-strong leading-snug">
+        <p className="text-base sm:text-lg text-app-text">
           {question.prompt}
         </p>
 
@@ -188,18 +188,18 @@ export function QuestionStage({
           onChange={(v) => setDrafts((d) => ({ ...d, [question.id]: v }))}
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-kumo-line">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-app-quiet">
           <Button
-            variant="ghost"
+            variant="subtle"
             onClick={onBack}
             disabled={activeIndex === 0}
-            icon={<ArrowLeftIcon size={16} />}
+            leftSection={<ArrowLeftIcon size={16} />}
           >
             Back
           </Button>
           <div className="flex items-center gap-2 ml-auto">
             <Button
-              variant="primary"
+              variant="filled"
               onClick={() => submit(false)}
               disabled={
                 disabled ||
@@ -208,32 +208,33 @@ export function QuestionStage({
                 !isAnswerable(question, submitted) ||
                 sameAnswer(entry.answer, { value: submitted, skipped: false })
               }
-              icon={<CheckIcon size={16} />}
+              leftSection={<CheckIcon size={16} />}
             >
               {entry.answer && !entry.answer.skipped ? "Update" : "Submit"}
             </Button>
             <Button
-              variant="secondary"
               onClick={skips ? skip : onNext}
               disabled={skips ? disabled || saving : !hasNext}
               aria-label={
                 (skips ? "Skip" : "Next") +
                 (pendingAhead > 0 ? `, ${pendingAhead} new` : "")
               }
-            >
-              <span className="relative flex items-center gap-1.5">
-                {skips ? "Skip" : "Next"}
-                <ArrowRightIcon size={16} />
-                {pendingAhead > 0 && (
-                  <span className="absolute -top-3.5 -right-4 min-w-5 h-5 px-1 rounded-full bg-kumo-danger text-white text-[11px] font-semibold flex items-center justify-center animate-pulse">
+              rightSection={
+                // Inline, not floating: a Mantine Button clips what overflows.
+                pendingAhead > 0 ? (
+                  <span className="min-w-5 h-5 px-1 rounded-full bg-app-danger text-white text-xs font-bold flex items-center justify-center animate-pulse">
                     {pendingAhead}
                   </span>
-                )}
-              </span>
+                ) : (
+                  <ArrowRightIcon size={16} />
+                )
+              }
+            >
+              {skips ? "Skip" : "Next"}
             </Button>
           </div>
         </div>
-      </Surface>
+      </Paper>
     </div>
   );
 }

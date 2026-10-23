@@ -1,4 +1,4 @@
-import { Badge } from "@cloudflare/kumo";
+import { Badge } from "@mantine/core";
 import {
   type LogMessage
 } from "../../shared";
@@ -15,20 +15,20 @@ export function DebugLog({ messages }: { messages: LogMessage[] }) {
           : 1;
         if (meta) seen.set(`${kind}:${meta.subjectId}`, count);
         return (
-          <li key={message.id} className="rounded-lg ring ring-kumo-line">
+          <li key={message.id} className="border-y border-app-quiet">
             <details>
               <summary className="cursor-pointer px-2 py-1.5 flex items-center gap-2 flex-wrap">
-                <span className="text-kumo-subtle tabular-nums">#{i}</span>
-                <Badge variant={meta ? "secondary" : "info"}>{kind}</Badge>
-                <span className="text-kumo-subtle">{message.role}</span>
+                <span className="text-app-muted tabular-nums">#{i}</span>
+                <Badge size="sm" color={meta ? "gray" : "primary"}>{kind}</Badge>
+                <span className="text-app-muted">{message.role}</span>
                 {meta && (
-                  <span className="text-kumo-default truncate max-w-[12rem]">
+                  <span className="text-app-text truncate max-w-[12rem]">
                     {meta.subjectId}
                   </span>
                 )}
-                {count > 1 && <Badge variant="warning">revision {count}</Badge>}
+                {count > 1 && <Badge size="sm" color="yellow">revision {count}</Badge>}
               </summary>
-              <pre className="px-2 pb-2 overflow-x-auto whitespace-pre-wrap break-all text-kumo-default">
+              <pre className="px-2 pb-2 overflow-x-auto whitespace-pre-wrap break-all text-app-text">
                 {JSON.stringify(message, null, 2)}
               </pre>
             </details>

@@ -22,7 +22,6 @@
   "dependencies": {
     "@ai-sdk/react": "^4.0.0",
     "@cloudflare/ai-chat": "*",
-    "@cloudflare/kumo": "^2.6.0",
     "@dembrane/examples-shared": "workspace:*",
     "@dembrane/voice-google": "workspace:*",
     "@json-render/core": "^0.21.1",
