@@ -57,13 +57,13 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 **Description:** Write the system prompt in `src/draft/prompts/draft.md` with the spec's five rules: nothing invented, talk about the draft is an instruction, follow the hints, the speaker's language, corrections win. In `src/draft/draft.ts`, `draftRequest(question, said, previous)` builds the prompt and the response schema `{ draft: string }` from the question's prompt, its hints (saying when there are none), every utterance in order and the previous draft. `readDraft(json)` returns the text, or throws. Write the tests first. `scripts/try-draft.ts` runs the spec's six sample cases against `AGENT_MODEL` at low thinking, through `scripts/gemini.ts`, and prints each draft beside what was said.
 
 **Acceptance criteria:**
-- [ ] `draftRequest()` includes the prompt, the hints or a line saying there are none, every utterance in order, and the previous draft only when there is one.
-- [ ] `readDraft()` returns the text, and throws on a missing or non-string `draft`.
-- [ ] `pnpm try-draft` runs all six cases (ramble with a correction and tag hints; "just write exactly what I said"; "drop the bit about parking"; no hints; Dutch speech with English hints; a ramble that tempts adding detail), or one case by name prefix.
+- [x] `draftRequest()` includes the prompt, the hints or a line saying there are none, every utterance in order, and the previous draft only when there is one.
+- [x] `readDraft()` returns the text, and throws on a missing or non-string `draft`.
+- [x] `pnpm try-draft` runs all six cases (ramble with a correction and tag hints; "just write exactly what I said"; "drop the bit about parking"; no hints; Dutch speech with English hints; a ramble that tempts adding detail), or one case by name prefix.
 
 **Verification:**
-- [ ] `pnpm test`, including the new `src/draft/draft.test.ts`
-- [ ] `pnpm exec tsc --noEmit` passes
+- [x] `pnpm test`, including the new `src/draft/draft.test.ts`
+- [x] `pnpm exec tsc --noEmit` passes
 - [ ] `pnpm try-draft` output read by eye, by the user at the checkpoint
 
 **Dependencies:** Task 1 (`Question.draftHints`)

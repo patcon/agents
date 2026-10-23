@@ -13,6 +13,7 @@
     "update-prices": "node scripts/update-prices.mjs",
     "check-plans": "node scripts/check-plans.mjs",
     "try-jev": "node scripts/try-jev.mjs",
+    "try-draft": "tsx scripts/try-draft.ts",
     "test": "vitest run",
     "decompile-plan": "tsx scripts/decompile-plan.ts",
     "compile-playbook": "tsx scripts/compile-playbook.ts",
