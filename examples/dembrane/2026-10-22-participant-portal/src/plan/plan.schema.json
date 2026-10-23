@@ -443,6 +443,10 @@
                           "dictate": {
                             "description": "False keeps what's said from filling it in. Filled in when absent.",
                             "type": "boolean"
+                          },
+                          "draftHints": {
+                            "description": "How the answer drafted from what's said should read, in prose: its style and length, as in \"two or three sentences, plain language\". A clean, faithful version of what was said when absent.",
+                            "type": "string"
                           }
                         },
                         "required": [

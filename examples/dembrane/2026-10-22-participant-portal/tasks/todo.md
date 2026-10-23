@@ -9,13 +9,13 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 **Description:** Add an optional `draftHints` string to the text question's shape in `QuestionSpecSchema`, with a `describe()` that tells the compiler it's prose about how the answer should read (style and length). Add `draftHints?: string` to `Question` in `src/shared.ts`, so the schema drift check passes. Give the admin setup's tags question `"draftHints": "A comma-separated list of short, lowercase tags, nothing else."`. Regenerate the schemas with `pnpm check-plans`.
 
 **Acceptance criteria:**
-- [ ] A text question with `draftHints` parses, and `questionFor()` gives a question carrying it. A radio, checkbox or number question with `draftHints` doesn't parse.
-- [ ] Both plan schemas include `draftHints` on text questions only, and `admin-setup.json` checks.
+- [x] A text question with `draftHints` parses, and `questionFor()` gives a question carrying it. A radio, checkbox or number question with `draftHints` doesn't parse.
+- [x] Both plan schemas include `draftHints` on text questions only, and `admin-setup.json` checks.
 
 **Verification:**
-- [ ] `pnpm test`, including new `src/plan/plan.test.ts` cases for the two criteria above
-- [ ] `pnpm check-plans` passes
-- [ ] `pnpm exec tsc --noEmit` passes
+- [x] `pnpm test`, including new `src/plan/plan.test.ts` cases for the two criteria above
+- [x] `pnpm check-plans` passes
+- [x] `pnpm exec tsc --noEmit` passes
 
 **Dependencies:** None
 

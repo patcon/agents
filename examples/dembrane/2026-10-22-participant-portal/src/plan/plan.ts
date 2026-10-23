@@ -70,6 +70,12 @@ export const QuestionSpecSchema = z.discriminatedUnion("type", [
       .optional()
       .describe(
         "False keeps what's said from filling it in. Filled in when absent."
+      ),
+    draftHints: z
+      .string()
+      .optional()
+      .describe(
+        "How the answer drafted from what's said should read, in prose: its style and length, as in \"two or three sentences, plain language\". A clean, faithful version of what was said when absent."
       )
   }),
   z.strictObject({

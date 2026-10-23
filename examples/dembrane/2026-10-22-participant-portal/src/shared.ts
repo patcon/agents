@@ -23,6 +23,8 @@ export type Question = {
   dictate?: boolean;
   /** A text question's field: a single line, or a paragraph when absent. */
   length?: "short" | "long";
+  /** How a text question's answer drafted from speech should read, in prose. */
+  draftHints?: string;
   /** The platform's consent card: recording waits for every option ticked. */
   consent?: true;
   /** Once answered, it can't be revised. A skip doesn't count. */

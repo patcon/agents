@@ -91,7 +91,8 @@
           "type": "text",
           "prompt": "Which tags can participants pick from? Separate them with commas.",
           "required": false,
-          "length": "short"
+          "length": "short",
+          "draftHints": "A comma-separated list of short, lowercase tags, nothing else."
         }
       }
     },
