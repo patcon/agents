@@ -1,6 +1,6 @@
 # Capability map: hosts plan their participants' session
 
-Status: draft, from the design discussion of 2026-10-22. Each module gets its own `spec-<module id>.md` beside this file before it's built; ~~only `text-dictation` has one so far, and it's built.~~ `text-dictation` has one and is built; `voice-drafting` has a draft one.
+Status: draft, from the design discussion of 2026-10-22. Each module gets its own `spec-<module id>.md` beside this file before it's built; ~~only `text-dictation` has one so far, and it's built.~~ `text-dictation` has one and is built; ~~`voice-drafting` has a draft one.~~ `voice-drafting` has one and is built, with some checks by hand still to run.
 
 The goal: portal setup ends with the host describing, out loud, the session they want their participants to have. That becomes the project's participant plan, which anyone who isn't the host gets when they open the project.
 

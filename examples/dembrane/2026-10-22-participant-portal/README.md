@@ -2,7 +2,7 @@
 
 A continuous voice session that walks a host through setting up their project's portal. The setup questions come from a plan compiled from a playbook (`src/plan/admin-setup.json`); more can come on demand from the host and from an agent. Everything is stored as an append-only `UIMessage` log in one Durable Object.
 
-A copy of `2026-10-22-playbook-compilation`, with `src/` grouped by concern. Like that one, it compiles its plan from a markdown playbook with Gemini, and checks the result against the hand-made plan (see [Playbooks](#playbooks-srccompilecompilets)). The running session still uses the hand-made plan. Like `2026-10-22-jev`, it has [Jev](https://docs.typesafe.ai), TypeSafe's System One model, listen along: every card with options shows how likely each option is to be what the speaker chose, and fills in the likely ones. Text questions are filled in by [dictation](#dictation-srccardsregistrytsx): what's said while one is showing becomes its draft.
+A copy of `2026-10-22-playbook-compilation`, with `src/` grouped by concern. Like that one, it compiles its plan from a markdown playbook with Gemini, and checks the result against the hand-made plan (see [Playbooks](#playbooks-srccompilecompilets)). The running session still uses the hand-made plan. Like `2026-10-22-jev`, it has [Jev](https://docs.typesafe.ai), TypeSafe's System One model, listen along: every card with options shows how likely each option is to be what the speaker chose, and fills in the likely ones. Text questions are filled in by [dictation](#dictation-srccardsregistrytsx): what's said while one is showing becomes its draft, and an LLM [rewrites that draft](#drafting-srcdraftdraftts) into what was meant, the way the field asks for.
 
 ## Run it
 
@@ -14,7 +14,7 @@ pnpm google-token      # writes a fresh GOOGLE_ACCESS_TOKEN to .env (lasts about
 pnpm run start
 ```
 
-Transcription and the agent's question both use Gemini on Vertex AI, so you need a Google Cloud project with Vertex AI enabled and `gcloud` signed in. Deploys use a JSON key for a service account with `roles/aiplatform.user` instead, as `GOOGLE_SERVICE_ACCOUNT_KEY`: the Worker trades it for access tokens with `serviceAccountToken`, and fetches a new one before each expires. Transcription streams to `gemini-3.5-transcribe-live-preview` through `VertexLiveSTT` from [`@dembrane/voice-google`](../packages/voice-google); the agent's question comes from `gemini-3.8-flash`, and so do compiled plans. The models are set in `wrangler.jsonc`.
+Transcription and the agent's question both use Gemini on Vertex AI, so you need a Google Cloud project with Vertex AI enabled and `gcloud` signed in. Deploys use a JSON key for a service account with `roles/aiplatform.user` instead, as `GOOGLE_SERVICE_ACCOUNT_KEY`: the Worker trades it for access tokens with `serviceAccountToken`, and fetches a new one before each expires. Transcription streams to `gemini-3.5-transcribe-live-preview` through `VertexLiveSTT` from [`@dembrane/voice-google`](../packages/voice-google); the agent's question comes from `gemini-3.8-flash`, and so do compiled plans. Drafts of text answers come from `gemini-3.5-flash`. The models are set in `wrangler.jsonc`.
 
 ## How it works
 
@@ -43,6 +43,7 @@ type LogMeta =
 | Plan   | `open()` and `answer()` append the questions the plan releases |
 | Host   | `@callable() pushHostQuestion()`                               |
 | Person | `@callable() answer(questionId, value, skipped)`               |
+| Drafting | `#draft()` appends a `draft` after an utterance on a text question |
 
 The agent is woken without a human message: a `trigger` entry is appended with `saveMessages()`, which runs `onChatMessage()`. That asks Gemini (`src/models/gemini.ts`) for a question in the same shape as a plan's (`questionLlmSchema()` in `src/plan/plan.ts`), checks it with Zod, appends it, and replies with a short assistant message saying what it asked. The trigger stays in the log, so it's clear why the turn ran.
 
@@ -87,16 +88,28 @@ The draft is built in `foldLog()`: a text question's `suggested` is every uttera
 
 An utterance counts for the question on screen when it was started, not when it was finished. The server notes the question at its first interim text, and saves it on the utterance's log entry as `onScreen`. So pressing Submit or Skip mid-sentence doesn't hand the end of the sentence to the next question.
 
-On the page, `TextInput` draws the field in two layers in one box. While dictation fills it, a display layer shows the draft with the transcriber's interim text greyed inline after it, and follows new text down unless the person has scrolled up. Pressing it swaps in the real textarea underneath within the same event, with the caret where they pressed (`src/cards/caret.ts`, using `document.caretPositionFromPoint`) and the scroll position kept. Both layers lay text out identically (`FIELD_TEXT`), so nothing moves. Fields are a fixed height, so they don't jump as text arrives: eight lines for long text, the default. A text question with `"length": "short"`, like the portal title, gets a single-line input instead, where the display follows new text sideways. A plan's question has one shape per type (`QuestionSpecSchema` in `src/plan/plan.ts`), so `options` and `assess` only go on choices, `length` and `dictate` on text, and `min` and `max` on numbers.
+On the page, `TextInput` draws the field in two layers in one box. While dictation fills it, a display layer shows the draft with the transcriber's interim text greyed inline after it, and follows new text down unless the person has scrolled up. Pressing it swaps in the real textarea underneath within the same event, with the caret where they pressed (`src/cards/caret.ts`, using `document.caretPositionFromPoint`) and the scroll position kept. Both layers lay text out identically (`FIELD_TEXT`), so nothing moves. Fields are a fixed height, so they don't jump as text arrives: eight lines for long text, the default. A text question with `"length": "short"`, like the portal title, gets a single-line input instead, where the display follows new text sideways. A plan's question has one shape per type (`QuestionSpecSchema` in `src/plan/plan.ts`), so `options` and `assess` only go on choices, `length`, `dictate` and `draftHints` on text, and `min` and `max` on numbers.
 
 | While the textarea has focus | |
 | --- | --- |
 | They haven't typed | Dictation keeps adding, with their caret and scroll put back. Interim text is in the textarea as plain text, and the final words replace it. Leaving brings the display back. |
-| They've typed | The text is theirs: the badge goes, dictation stops, and it stays a textarea. |
+| They've typed | The text is theirs: the badge goes, dictation and drafting stop, and it stays a textarea. |
 
 Pressing Submit mid-sentence saves what's on screen, greyed words included. Cards read whether dictation fills them from `/dictating` and the interim text from `/interim` in their state, as they read Jev's likelihoods from `/likelihood`.
 
-Tests sit beside what they test (`src/shared.test.ts`, `src/plan/plan.test.ts`, `src/cards/caret.test.ts`); `pnpm test` runs them along with `tests/compile.test.ts`.
+### Drafting (`src/draft/draft.ts`)
+
+People ramble, correct themselves and circle back, so after each utterance an LLM rewrites the draft of the text question it counts for, from everything said for it. "um, tags, so housing, and transport, oh and not parks, actually yes parks" becomes "housing, transport, parks". Spec: [`design/spec-voice-drafting.md`](design/spec-voice-drafting.md).
+
+- A plan's text question can carry `draftHints`, prose on how its answer should read; the tags question asks for "A comma-separated list of short, lowercase tags, nothing else." A playbook writes them as a note, `[hints: …]`, which the compiler carries over. Without hints, the draft is a clean, faithful version of what was said.
+- The prompt is `src/draft/prompts/draft.md`: add nothing that wasn't said, treat talk about the draft ("shorter", "write exactly what I said") as an instruction rather than content, follow the hints unless asked otherwise out loud, write in the speaker's language, and keep corrections. `draftRequest()` builds each call, and `readDraft()` checks the answer.
+- The server (`#draft()` in `src/server.ts`) calls `DRAFT_MODEL` at low thinking, with one call per question in flight and one more after it for whatever was said meanwhile, and gives a call up after 20 s. Each draft is logged as a `draft` entry. `foldLog()` shows the latest draft followed, verbatim, by anything said since, so words appear at once and the next draft takes them in. A failed call logs nothing, and the words stay as said.
+- Once someone changes a field's text, the page calls `takeOver()` and the server stops drafting it. While a call is in flight, the page shows "Drafting…" beside the "Filled in from what was said" badge.
+- Calls and tokens have their own "Drafting" line in the log drawer's cost estimate. `DRAFT_ENABLED=false` in `.env` turns drafting off, leaving plain dictation.
+
+`pnpm try-draft [case] [--model name]` runs sample rambles past the prompt and prints each draft beside what was said, for reading by eye. `gemini-3.5-flash` drafts in about 2 s, where `gemini-3.8-flash` often took 10–60 s, and unlike `gemini-3.5-flash-lite` it follows "write exactly what I said".
+
+Tests sit beside what they test (`src/shared.test.ts`, `src/plan/plan.test.ts`, `src/draft/draft.test.ts`, `src/cards/caret.test.ts`); `pnpm test` runs them along with `tests/compile.test.ts`.
 
 ### Playbooks (`src/compile/compile.ts`)
 
@@ -117,7 +130,7 @@ pnpm compile-playbook src/compile/playbooks/admin-setup.decompiled.md --runs 10 
 pnpm compare-plans src/plan/admin-setup.json compiled/*.json
 ```
 
-`decompile-plan` has Gemini write the playbook for a plan, with notes for the compiler in square brackets. `compile-playbook` compiles in parallel into `compiled/`, which isn't committed. `compare-plans` calls no model. It matches prompts by key and sections by title, and reports a difference in section, type, options, `required`, card, reading order or what releases an item. Ids and `order` strings don't count, and changed wording is reported apart. Each call prints its time, tokens and cost. 10 of 10 compiles of the decompiled admin setup came out the same as the hand-made plan, at about 21 s and 1.8¢ each.
+`decompile-plan` has Gemini write the playbook for a plan, with notes for the compiler in square brackets. `compile-playbook` compiles in parallel into `compiled/`, which isn't committed. `compare-plans` calls no model. It matches prompts by key and sections by title, and reports a difference in section, type, options, `required`, card, reading order, what releases an item, or draft hints given or not. Ids and `order` strings don't count, and changed wording, of prompts or hints, is reported apart. Gemini leaves an optional `draftHints` out even where the playbook has one, so `planLlmSchema()` requires it, with null for none, and `fromLlmPlan()` drops the nulls. Each call prints its time, tokens and cost. 10 of 10 compiles of the decompiled admin setup came out the same as the hand-made plan, at about 21 s and 1.8¢ each.
 
 ## Related
 

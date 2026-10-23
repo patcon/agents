@@ -1,6 +1,6 @@
 # Spec: drafting text fields from speech
 
-Status: draft, for review. Module `voice-drafting`, slice 1.1 in [`capability-map.md`](capability-map.md). It builds on [`text-dictation`](spec-text-dictation.md). `context-carryover`, `draft-ahead`, `planner` and `projects` come after it and are out of scope here.
+Status: ~~draft, for review.~~ built, 2026-10-23. The unticked criteria below need speaking into a microphone, and wait on a run by hand. Module `voice-drafting`, slice 1.1 in [`capability-map.md`](capability-map.md). It builds on [`text-dictation`](spec-text-dictation.md). `context-carryover`, `draft-ahead`, `planner` and `projects` come after it and are out of scope here.
 
 ## Objective
 
@@ -172,17 +172,17 @@ Then a check by hand with `pnpm run start`: on the tags question, speak a ramble
 
 ## Success criteria
 
-- [ ] With recording on and drafting on, each final utterance said while a text question shows starts a rewrite, and the field shows the new draft once it's logged.
+- [x] With recording on and drafting on, each final utterance said while a text question shows starts a rewrite, and the field shows the new draft once it's logged.
 - [ ] Until a draft arrives, and for words said since the last one, the field shows them verbatim, then greyed interim text, as in `text-dictation`.
-- [ ] Only one draft call per question is in flight; speech during it is covered by exactly one more call.
-- [ ] Drafts follow `draftHints`, keep corrections, treat talk about the draft as instructions, follow the speaker's language, and add nothing that wasn't said, in every `pnpm try-draft` case, read by eye.
+- [x] Only one draft call per question is in flight; speech during it is covered by exactly one more call (seen in a session's log, 2026-10-23: a second draft 2.3 s after the first).
+- [x] Drafts follow `draftHints`, keep corrections, treat talk about the draft as instructions, follow the speaker's language, and add nothing that wasn't said, in every `pnpm try-draft` case, read by eye.
 - [ ] Once the person changes the field's text, the server makes no more draft calls for it.
 - [ ] "Drafting…" shows on the question on screen while its call is in flight, and goes when it ends, whether it worked or failed.
 - [ ] A failed call leaves the verbatim text in place.
-- [ ] Drafts are `draft` log entries; calls and tokens appear in the cost estimate.
+- [ ] Drafts are `draft` log entries (seen in a session, 2026-10-23); calls and tokens appear in the cost estimate.
 - [ ] `DRAFT_ENABLED=false` gives `text-dictation`'s behaviour, with no draft calls.
-- [ ] `draftHints` parses on a text question, and on no other type, reaches the question, appears in both plan schemas, and `pnpm check-plans` passes with the tags question's hints.
-- [ ] The new tests pass, and the existing ones still pass.
+- [x] `draftHints` parses on a text question, and on no other type, reaches the question, appears in both plan schemas, and `pnpm check-plans` passes with the tags question's hints.
+- [x] The new tests pass, and the existing ones still pass.
 
 ## Decisions
 

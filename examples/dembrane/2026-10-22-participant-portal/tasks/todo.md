@@ -176,11 +176,11 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 **Description:** Add a paragraph to the README's "Dictation" section: the LLM rewrite after each utterance, `draftHints` and the playbook note, the `draft` log entry and how the fold composes it with the words said since, taking over, the "Drafting…" sign, `DRAFT_ENABLED`, and `pnpm try-draft`. Mention drafting in the intro's summary of what the example does. Mark the spec built and check its success criteria.
 
 **Acceptance criteria:**
-- [ ] Someone reading only the README knows what drafting does, how to turn it off, and how to try the prompt.
+- [x] Someone reading only the README knows what drafting does, how to turn it off, and how to try the prompt.
 - [ ] The spec's status says built, with each success criterion checked.
 
 **Verification:**
-- [ ] Read through; every file and command it names exists
+- [x] Read through; every file and command it names exists
 
 **Dependencies:** Tasks 1–7
 
