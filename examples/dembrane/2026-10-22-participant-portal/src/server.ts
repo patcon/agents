@@ -98,6 +98,11 @@ const ASSESS_AFTER_QUESTION_MS = 100;
 const ASSESS_UTTERANCES = 40;
 /** How much of the transcript Jev sees in a preview, before what's being said. */
 const PREVIEW_UTTERANCES = 10;
+/**
+ * A draft call that takes longer is given up, as a failure, so a stall
+ * doesn't hold the question's next draft. They take about 2 s.
+ */
+const DRAFT_TIMEOUT_MS = 20_000;
 
 /**
  * One conversation, one Durable Object.
@@ -417,6 +422,13 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
     return undefined;
   }
 
+  /** Pages show "Drafting…" on these. Unlogged, like a Jev preview. */
+  #broadcastDrafting() {
+    this.broadcast(
+      JSON.stringify({ type: "drafting", questionIds: [...this.#drafting] })
+    );
+  }
+
   #draftSoon(questionId: string | null) {
     if (!questionId || !this.#draftOn()) return;
     if (!this.#draftable(this.#view(), questionId)) return;
@@ -429,6 +441,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
       return;
     }
     this.#drafting.add(questionId);
+    this.#broadcastDrafting();
     try {
       await this.#tail;
       const view = this.#view();
@@ -446,7 +459,8 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
         system: draftSystem,
         prompt,
         schema,
-        thinkingLevel: "low"
+        thinkingLevel: "low",
+        signal: AbortSignal.timeout(DRAFT_TIMEOUT_MS)
       });
       this.#addUsage({
         draftCalls: 1,
@@ -469,6 +483,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
       console.error("Draft failed", error);
     } finally {
       this.#drafting.delete(questionId);
+      this.#broadcastDrafting();
       if (this.#draftAgain.delete(questionId)) void this.#draft(questionId);
     }
   }

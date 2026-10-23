@@ -160,7 +160,7 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 - [ ] It doesn't show on a question whose text has been taken over.
 
 **Verification:**
-- [ ] `pnpm exec tsc --noEmit` passes
+- [x] `pnpm exec tsc --noEmit` passes
 - [ ] By hand: the sign comes and goes as you speak; with the network to Vertex blocked, or a bad model name, it still goes
 
 **Dependencies:** Task 5 (task 6 for the second criterion)

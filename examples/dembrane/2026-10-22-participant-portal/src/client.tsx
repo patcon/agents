@@ -239,6 +239,7 @@ function QuestionStage({
   pendingAhead,
   disabled,
   interim,
+  drafting,
   onBack,
   onNext,
   onAnswer,
@@ -251,6 +252,8 @@ function QuestionStage({
   disabled: boolean;
   /** What's being said now, before the transcriber makes it final. */
   interim?: string;
+  /** Whether the server is writing a draft for this question now. */
+  drafting: boolean;
   onBack: () => void;
   onNext: () => void;
   onAnswer: (value: AnswerValue, skipped: boolean) => Promise<void>;
@@ -354,6 +357,7 @@ function QuestionStage({
           <Badge variant="outline">{SOURCE_LABEL[question.source]}</Badge>
           <AnswerStatusBadge entry={entry} />
           {filled && <Badge variant="info">Filled in from what was said</Badge>}
+          {dictating && drafting && <Badge variant="outline">Drafting…</Badge>}
           {locked && <Badge variant="outline">Can't be changed</Badge>}
         </div>
 
@@ -636,6 +640,8 @@ function App() {
   const sessionId = useMemo(getSessionId, []);
   const [connection, setConnection] = useState<ConnectionStatus>("connecting");
   const [preview, setPreview] = useState<Preview | null>(null);
+  /** Questions the server is writing a draft for now. */
+  const [drafting, setDrafting] = useState<string[]>([]);
 
   const agent = useAgent<Usage>({
     agent: "ConversationAgent",
@@ -647,6 +653,7 @@ function App() {
       try {
         const message = JSON.parse(event.data);
         if (message?.type === "jev-preview") setPreview(message.preview);
+        if (message?.type === "drafting") setDrafting(message.questionIds);
       } catch {
         // Not ours.
       }
@@ -879,6 +886,7 @@ function App() {
                 ? (voice.interimTranscript ?? undefined)
                 : undefined
             }
+            drafting={!!current && drafting.includes(current)}
             onBack={() => goTo(activeIndex - 1)}
             onNext={() => goTo(activeIndex + 1)}
             onAnswer={answer}
