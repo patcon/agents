@@ -1,145 +1,197 @@
-# Tasks: text-dictation
+# Tasks: voice-drafting
 
-Plan: [`plan.md`](plan.md). Spec: [`design/spec-text-dictation.md`](../design/spec-text-dictation.md).
+Plan: [`plan.md`](plan.md). Spec: [`design/spec-voice-drafting.md`](../design/spec-voice-drafting.md).
 
 Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 
-## Task 1: Text questions get a draft from what was said while they showed
+## Task 1: Text questions can carry `draftHints`, and the tags question has some
 
-**Description:** Add `dictate?: boolean` to `Question`. After `foldLog()`'s loop, give each text question with dictation on a `suggested` value: the utterances said while it was on screen, in order, joined by single spaces. Update `suggested`'s doc comment. Write the tests first, in a new `src/shared.test.ts`, and widen Vitest's `include` to find it.
+**Description:** Add an optional `draftHints` string to the text question's shape in `QuestionSpecSchema`, with a `describe()` that tells the compiler it's prose about how the answer should read (style and length). Add `draftHints?: string` to `Question` in `src/shared.ts`, so the schema drift check passes. Give the admin setup's tags question `"draftHints": "A comma-separated list of short, lowercase tags, nothing else."`. Regenerate the schemas with `pnpm check-plans`.
 
 **Acceptance criteria:**
-- [x] Utterances said while a text question shows become its `suggested`, in order; those said before it showed, or while another question showed, don't count; two separate stretches on screen both count.
-- [x] `dictate: false`, or no utterances while showing, gives no `suggested`; radio, checkbox and number questions get no dictated `suggested`, and Jev's suggestions are unchanged.
-- [x] With recording on, speaking while the tags question shows fills its field with the "Filled in from what was said" badge, and nothing is saved until Submit.
+- [ ] A text question with `draftHints` parses, and `questionFor()` gives a question carrying it. A radio, checkbox or number question with `draftHints` doesn't parse.
+- [ ] Both plan schemas include `draftHints` on text questions only, and `admin-setup.json` checks.
 
 **Verification:**
-- [x] `pnpm test`: the 7 new fold tests and the 12 existing ones pass
-- [x] `pnpm exec tsc --noEmit` passes
-- [x] By hand with `pnpm run start`: the tags question fills as you speak, stops changing once edited, and shows the answer once submitted
+- [ ] `pnpm test`, including new `src/plan/plan.test.ts` cases for the two criteria above
+- [ ] `pnpm check-plans` passes
+- [ ] `pnpm exec tsc --noEmit` passes
 
 **Dependencies:** None
 
 **Files likely touched:**
-- `src/shared.ts`
-- `src/shared.test.ts` (new)
-- `vitest.config.ts`
-
-**Estimated scope:** Small
-
-## Task 2: Plan prompts can turn dictation off with `"dictate": false`
-
-**Description:** Add an optional `dictate` boolean to the prompt payload in `src/plan/plan.ts`, described like `assess`, and have `questionFor()` carry it onto the question. Regenerate the JSON schemas with `pnpm check-plans`.
-
-**Acceptance criteria:**
-- [x] A prompt with `"dictate": false` parses, and `questionFor()` gives a question with `dictate: false`; without it, `dictate` is unset, as `assess` is.
-- [x] `src/plan/plan.schema.json` and `src/plan/plan.llm.schema.json` include `dictate`, and `admin-setup.json` still checks.
-
-**Verification:**
-- [x] `pnpm test`, including a new `src/plan/plan.test.ts` for the two `questionFor()` cases
-- [x] `pnpm check-plans` passes
-- [x] `pnpm exec tsc --noEmit` passes
-
-**Dependencies:** Task 1 (`Question.dictate`)
-
-**Files likely touched:**
 - `src/plan/plan.ts`
-- `src/plan/plan.test.ts` (new)
+- `src/shared.ts`
+- `src/plan/plan.test.ts`
+- `src/plan/admin-setup.json`
 - `src/plan/plan.schema.json`, `src/plan/plan.llm.schema.json` (generated)
 
 **Estimated scope:** Small
 
-## Checkpoint: the draft
+## Task 2: Playbooks carry hints as notes, and compiles still match
 
-- [x] Tests, typecheck and `pnpm check-plans` pass
-- [x] Hand check from task 1 done
-- [x] Review with the user before phase 2
-
-## Task 3: Interim text shows greyed in the text field on screen
-
-**Description:** `App` passes `voice.interimTranscript` to `QuestionStage`. `QuestionStage` passes it on to `CardInput` as `interim` only when the question has dictation on, is text, is `view.onScreen`, recording is on, it's unanswered, and the card hasn't been edited. `CardInput` keeps `/interim` in card state, as it does `/likelihood`. `TextInput` draws it as a greyed line directly under the text, inside the same bordered box. `cards.ts` documents `/interim` beside `/likelihood`.
+**Description:** The decompile prompt learns to write a text question's hints as a note, e.g. `[hints: a comma-separated list of short, lowercase tags]`, and the compile prompt learns to turn that note into `draftHints`. Re-decompile to a scratch file to check the prompt writes the note, then add it to the committed playbook by hand, so nothing else in the playbook changes. `compare-plans` reports hints that differ only in wording apart, as it does for prompts, and a missing or extra hint as a difference.
 
 **Acceptance criteria:**
-- [x] While someone speaks with a text question on screen, the interim text shows greyed ~~under the draft~~ inline after the draft (task 3a), and is gone once the utterance is final and has joined the draft.
-- [x] It doesn't show once the field has been edited, once the question is answered, for `dictate: false`, or for non-text questions.
-- [x] ~~It's never part of the value: submitting mid-sentence saves only the draft.~~ Submitting mid-sentence saves the draft with the greyed words as they stand.
+- [ ] A fresh decompile of `admin-setup.json` writes the hints note on the tags question.
+- [ ] `compare-plans` reports a reworded hint as `reworded`, and a missing hint as a difference.
+- [ ] 10 of 10 compiles of the playbook match the hand-made plan.
 
 **Verification:**
-- [x] `pnpm exec tsc --noEmit` and `pnpm test` pass
-- [x] By hand with `pnpm run start`: each criterion above, and no visible doubling when interim text turns final
+- [ ] `pnpm test`, including a `tests/compile.test.ts` case for a reworded hint and one for a missing hint
+- [ ] `pnpm compile-playbook src/compile/playbooks/admin-setup.decompiled.md --runs 10` then `pnpm compare-plans src/plan/admin-setup.json compiled/*.json` says "all the same"
 
 **Dependencies:** Task 1
 
 **Files likely touched:**
-- `src/client.tsx`
-- `src/cards/registry.tsx`
-- `src/cards/cards.ts`
+- `src/compile/prompts/decompile-plan.md`
+- `src/compile/prompts/compile-playbook.md`
+- `src/compile/playbooks/admin-setup.decompiled.md`
+- `src/compile/compare-plans.ts`
+- `tests/compile.test.ts`
 
 **Estimated scope:** Medium
 
-## Task 3a: A display layer shows the draft with interim text inline
+## Task 3: The draft prompt, `draftRequest()`, `readDraft()` and `pnpm try-draft`
 
-**Description:** Replaces task 3's wrapper box and greyed line under the text (`70e9714b`, `819959c1`). `TextInput` stacks a display `<div>` over the real `<textarea>` in one grid cell, with identical height (about 8 lines), font, padding, line height, wrapping and `scrollbar-gutter: stable`. While dictation fills the field, the div shows the draft followed by the interim text, greyed, inline; `cursor: text`. It follows new text while scrolled to the bottom. The page tells the card whether dictation is filling it (`/dictating` in card state), since only the page knows whether its text has been changed.
+**Description:** Write the system prompt in `src/draft/prompts/draft.md` with the spec's five rules: nothing invented, talk about the draft is an instruction, follow the hints, the speaker's language, corrections win. In `src/draft/draft.ts`, `draftRequest(question, said, previous)` builds the prompt and the response schema `{ draft: string }` from the question's prompt, its hints (saying when there are none), every utterance in order and the previous draft. `readDraft(json)` returns the text, or throws. Write the tests first. `scripts/try-draft.ts` runs the spec's six sample cases against `AGENT_MODEL` at low thinking, through `scripts/gemini.ts`, and prints each draft beside what was said.
 
 **Acceptance criteria:**
-- [x] While dictating, the interim text shows greyed right after the last word, and the field's height never changes.
-- [x] New text keeps the display scrolled to the bottom, unless the person scrolled up.
-- [x] Without dictation (off, answered, or its text changed), the field is a plain textarea of the same height.
+- [ ] `draftRequest()` includes the prompt, the hints or a line saying there are none, every utterance in order, and the previous draft only when there is one.
+- [ ] `readDraft()` returns the text, and throws on a missing or non-string `draft`.
+- [ ] `pnpm try-draft` runs all six cases (ramble with a correction and tag hints; "just write exactly what I said"; "drop the bit about parking"; no hints; Dutch speech with English hints; a ramble that tempts adding detail), or one case by name prefix.
 
 **Verification:**
-- [x] `pnpm exec tsc --noEmit` and `pnpm test` pass
-- [x] By hand: the criteria above, with a long enough dictation to pass the fold
+- [ ] `pnpm test`, including the new `src/draft/draft.test.ts`
+- [ ] `pnpm exec tsc --noEmit` passes
+- [ ] `pnpm try-draft` output read by eye, by the user at the checkpoint
 
-**Dependencies:** Task 3
+**Dependencies:** Task 1 (`Question.draftHints`)
 
 **Files likely touched:**
-- `src/cards/registry.tsx`
-- `src/client.tsx`
-- `src/cards/cards.ts`
+- `src/draft/draft.ts` (new)
+- `src/draft/draft.test.ts` (new)
+- `src/draft/prompts/draft.md` (new)
+- `scripts/try-draft.ts` (new)
+- `package.json` (a `try-draft` script)
 
 **Estimated scope:** Medium
 
-## Task 3b: Pressing the display swaps in the textarea, caret where pressed
+## Checkpoint: the prompt
 
-**Description:** On pointer-down on the display, or focus by Tab, `TextInput` hides the div and focuses the textarea in the same event, carrying over the scroll position and placing the caret: where pressed (`caretPositionFromPoint`, falling back to `caretRangeFromPoint`), at the end of the draft for a press on the interim text, at the end for Tab. ~~Taking over stops dictation for the field, as an edit did: the page records the draft as theirs.~~ Only changing the text stops dictation; while focused and unchanged, dictation keeps adding with the caret and scroll kept, and leaving brings the display back. Turning the caret result into an offset is a pure function in `src/cards/caret.ts`, tested beside it.
+- [ ] `pnpm test`, the typecheck and `pnpm check-plans` pass; 10 of 10 compiles match
+- [ ] The user reads `pnpm try-draft`'s output for every case, and the prompt is changed until they're happy with it
+
+## Task 4: A `draft` log entry, folded into the question's draft
+
+**Description:** Add the `draft` kind to `LogMeta`, the `Draft` type (`text`, `seenUpTo`, `model`) and `draft: Draft` to `LogDataParts`, as the spec has them. In `foldLog()`, keep the latest draft for each question while reading the log. After the loop, a drafted text question's `suggested` becomes the latest draft's text followed by the utterances that count for it after `seenUpTo`, joined by single spaces with empty parts left out, and is left out when empty. Write the spec's seven fold tests first.
 
 **Acceptance criteria:**
-- [x] Pressing anywhere in the display gives a focused textarea with no text moving, the caret where pressed.
-- [x] ~~After taking over, the badge goes, new speech doesn't change the field, and it stays a textarea after clicking away.~~ Clicking in and out without typing keeps the badge and brings the display back; while focused, new speech is added without moving the caret. After typing, the badge goes, new speech doesn't change the field, and it stays a textarea.
-- [x] Tab into the field gives a focused textarea with the caret at the end.
+- [ ] With no draft, `suggested` is what `text-dictation` gives today, and the existing fold tests pass unchanged.
+- [ ] With drafts, `suggested` follows the spec's seven cases: draft then unseen utterances; just the draft when it saw the last one; the later of two drafts; not another question's draft; nothing with `dictate: false`; nothing when the draft is empty and nothing follows.
 
 **Verification:**
-- [x] `pnpm test`, including `src/cards/caret.test.ts`
-- [x] `pnpm exec tsc --noEmit` passes
-- [x] By hand: the criteria above, on desktop, and on a phone if one's handy (the keyboard should open)
+- [ ] `pnpm test`, including the seven new cases in `src/shared.test.ts`
+- [ ] `pnpm exec tsc --noEmit` passes
 
-**Dependencies:** Task 3a
+**Dependencies:** None (it can be built beside tasks 2 and 3)
 
 **Files likely touched:**
-- `src/cards/registry.tsx`
-- `src/cards/caret.ts`, `src/cards/caret.test.ts` (new)
-- `src/client.tsx`
+- `src/shared.ts`
+- `src/shared.test.ts`
+
+**Estimated scope:** Small
+
+## Task 5: The server drafts a text question after each utterance
+
+**Description:** In `ConversationAgent`, after an utterance is appended, `#draftSoon(questionId)` starts a rewrite for the question it counts for, if that question is a text question with dictation on, still open, and drafting is on. `#draft(questionId)` copies `#assess()`'s pattern, with in-flight and again sets keyed by question id. It waits for `#tail`, skips if the latest draft already saw the question's last utterance, calls `generateJson()` with `draftRequest()`, adds the usage to the agent's tally, and appends a `draft` entry (`role: "system"`, a `data-draft` part). A failure is logged to the console and nothing is appended. Import the prompt with `?raw`. Add `DRAFT_ENABLED` to `wrangler.jsonc` (`"true"`), `.env.example` (with a comment like `JEV_ENABLED`'s) and `env.d.ts` (`pnpm types`).
+
+**Acceptance criteria:**
+- [ ] With recording on, speaking while the tags question shows logs a `draft` entry after each utterance, and the field shows it, followed by any words said since.
+- [ ] Only one call per question is in flight; speech during a call leads to exactly one more call.
+- [ ] Calls and tokens show in the log drawer's cost estimate; a failed call leaves the verbatim text; `DRAFT_ENABLED=false` makes no calls.
+
+**Verification:**
+- [ ] `pnpm test` and `pnpm exec tsc --noEmit` pass
+- [ ] By hand with `pnpm run start`: the three criteria above, watching the log drawer for `draft` entries and the call count
+
+**Dependencies:** Tasks 3 and 4
+
+**Files likely touched:**
+- `src/server.ts`
+- `wrangler.jsonc`
+- `.env.example`
+- `env.d.ts` (generated)
 
 **Estimated scope:** Medium
 
-## Task 4: The README describes dictation
+## Checkpoint: drafting end to end
 
-**Description:** Add a short "Dictation" subsection after "Jev" in `README.md`: what fills a text field and when, the interim text, `"dictate": false`, and that nothing is submitted for the person. Note that tests now also live beside their source.
+- [ ] Tests and typecheck pass
+- [ ] By hand: a ramble on the tags question shows verbatim at once, then becomes a tidy tag list; `DRAFT_ENABLED=false` gives plain dictation
+- [ ] Review with the user before phase 3, including how the text changing under them feels
+
+## Task 6: Typing in a field stops the server drafting it
+
+**Description:** Add a `takeOver(questionId)` callable that puts the question in an in-memory set, unlogged, which `#draftSoon()` checks. On the page, when a text question's card becomes edited (the `edited` value `QuestionStage` already computes), call `takeOver` once for it.
 
 **Acceptance criteria:**
-- [x] The section matches what was built, and links the spec.
+- [ ] After the person changes a text field's text, further speech logs no more `draft` entries for that question.
+- [ ] Clicking into the field and leaving without changing it doesn't stop drafting.
 
 **Verification:**
-- [x] Read it against the code once tasks 1 to 3b are in
+- [ ] `pnpm exec tsc --noEmit` passes
+- [ ] By hand: type in the tags field, keep speaking, and see the agent's call count stop rising and no new `draft` entries in the log drawer
 
-**Dependencies:** Tasks 1, 2, 3, 3a, 3b
+**Dependencies:** Task 5
+
+**Files likely touched:**
+- `src/server.ts`
+- `src/client.tsx`
+
+**Estimated scope:** Small
+
+## Task 7: "Drafting…" shows while a rewrite is in flight
+
+**Description:** Whenever the set of questions with a call in flight changes, the server broadcasts `{ type: "drafting", questionIds }`, unlogged, as `jev-preview` is. The page keeps the latest set and shows a small "Drafting…" sign beside the "Filled in from what was said" badge on the question on screen while it's in the set.
+
+**Acceptance criteria:**
+- [ ] The sign shows while a draft call for the question on screen is in flight, and goes when it ends, whether it worked or failed.
+- [ ] It doesn't show on a question whose text has been taken over.
+
+**Verification:**
+- [ ] `pnpm exec tsc --noEmit` passes
+- [ ] By hand: the sign comes and goes as you speak; with the network to Vertex blocked, or a bad model name, it still goes
+
+**Dependencies:** Task 5 (task 6 for the second criterion)
+
+**Files likely touched:**
+- `src/server.ts`
+- `src/client.tsx`
+
+**Estimated scope:** Small
+
+## Task 8: The README describes drafting
+
+**Description:** Add a paragraph to the README's "Dictation" section: the LLM rewrite after each utterance, `draftHints` and the playbook note, the `draft` log entry and how the fold composes it with the words said since, taking over, the "Drafting…" sign, `DRAFT_ENABLED`, and `pnpm try-draft`. Mention drafting in the intro's summary of what the example does. Mark the spec built and check its success criteria.
+
+**Acceptance criteria:**
+- [ ] Someone reading only the README knows what drafting does, how to turn it off, and how to try the prompt.
+- [ ] The spec's status says built, with each success criterion checked.
+
+**Verification:**
+- [ ] Read through; every file and command it names exists
+
+**Dependencies:** Tasks 1–7
 
 **Files likely touched:**
 - `README.md`
+- `design/spec-voice-drafting.md`
+- `design/capability-map.md` (the status line)
 
-**Estimated scope:** XS
+**Estimated scope:** Small
 
 ## Checkpoint: complete
 
-- [x] Every success criterion in `design/spec-text-dictation.md` is met
-- [x] Review with the user
+- [ ] Every success criterion in the spec is checked
+- [ ] This plan and its tasks move to `archived/` as `voice-drafting-plan.md` and `voice-drafting-todo.md`

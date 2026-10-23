@@ -1,65 +1,85 @@
-# Implementation plan: text-dictation
+# Implementation plan: voice-drafting
 
-Spec: [`design/spec-text-dictation.md`](../design/spec-text-dictation.md). Module `text-dictation` in [`design/capability-map.md`](../design/capability-map.md). Tasks: [`todo.md`](todo.md).
+Spec: [`design/spec-voice-drafting.md`](../design/spec-voice-drafting.md). Module `voice-drafting`, slice 1.1 in [`design/capability-map.md`](../design/capability-map.md). Tasks: [`todo.md`](todo.md). Finished plans are kept in [`archived/`](archived/).
 
 ## Overview
 
-What's said while a text question is on screen becomes its draft, and the transcriber's interim text shows greyed in the field while someone is still speaking. The draft is built in `foldLog()` as the question's `suggested` value, which the page already shows as a draft with the "Filled in from what was said" badge, and never submits. The interim text is only shown on the page.
+After each utterance, an LLM rewrites a text question's draft from everything said while it showed, following the question's `draftHints` and the speaker's own asks. Each rewrite is logged as a `draft` entry. `foldLog()` shows the latest draft followed, word for word, by what's been said since, so words still appear the moment they're said. Typing in the field stops drafting it, and a "Drafting…" sign shows while a rewrite is being written.
 
-Baseline before starting: `pnpm test` passes 12 tests, and `pnpm exec tsc --noEmit` reports no errors.
+Baseline before starting: `pnpm test` passes 33 tests, `pnpm exec tsc --noEmit` reports no errors, and 10 of 10 compiles of the admin setup's playbook match the hand-made plan.
 
 ## Architecture decisions
 
-- **Reuse `QuestionView.suggested`** rather than adding a separate dictation field. The page's draft, badge, stop-on-edit and submit logic all key off it already, so task 1 is usable end to end without touching the client.
-- **Build the draft after the fold's loop**, from `view.utterances` and their `onScreen`, rather than inside the loop. Utterances already carry `onScreen`, and it keeps the Jev branch untouched.
-- **`Question.dictate` is carried the same way as `assess`**: optional on the plan prompt's payload, copied by `questionFor()`, on when absent.
-- **Interim text goes through card state at `/interim`**, as Jev's likelihoods go through `/likelihood`. `QuestionStage` decides whether to pass it, since it alone knows whether the card has been edited.
-- **Tests sit beside the file they test**: `src/shared.test.ts`, `src/plan/plan.test.ts`. Vitest's `include` gains `src/**/*.test.ts`. `tests/compile.test.ts` stays put.
+- **The prompt first.** Whether the drafts read well is the biggest unknown, and it needs no server, log or page. `src/draft/draft.ts` builds the request and reads the answer as pure functions, as `src/models/jev.ts` does, so `pnpm try-draft` can run sample rambles past the real prompt before anything is wired up.
+- **`draftHints` lives on the text question's shape**, beside `length` and `dictate`, now that plan questions have a shape per type. `questionFor()` already passes the question through, so nothing else changes there.
+- **Hints go through playbooks as notes**, like `[short answer]`, so the compiler stays checked against the hand-made plan. `compare-plans` reports differently worded hints apart from real differences, as it does for prompts, since hints are prose.
+- **The fold composes; the server only schedules and logs.** The server never writes `suggested`. It appends `draft` entries, and every device folds the same result.
+- **Drafting copies `#assess()`'s scheduling, one question at a time.** There are in-flight and again sets keyed by question id, instead of Jev's single flags, so two questions can be drafted at once without one holding up the other.
+- **`takeOver` and the "Drafting…" sign are unlogged**, as `jev-preview` is. Both are about calls in flight, not about what anyone said or answered.
 
 ## Dependency graph
 
 ```
-Question.dictate (shared.ts)
-    ├── foldLog() dictation draft (shared.ts) ──→ page shows it via `suggested` (no change)
-    │       └── interim text in the card (registry.tsx, cards.ts, client.tsx)
-    └── `dictate` on plan prompts (plan.ts, generated schemas)
-README "Dictation" section: after all of the above
+draftHints on text questions (plan.ts, shared.ts)
+    ├── hints in playbooks (prompts, playbook, compare-plans)
+    └── draftRequest() / readDraft() + prompt + try-draft (src/draft/)
+            │
+`draft` entry + fold (shared.ts) ─┤
+            │
+            └── server drafting loop (server.ts, DRAFT_ENABLED)
+                    ├── takeOver (server.ts, client.tsx)
+                    └── "Drafting…" broadcast and sign (server.ts, client.tsx)
+README: after all of the above
 ```
+
+The fold (task 4) depends on nothing but `shared.ts`, so it can be built beside tasks 2 and 3.
 
 ## Task list
 
-### Phase 1: the draft
+### Phase 1: hints and the prompt
 
-- [x] Task 1: Text questions get a draft from what was said while they showed
-- [x] Task 2: Plan prompts can turn dictation off with `"dictate": false`
+- [ ] Task 1: Text questions can carry `draftHints`, and the tags question has some
+- [ ] Task 2: Playbooks carry hints as notes, and compiles still match
+- [ ] Task 3: The draft prompt, `draftRequest()`, `readDraft()` and `pnpm try-draft`
 
-### Checkpoint: the draft
+### Checkpoint: the prompt
 
-- [x] `pnpm test` and `pnpm exec tsc --noEmit` pass; `pnpm check-plans` passes
-- [x] By hand: speaking while the tags question is on screen fills its field, with the badge
-- [x] Review with the user before phase 2
+- [ ] `pnpm test`, the typecheck and `pnpm check-plans` pass; 10 of 10 compiles match
+- [ ] The user reads `pnpm try-draft`'s output for every case, and the prompt is changed until they're happy with it
 
-### Phase 2: interim text and docs
+### Phase 2: drafts in the session
 
-- [x] Task 3: Interim text shows greyed in the text field on screen
-- [x] Task 3a: A display layer shows the draft with interim text inline (replaces task 3's line under the text)
-- [x] Task 3b: Pressing the display swaps in the textarea, caret where pressed
-- [x] Task 4: The README describes dictation
+- [ ] Task 4: A `draft` log entry, folded into the question's draft
+- [ ] Task 5: The server drafts a text question after each utterance
+
+### Checkpoint: drafting end to end
+
+- [ ] Tests and typecheck pass
+- [ ] By hand: a ramble on the tags question shows verbatim at once, then becomes a tidy tag list; `DRAFT_ENABLED=false` gives plain dictation
+- [ ] Review with the user before phase 3
+
+### Phase 3: taking over, showing the work, docs
+
+- [ ] Task 6: Typing in a field stops the server drafting it
+- [ ] Task 7: "Drafting…" shows while a rewrite is in flight
+- [ ] Task 8: The README describes drafting
 
 ### Checkpoint: complete
 
-- [x] Every success criterion in the spec is met
-- [x] Review with the user
+- [ ] Every success criterion in the spec is checked
+- [ ] This plan and its tasks move to `archived/` as `voice-drafting-plan.md` and `voice-drafting-todo.md`
 
 ## Risks and mitigations
 
 | Risk | Impact | Mitigation |
-| ---- | ------ | ---------- |
-| A text question is answered or skipped, then revisited: what shows? | Low | Today's page logic: an answer shows over `suggested`; a skipped question shows `suggested` as its value but without the badge, since it has an answer entry. That matches Jev's behaviour, so no change; the hand check confirms it. |
-| Two devices with different questions showing: `view.onScreen` is whichever moved last | Low | Same limitation Jev has today; out of scope. The interim text uses the same `onScreen`, so the field and the draft agree. |
-| The interim text and the final utterance both show for a moment | Low | The transcriber clears interim text when it sends the final; check by hand that there's no visible doubling. |
-| Gemini's compile starts emitting `dictate` because it appears in the LLM schema | Low | The field is optional and on by default; `tests/compile.test.ts` and the 10-of-10 comparison don't depend on it. Re-run `pnpm test`. |
+| --- | --- | --- |
+| Drafts add things that weren't said, or write instructions ("shorter") into the text | High | Task 3 comes first and is read by eye against cases written to tempt exactly that; the checkpoint waits on the user. A Jev check of draft against transcript is noted in the spec as later. |
+| Text jumps as a draft replaces the verbatim words someone is reading | Med | It's inherent in the design; check it by hand at the phase 2 checkpoint. If it's bad, a short pause before drafting (as Jev waits after a question arrives) batches utterances, at the cost of a slower draft. |
+| A call per utterance costs more than expected on long answers | Med | The cost estimate shows it from task 5 on; `DRAFT_ENABLED=false` turns it off. The spec's open question on capping what a long field sends is left for `planner`. |
+| A slow draft arrives after the person has typed or submitted | Low | The fold already ignores drafts once a question is answered, and the page ignores new drafts once the text is theirs, as it ignores new speech today. |
+| Hints change how the compiler reads playbooks, and compiles stop matching | Low | Task 2 reruns the 10 compiles, as was done for `[short answer]`. |
+| The in-memory taken-over set is lost on a Durable Object restart | Low | A few more drafts may be logged and the page ignores them; the spec accepts this. |
 
 ## Open questions
 
-None. The spec's three open questions were decided on 2026-10-22.
+- None blocking. The spec's open question on long fields (capping what one call sends) waits for `planner`.
