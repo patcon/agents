@@ -112,7 +112,7 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 - [ ] Calls and tokens show in the log drawer's cost estimate; a failed call leaves the verbatim text; `DRAFT_ENABLED=false` makes no calls.
 
 **Verification:**
-- [ ] `pnpm test` and `pnpm exec tsc --noEmit` pass
+- [x] `pnpm test` and `pnpm exec tsc --noEmit` pass
 - [ ] By hand with `pnpm run start`: the three criteria above, watching the log drawer for `draft` entries and the call count
 
 **Dependencies:** Tasks 3 and 4

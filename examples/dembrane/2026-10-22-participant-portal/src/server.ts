@@ -12,6 +12,8 @@ import {
   type UIMessage
 } from "ai";
 import { checkPlan } from "./compile/compile";
+import { draftRequest, readDraft } from "./draft/draft";
+import draftSystem from "./draft/prompts/draft.md?raw";
 import { generateJson, googleAccessToken } from "./models/gemini";
 import {
   askJev,
@@ -42,6 +44,7 @@ import {
   textOf,
   type AnswerValue,
   type Assessment,
+  type Draft,
   type LogMessage,
   type LogView,
   type Preview,
@@ -275,6 +278,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
       parts: [{ type: "text", text }]
     });
     this.#assessSoon(0);
+    this.#draftSoon(startedOn);
   }
 
   // --- Jev ---
@@ -363,6 +367,98 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
         this.#assessAgain = false;
         this.#assessSoon(0);
       }
+    }
+  }
+
+  // --- Drafting ---
+  //
+  // After each utterance, an LLM rewrites the draft of the text question it
+  // counts for, from everything said for it. One call per question is in
+  // flight: whatever is said meanwhile is covered by one more call after it.
+  // Different questions are drafted at the same time.
+
+  #drafting = new Set<string>();
+  #draftAgain = new Set<string>();
+
+  /** On unless DRAFT_ENABLED is "false". */
+  #draftOn() {
+    return String(this.env.DRAFT_ENABLED) !== "false";
+  }
+
+  /** The question, if it's a dictated text question still waiting for an answer. */
+  #draftable(view: LogView, questionId: string | null) {
+    const entry = view.questions.find((q) => q.question.id === questionId);
+    if (!entry || !isOpen(entry)) return undefined;
+    const { question } = entry;
+    return question.type === "text" && question.dictate !== false
+      ? question
+      : undefined;
+  }
+
+  /** The latest draft logged for the question, if any. */
+  #latestDraft(questionId: string): Draft | undefined {
+    for (const message of [...(this.messages as LogMessage[])].reverse()) {
+      if (message.metadata?.kind !== "draft") continue;
+      if (message.metadata.subjectId !== questionId) continue;
+      const part = message.parts.find((p) => p.type === "data-draft");
+      if (part) return part.data;
+    }
+    return undefined;
+  }
+
+  #draftSoon(questionId: string | null) {
+    if (!questionId || !this.#draftOn()) return;
+    if (!this.#draftable(this.#view(), questionId)) return;
+    void this.#draft(questionId);
+  }
+
+  async #draft(questionId: string) {
+    if (this.#drafting.has(questionId)) {
+      this.#draftAgain.add(questionId);
+      return;
+    }
+    this.#drafting.add(questionId);
+    try {
+      await this.#tail;
+      const view = this.#view();
+      const question = this.#draftable(view, questionId);
+      if (!question) return;
+      const said = view.utterances.filter((u) => u.onScreen === questionId);
+      const last = said.at(-1);
+      const previous = this.#latestDraft(questionId);
+      // Nothing said since the last draft.
+      if (!last || previous?.seenUpTo === last.id) return;
+
+      const { prompt, schema } = draftRequest(question, said, previous?.text);
+      const { json, usage } = await generateJson(this.env, {
+        model: this.env.AGENT_MODEL,
+        system: draftSystem,
+        prompt,
+        schema,
+        thinkingLevel: "low"
+      });
+      this.#addUsage({
+        agentCalls: 1,
+        agentInputTokens: usage.inputTokens,
+        agentOutputTokens: usage.outputTokens
+      });
+      const draft: Draft = {
+        text: readDraft(json),
+        seenUpTo: last.id,
+        model: this.env.AGENT_MODEL
+      };
+      await this.#append({
+        id: newId("draft"),
+        role: "system",
+        metadata: { kind: "draft", subjectId: questionId, at: Date.now() },
+        parts: [{ type: "data-draft", data: draft }]
+      });
+    } catch (error) {
+      // The field keeps showing what was said, so nothing is lost.
+      console.error("Draft failed", error);
+    } finally {
+      this.#drafting.delete(questionId);
+      if (this.#draftAgain.delete(questionId)) void this.#draft(questionId);
     }
   }
 

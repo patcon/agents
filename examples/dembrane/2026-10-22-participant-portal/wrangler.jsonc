@@ -31,7 +31,10 @@
     "COMPILE_THINKING": "low",
     // Pinned, not jev-latest, so thresholds mean the same from run to run.
     "JEV_MODEL": "jev-1.13.0",
-    "JEV_ENABLED": "true"
+    "JEV_ENABLED": "true",
+    // An LLM rewrites a text question's draft after each utterance, with
+    // AGENT_MODEL; DRAFT_ENABLED=false in .env leaves plain dictation.
+    "DRAFT_ENABLED": "true"
   },
   "compatibility_date": "2026-06-11",
   "compatibility_flags": ["nodejs_compat"],
