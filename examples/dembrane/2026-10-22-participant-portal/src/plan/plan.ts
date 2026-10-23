@@ -53,7 +53,7 @@ const ChoiceSpecSchema = (type: "radio" | "checkbox") =>
       )
   });
 
-const QuestionSpecSchema = z.discriminatedUnion("type", [
+export const QuestionSpecSchema = z.discriminatedUnion("type", [
   ChoiceSpecSchema("radio"),
   ChoiceSpecSchema("checkbox"),
   z.strictObject({
@@ -278,6 +278,12 @@ export function planLlmSchema(): object {
   // The plan's own `$schema` field is for editors, not the model.
   const { $schema: _editorsOnly, ...properties } = schema.properties ?? {};
   return toLlmSchema({ ...schema, properties }) as object;
+}
+
+/** The schema a model answers with when it writes one question, as the agent does. */
+export function questionLlmSchema(): object {
+  const { $schema: _editorsOnly, ...schema } = z.toJSONSchema(QuestionSpecSchema);
+  return toLlmSchema(schema) as object;
 }
 
 // Fails to compile if the schemas drift from the types in shared.ts.

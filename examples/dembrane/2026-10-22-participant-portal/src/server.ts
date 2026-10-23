@@ -24,9 +24,11 @@ import { VertexLiveSTT } from "@dembrane/voice-google";
 import { platformAdminRoute } from "./platform-admin/route";
 import {
   PlanSchema,
+  QuestionSpecSchema,
   dueItems,
   lintPlan,
   questionFor,
+  questionLlmSchema,
   type Plan,
   type PlanEvent
 } from "./plan/plan";
@@ -72,22 +74,8 @@ const HOST_QUESTIONS: Omit<Question, "id" | "source">[] = [
   }
 ];
 
-/** What the agent's question must look like, as Gemini's response schema. */
-const QUESTION_SCHEMA = {
-  type: "object",
-  properties: {
-    type: { type: "string", enum: ["radio", "checkbox", "text", "number"] },
-    prompt: { type: "string" },
-    options: {
-      type: "array",
-      items: { type: "string" },
-      description: "Required for radio and checkbox"
-    },
-    min: { type: "number" },
-    max: { type: "number" }
-  },
-  required: ["type", "prompt"]
-};
+/** What the agent's question must look like: a plan question's shape. */
+const QUESTION_SCHEMA = questionLlmSchema();
 
 const newId = (prefix: string) => `${prefix}_${crypto.randomUUID()}`;
 
@@ -639,10 +627,12 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
       agentInputTokens: usage.inputTokens,
       agentOutputTokens: usage.outputTokens
     });
-    const input = json as Pick<
-      Question,
-      "type" | "prompt" | "options" | "min" | "max"
-    >;
+    // A question that doesn't fit throws, and the fixed question is asked.
+    const parsed = QuestionSpecSchema.safeParse(json);
+    if (!parsed.success) {
+      throw new Error(`The agent's question doesn't fit: ${parsed.error.message}`);
+    }
+    const input = parsed.data;
 
     await this.#appendQuestion({
       ...input,

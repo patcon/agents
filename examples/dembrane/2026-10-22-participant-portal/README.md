@@ -44,7 +44,7 @@ type LogMeta =
 | Host   | `@callable() pushHostQuestion()`                               |
 | Person | `@callable() answer(questionId, value, skipped)`               |
 
-The agent is woken without a human message: a `trigger` entry is appended with `saveMessages()`, which runs `onChatMessage()`. That asks Gemini for a question shaped by a JSON schema (`src/models/gemini.ts`), appends it, and replies with a short assistant message saying what it asked. The trigger stays in the log, so it's clear why the turn ran.
+The agent is woken without a human message: a `trigger` entry is appended with `saveMessages()`, which runs `onChatMessage()`. That asks Gemini (`src/models/gemini.ts`) for a question in the same shape as a plan's (`questionLlmSchema()` in `src/plan/plan.ts`), checks it with Zod, appends it, and replies with a short assistant message saying what it asked. The trigger stays in the log, so it's clear why the turn ran.
 
 ```ts
 await this.saveMessages((messages) => [...messages, triggerEntry]);
