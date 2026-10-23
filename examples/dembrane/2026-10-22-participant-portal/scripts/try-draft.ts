@@ -73,6 +73,18 @@ const CASES: Case[] = [
     want: "wonen, verkeer, groen, veiligheid"
   },
   {
+    name: "complaint",
+    question: tags,
+    said: [
+      "democracy consensus",
+      "a sorry a comma between those",
+      "A comma between those?",
+      "It's no good."
+    ],
+    previous: "democracy, consensus",
+    want: "democracy, consensus, not emptied by the complaint"
+  },
+  {
     name: "tempting-detail",
     question: about,
     said: [
@@ -86,7 +98,7 @@ const args = process.argv.slice(2);
 const modelAt = args.indexOf("--model");
 const modelFlag = modelAt === -1 ? undefined : args[modelAt + 1];
 const [prefix] = args.filter(
-  (a, i) => !a.startsWith("--") && i !== modelAt + 1
+  (a, i) => !a.startsWith("--") && (modelAt === -1 || i !== modelAt + 1)
 );
 const cases = prefix ? CASES.filter((c) => c.name.startsWith(prefix)) : CASES;
 if (!cases.length) {
