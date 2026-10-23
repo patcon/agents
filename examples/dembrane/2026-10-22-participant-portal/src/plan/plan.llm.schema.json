@@ -683,6 +683,21 @@
                                         "null"
                                       ]
                                     },
+                                    "length": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "short",
+                                            "long"
+                                          ]
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "short is a single line, as for a title or a name; long is a paragraph. Long when null"
+                                    },
                                     "value": {
                                       "type": "object",
                                       "properties": {
@@ -701,6 +716,7 @@
                                   },
                                   "required": [
                                     "placeholder",
+                                    "length",
                                     "value"
                                   ],
                                   "additionalProperties": false

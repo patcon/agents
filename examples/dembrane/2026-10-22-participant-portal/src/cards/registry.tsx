@@ -174,6 +174,7 @@ const { registry } = defineRegistry(cardCatalog, {
         <DictationField
           label={prompt}
           placeholder={props.placeholder ?? undefined}
+          short={props.length === "short"}
           value={typeof value === "string" ? value : ""}
           onChange={(v) => setValue(v)}
           dictating={dictating}
@@ -210,12 +211,18 @@ const { registry } = defineRegistry(cardCatalog, {
   }
 });
 
-// The display layer and the textarea lay their text out identically, so
+// The display layer and the field lay their text out identically, so
 // swapping one for the other moves nothing: same box, font, padding, line
 // height and wrapping, and room for a scrollbar whether or not there is one.
+// A single line doesn't wrap, and scrolls sideways with no scrollbar, as an
+// input does.
 const FIELD_TEXT =
-  "col-start-1 row-start-1 h-52 w-full overflow-y-auto [scrollbar-gutter:stable] " +
-  "px-3 py-2 text-sm leading-6 [font-family:inherit] whitespace-pre-wrap break-words";
+  "col-start-1 row-start-1 w-full px-3 py-2 text-sm leading-6 [font-family:inherit]";
+const LINES_TEXT =
+  "overflow-y-auto [scrollbar-gutter:stable] whitespace-pre-wrap break-words";
+const LINE_TEXT = "overflow-x-auto overflow-y-hidden [scrollbar-width:none] whitespace-pre";
+/** Eight lines of leading-6 plus py-2 for long text, or one for short. */
+const fieldHeight = (short: boolean) => (short ? "h-10" : "h-52");
 
 /**
  * A text field that dictation can fill. A textarea can't grey out part of its
@@ -224,10 +231,12 @@ const FIELD_TEXT =
  * new text down unless the person has scrolled up. Pressing it, or tabbing
  * to it, swaps in the textarea; dictation keeps filling it until they change
  * the text, and the display comes back if they leave without changing it.
+ * Short text is a single-line input, and new text is followed sideways.
  */
 function DictationField({
   label,
   placeholder,
+  short,
   value,
   onChange,
   dictating,
@@ -235,6 +244,7 @@ function DictationField({
 }: {
   label?: string;
   placeholder?: string;
+  short: boolean;
   value: string;
   onChange: (value: string) => void;
   dictating: boolean;
@@ -242,9 +252,14 @@ function DictationField({
 }) {
   const display = useRef<HTMLDivElement>(null);
   const interimText = useRef<HTMLSpanElement>(null);
-  const textarea = useRef<HTMLTextAreaElement>(null);
+  const textarea = useRef<HTMLTextAreaElement & HTMLInputElement>(null);
+  const Field = short ? "input" : "textarea";
+  // Which way new text pushes the field: down, or sideways on one line.
+  const axis = short
+    ? ({ pos: "scrollLeft", size: "scrollWidth", client: "clientWidth" } as const)
+    : ({ pos: "scrollTop", size: "scrollHeight", client: "clientHeight" } as const);
   // Shared by both layers, so swapping keeps the field's place.
-  const scroll = useRef({ top: 0, atBottom: true });
+  const scroll = useRef({ pos: 0, atEnd: true });
   // The textarea's selection, put back when dictation adds text under it.
   const selection = useRef({ start: 0, end: 0 });
   // Once they've typed, the text is theirs: nothing moves the caret for them.
@@ -260,8 +275,8 @@ function DictationField({
 
   const onScroll = (el: HTMLElement) => {
     scroll.current = {
-      top: el.scrollTop,
-      atBottom: el.scrollHeight - el.scrollTop - el.clientHeight < 4
+      pos: el[axis.pos],
+      atEnd: el[axis.size] - el[axis.pos] - el[axis.client] < 4
     };
   };
 
@@ -274,12 +289,12 @@ function DictationField({
     el.focus({ preventScroll: true });
     el.setSelectionRange(caret, caret);
     selection.current = { start: caret, end: caret };
-    el.scrollTop = scroll.current.top;
+    el[axis.pos] = scroll.current.pos;
   };
 
   useLayoutEffect(() => {
     const place = (el: HTMLElement) => {
-      el.scrollTop = scroll.current.atBottom ? el.scrollHeight : scroll.current.top;
+      el[axis.pos] = scroll.current.atEnd ? el[axis.size] : scroll.current.pos;
     };
     if (showDisplay) {
       if (display.current) place(display.current);
@@ -294,8 +309,10 @@ function DictationField({
   }, [text, interim, showDisplay]);
 
   return (
-    <div className="grid rounded-lg bg-kumo-control ring ring-kumo-line focus-within:ring-[1.5px] focus-within:ring-kumo-focus/50">
-      <textarea
+    <div
+      className={`grid ${fieldHeight(short)} rounded-lg bg-kumo-control ring ring-kumo-line focus-within:ring-[1.5px] focus-within:ring-kumo-focus/50`}
+    >
+      <Field
         ref={textarea}
         aria-label={label}
         placeholder={placeholder}
@@ -306,12 +323,12 @@ function DictationField({
         }}
         onSelect={(e) => {
           const el = e.currentTarget;
-          selection.current = { start: el.selectionStart, end: el.selectionEnd };
+          selection.current = { start: el.selectionStart ?? 0, end: el.selectionEnd ?? 0 };
         }}
         onScroll={(e) => onScroll(e.currentTarget)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className={`${FIELD_TEXT} resize-none border-0 bg-transparent text-kumo-default outline-none placeholder:text-kumo-subtle ${
+        className={`${FIELD_TEXT} ${short ? LINE_TEXT : LINES_TEXT} h-full resize-none border-0 bg-transparent text-kumo-default outline-none placeholder:text-kumo-subtle ${
           showDisplay ? "invisible" : ""
         }`}
       />
@@ -319,7 +336,7 @@ function DictationField({
         <div
           ref={display}
           role="textbox"
-          aria-multiline
+          aria-multiline={!short}
           aria-label={label}
           tabIndex={0}
           onMouseDown={(e) => {
@@ -338,7 +355,7 @@ function DictationField({
           }}
           onFocus={() => swapIn(value.length)}
           onScroll={(e) => onScroll(e.currentTarget)}
-          className={`${FIELD_TEXT} cursor-text text-kumo-default`}
+          className={`${FIELD_TEXT} ${short ? LINE_TEXT : LINES_TEXT} h-full cursor-text text-kumo-default`}
         >
           {value}
           {/* A textarea shows a trailing line break; a div needs a nudge. */}

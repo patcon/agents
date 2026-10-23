@@ -45,7 +45,7 @@ Added after trying a greyed line under the text: it looked poor, and the field's
 
 - **Two layers in one box.** `TextInput` stacks a display `<div>` over the real `<textarea>` in one grid cell. The div shows while dictation fills the field; the textarea is always mounted underneath.
 - **Identical text layout.** Both share the box's height, font, padding, line height and wrapping (`pre-wrap`, `break-word`), and `scrollbar-gutter: stable`, so swapping one for the other moves no text. The div keeps a trailing line break the way a textarea does.
-- **Taller, fixed height.** About 8 lines, scrolling inside, for every text field. A fixed height means nothing jumps as text arrives. A `rows` prop can come with the planner.
+- **Taller, fixed height.** About 8 lines, scrolling inside, for every text field. A fixed height means nothing jumps as text arrives. ~~A `rows` prop can come with the planner.~~ `TextInput` has a `length` prop instead (added 2026-10-23): `"short"` is a single-line input, which the portal title's card uses, and `"long"`, the default, is this field.
 - **Follows new text.** If the div was scrolled to the bottom, it stays at the bottom as text arrives; if the person scrolled up, it stays where they are.
 - **Looks editable.** `cursor: text` over the div.
 - **~~Taking over~~ Swapping in the textarea.** Pressing on the div, or tabbing to it, swaps in the textarea in the same event: the scroll position carries over, the textarea is focused, and the caret goes where they pressed (from `document.caretPositionFromPoint`, falling back to `caretRangeFromPoint`; a press on the interim text puts it at the end of the draft; tabbing puts it at the end). Focusing within the event keeps a phone's keyboard opening.

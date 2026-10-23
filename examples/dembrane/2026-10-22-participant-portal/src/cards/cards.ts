@@ -62,6 +62,12 @@ export const cardCatalog = defineCatalog(schema, {
     TextInput: {
       props: z.strictObject({
         placeholder: z.string().nullable(),
+        length: z
+          .enum(["short", "long"])
+          .nullable()
+          .describe(
+            "short is a single line, as for a title or a name; long is a paragraph. Long when null"
+          ),
         value: draft
       }),
       description: "Free text"
@@ -168,7 +174,11 @@ export function defaultCard(question: Question): CardSpec {
       case "text":
         return {
           type: "TextInput",
-          props: { placeholder: "Type your answer", value: { $bindState: "/value" } }
+          props: {
+            placeholder: "Type your answer",
+            length: null,
+            value: { $bindState: "/value" }
+          }
         };
     }
   })();

@@ -124,7 +124,7 @@ Carried over from `text-dictation`:
 - After an edit, keep adding new speech after it, instead of stopping. Needs the draft to remember where the edit ended.
 - ~~Show interim text inline after the last word instead of on a line below, if the field gets long enough for it to matter.~~ Done in `text-dictation`.
 - ~~Maybe an LLM pass that tidies dictated text as it arrives, broadcast like `jev-preview` rather than logged.~~ Now `voice-drafting`, and logged.
-- A `rows` prop on `TextInput` for a taller field than the default eight lines.
+- ~~A `rows` prop on `TextInput` for a taller field than the default eight lines.~~ `TextInput` has `length: "short" | "long"` instead (2026-10-23), for a single-line title; a taller field for the planner is still open.
 
 Benefits from `context-carryover` and `draft-ahead` (a host often describes their participants' session before reaching this step), but doesn't need them.
 
