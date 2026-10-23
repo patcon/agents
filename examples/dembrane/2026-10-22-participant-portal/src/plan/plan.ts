@@ -278,12 +278,46 @@ export function toLlmSchema(schema: unknown): unknown {
   return out;
 }
 
+/**
+ * Gemini leaves an optional `draftHints` out even when the playbook gives
+ * hints, so the model's schema requires it, with null for none.
+ * `fromLlmPlan()` takes the nulls out again.
+ */
+function requireDraftHints(schema: unknown): unknown {
+  if (Array.isArray(schema)) return schema.map(requireDraftHints);
+  if (!schema || typeof schema !== "object") return schema;
+  const out = Object.fromEntries(
+    Object.entries(schema).map(([key, value]) => [key, requireDraftHints(value)])
+  ) as { properties?: Record<string, object>; required?: string[] };
+  const hints = out.properties?.draftHints;
+  if (hints) {
+    out.properties = {
+      ...out.properties,
+      draftHints: { ...hints, type: ["string", "null"] }
+    };
+    out.required = [...(out.required ?? []), "draftHints"];
+  }
+  return out;
+}
+
 /** The schema a model answers with when it writes a plan. */
 export function planLlmSchema(): object {
   const schema = z.toJSONSchema(PlanSchema);
   // The plan's own `$schema` field is for editors, not the model.
   const { $schema: _editorsOnly, ...properties } = schema.properties ?? {};
-  return toLlmSchema({ ...schema, properties }) as object;
+  return requireDraftHints(toLlmSchema({ ...schema, properties })) as object;
+}
+
+/** A plan as a model wrote it to `planLlmSchema()`, with null hints left out. */
+export function fromLlmPlan(json: unknown): unknown {
+  const plan = structuredClone(json) as {
+    items?: { payload?: { question?: { draftHints?: unknown } } }[];
+  } | null;
+  for (const item of Array.isArray(plan?.items) ? plan.items : []) {
+    if (item?.payload?.question?.draftHints === null)
+      delete item.payload.question.draftHints;
+  }
+  return plan;
 }
 
 /** The schema a model answers with when it writes one question, as the agent does. */

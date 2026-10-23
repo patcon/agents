@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PlanItemSchema, questionFor } from "./plan";
+import { PlanItemSchema, planLlmSchema, questionFor } from "./plan";
 
 describe("questionFor() and dictation", () => {
   it("carries a text question's dictate: false onto the question", () => {
@@ -79,5 +79,25 @@ describe("questionFor() and draft hints", () => {
     });
 
     expect(parsed.success).toBe(false);
+  });
+});
+
+describe("planLlmSchema() and draft hints", () => {
+  it("asks for draftHints on every text question, as a string or null", () => {
+    // Gemini leaves optional draftHints out even when the playbook has hints.
+    const texts: { properties: Record<string, { type: unknown }>; required: string[] }[] = [];
+    const walk = (node: unknown): void => {
+      if (!node || typeof node !== "object") return;
+      const n = node as { properties?: { type?: { enum?: string[] } } };
+      if (n.properties?.type?.enum?.[0] === "text") texts.push(node as never);
+      Object.values(node).forEach(walk);
+    };
+    walk(planLlmSchema());
+
+    expect(texts.length).toBeGreaterThan(0);
+    for (const text of texts) {
+      expect(text.required).toContain("draftHints");
+      expect(text.properties.draftHints.type).toEqual(["string", "null"]);
+    }
   });
 });

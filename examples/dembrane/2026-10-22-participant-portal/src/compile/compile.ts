@@ -2,6 +2,7 @@ import type { TokenUsage, Turn } from "../models/gemini";
 import {
   PlanSchema,
   lintPlan,
+  fromLlmPlan,
   planLlmSchema,
   type LintMessage,
   type Plan
@@ -134,10 +135,11 @@ export async function compilePlaybook(
     usage.outputTokens += answer.usage.outputTokens;
 
     // The model's `source` is a guess; this one is the truth.
+    const written = fromLlmPlan(answer.json);
     const json =
-      answer.json && typeof answer.json === "object"
-        ? { ...answer.json, source }
-        : answer.json;
+      written && typeof written === "object"
+        ? { ...written, source }
+        : written;
     const { plan, messages } = checkPlan(json);
     attempts.push({ json: answer.json, messages, usage: answer.usage });
 

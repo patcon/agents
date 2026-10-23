@@ -33,13 +33,13 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 **Description:** The decompile prompt learns to write a text question's hints as a note, e.g. `[hints: a comma-separated list of short, lowercase tags]`, and the compile prompt learns to turn that note into `draftHints`. Re-decompile to a scratch file to check the prompt writes the note, then add it to the committed playbook by hand, so nothing else in the playbook changes. `compare-plans` reports hints that differ only in wording apart, as it does for prompts, and a missing or extra hint as a difference.
 
 **Acceptance criteria:**
-- [ ] A fresh decompile of `admin-setup.json` writes the hints note on the tags question.
-- [ ] `compare-plans` reports a reworded hint as `reworded`, and a missing hint as a difference.
-- [ ] 10 of 10 compiles of the playbook match the hand-made plan.
+- [x] A fresh decompile of `admin-setup.json` writes the hints note on the tags question.
+- [x] `compare-plans` reports a reworded hint as `reworded`, and a missing hint as a difference.
+- [x] 10 of 10 compiles of the playbook match the hand-made plan.
 
 **Verification:**
-- [ ] `pnpm test`, including a `tests/compile.test.ts` case for a reworded hint and one for a missing hint
-- [ ] `pnpm compile-playbook src/compile/playbooks/admin-setup.decompiled.md --runs 10` then `pnpm compare-plans src/plan/admin-setup.json compiled/*.json` says "all the same"
+- [x] `pnpm test`, including a `tests/compile.test.ts` case for a reworded hint and one for a missing hint
+- [x] `pnpm compile-playbook src/compile/playbooks/admin-setup.decompiled.md --runs 10` then `pnpm compare-plans src/plan/admin-setup.json compiled/*.json` says "all the same"
 
 **Dependencies:** Task 1
 

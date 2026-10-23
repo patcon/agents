@@ -443,13 +443,17 @@
                           },
                           "draftHints": {
                             "description": "How the answer drafted from what's said should read, in prose: its style and length, as in \"two or three sentences, plain language\". A clean, faithful version of what was said when absent.",
-                            "type": "string"
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "required": [
                           "type",
                           "prompt",
-                          "required"
+                          "required",
+                          "draftHints"
                         ],
                         "additionalProperties": false
                       },

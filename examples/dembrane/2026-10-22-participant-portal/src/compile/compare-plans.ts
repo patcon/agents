@@ -171,6 +171,17 @@ export function comparePlans(expected: Plan, actual: Plan): Difference[] {
         message: `"${qa.prompt}" → "${qb.prompt}"`
       });
     }
+    // Hints are prose, like the prompt: having them or not is what counts.
+    const [ha, hb] = [field(qa, "draftHints"), field(qb, "draftHints")];
+    if ((ha === undefined) !== (hb === undefined)) {
+      compare("draftHints", ha, hb);
+    } else if (String(ha).trim() !== String(hb).trim()) {
+      differences.push({
+        kind: "reworded",
+        where: key,
+        message: `draftHints "${ha}" → "${hb}"`
+      });
+    }
   }
 
   // Reading order, over the prompts both plans have

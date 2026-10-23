@@ -5,7 +5,7 @@
 - What must be provided before each portal conversation? [pick any: A name, An email] [optional]
 - Can participants ask to be emailed when the report is ready? [pick one: Yes, No] [optional] [only if What must be provided before each portal conversation? includes An email]
 - Which tutorial should participants see first? [pick one: None, Basic, Advanced]
-- Which tags can participants pick from? Separate them with commas. [optional] [short answer]
+- Which tags can participants pick from? Separate them with commas. [optional] [short answer] [hints: A comma-separated list of short, lowercase tags, nothing else.]
 
 ## Participant features
 - Should participants be able to use Explore? [pick one: Yes, No]

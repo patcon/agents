@@ -71,6 +71,22 @@ describe("compilePlaybook", () => {
     expect(retry[2].text).toContain("one-consent");
   });
 
+  it("takes null draftHints as none", async () => {
+    const plan = copy();
+    for (const item of plan.items) {
+      if (item.kind === "prompt" && item.payload.question.type === "text")
+        item.payload.question.draftHints ??= null as never;
+    }
+    const result = await compilePlaybook("# Setup", {
+      name: "setup",
+      prompts,
+      generate: stub(plan).generate
+    });
+
+    expect(result.attempts).toHaveLength(1);
+    expect(comparePlans(handMade, result.plan!)).toEqual([]);
+  });
+
   it("sends Zod's objections back too", async () => {
     const { generate, requests } = stub({ schemaVersion: 1 }, copy());
     const result = await compilePlaybook("# Setup", {
@@ -149,6 +165,34 @@ describe("comparePlans", () => {
         kind: "reworded",
         where: "tags",
         message: expect.stringContaining("Which tags?")
+      }
+    ]);
+  });
+
+  it("reports reworded draft hints apart from a difference", () => {
+    const plan = copy();
+    const tags = plan.items.find((i) => i.id === "tags")!;
+    if (tags.kind === "prompt" && tags.payload.question.type === "text")
+      tags.payload.question.draftHints = "Short lowercase tags, comma-separated.";
+    expect(comparePlans(handMade, plan)).toEqual([
+      {
+        kind: "reworded",
+        where: "tags",
+        message: expect.stringContaining("Short lowercase tags, comma-separated.")
+      }
+    ]);
+  });
+
+  it("reports missing draft hints as a difference", () => {
+    const plan = copy();
+    const tags = plan.items.find((i) => i.id === "tags")!;
+    if (tags.kind === "prompt" && tags.payload.question.type === "text")
+      delete tags.payload.question.draftHints;
+    expect(comparePlans(handMade, plan)).toEqual([
+      {
+        kind: "differs",
+        where: "tags",
+        message: expect.stringContaining("draftHints")
       }
     ]);
   });
