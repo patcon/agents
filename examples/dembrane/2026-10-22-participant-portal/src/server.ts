@@ -384,6 +384,11 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
 
   #drafting = new Set<string>();
   #draftAgain = new Set<string>();
+  /**
+   * Questions whose text someone has changed on a page: theirs now, so no
+   * more drafts. Unlogged; lost on a restart, which costs a few calls.
+   */
+  #takenOver = new Set<string>();
 
   /** On unless DRAFT_ENABLED is "false". */
   #draftOn() {
@@ -392,6 +397,7 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
 
   /** The question, if it's a dictated text question still waiting for an answer. */
   #draftable(view: LogView, questionId: string | null) {
+    if (questionId && this.#takenOver.has(questionId)) return undefined;
     const entry = view.questions.find((q) => q.question.id === questionId);
     if (!entry || !isOpen(entry)) return undefined;
     const { question } = entry;
@@ -624,6 +630,12 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
       metadata: { kind: "shown", subjectId: questionId, at: Date.now() },
       parts: [{ type: "data-shown", data: { questionId } }]
     });
+  }
+
+  /** Someone changed this question's text on a page: stop drafting it. */
+  @callable()
+  async takeOver(questionId: string) {
+    this.#takenOver.add(questionId);
   }
 
   /** On-demand question from the host, outside the schedule. */

@@ -242,7 +242,8 @@ function QuestionStage({
   onBack,
   onNext,
   onAnswer,
-  onEdited
+  onEdited,
+  onTakeOver
 }: {
   questions: QuestionView[];
   activeIndex: number;
@@ -255,6 +256,8 @@ function QuestionStage({
   onAnswer: (value: AnswerValue, skipped: boolean) => Promise<void>;
   /** Whether there's an unsaved edit, whenever that changes. */
   onEdited: (edited: boolean) => void;
+  /** Someone changed a text question's text, so it's theirs now. */
+  onTakeOver: (questionId: string) => void;
 }) {
   const entry = questions[activeIndex];
   const question = entry.question;
@@ -311,6 +314,9 @@ function QuestionStage({
     question.id in drafts &&
     !sameAnswer({ value: saved, skipped: false }, { value, skipped: false });
   useEffect(() => onEdited(edited), [edited, onEdited]);
+  useEffect(() => {
+    if (edited && question.type === "text") onTakeOver(question.id);
+  }, [edited, question, onTakeOver]);
   // Skip records a skip on an unanswered question, and drops an unsaved edit
   // on an answered one. Otherwise it's just Next. Consent can't be skipped:
   // its only answer is the tick.
@@ -719,6 +725,18 @@ function App() {
   const [waitingAtEnd, setWaitingAtEnd] = useState(false);
   const [edited, setEdited] = useState(false);
 
+  // Once someone changes a text question's text it's theirs: the server
+  // stops drafting it. Told once per question.
+  const takenOver = useRef(new Set<string>());
+  const takeOver = useCallback(
+    (questionId: string) => {
+      if (takenOver.current.has(questionId)) return;
+      takenOver.current.add(questionId);
+      agent.call("takeOver", [questionId]).catch(() => {});
+    },
+    [agent]
+  );
+
   const goTo = (index: number) => {
     const target = questions[index];
     if (target) setActiveId(target.question.id);
@@ -865,6 +883,7 @@ function App() {
             onNext={() => goTo(activeIndex + 1)}
             onAnswer={answer}
             onEdited={setEdited}
+            onTakeOver={takeOver}
           />
         ) : (
           <Surface className="rounded-xl ring ring-dashed ring-kumo-line p-8 flex flex-col items-center text-center gap-2">

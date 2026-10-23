@@ -140,7 +140,7 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 - [ ] Clicking into the field and leaving without changing it doesn't stop drafting.
 
 **Verification:**
-- [ ] `pnpm exec tsc --noEmit` passes
+- [x] `pnpm exec tsc --noEmit` passes
 - [ ] By hand: type in the tags field, keep speaking, and see the agent's call count stop rising and no new `draft` entries in the log drawer
 
 **Dependencies:** Task 5
