@@ -64,7 +64,7 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 **Verification:**
 - [x] `pnpm test`, including the new `src/draft/draft.test.ts`
 - [x] `pnpm exec tsc --noEmit` passes
-- [ ] `pnpm try-draft` output read by eye, by the user at the checkpoint
+- [x] `pnpm try-draft` output read by eye, by the user at the checkpoint
 
 **Dependencies:** Task 1 (`Question.draftHints`)
 
@@ -79,20 +79,20 @@ Before every commit: `pnpm test` and `pnpm exec tsc --noEmit` pass.
 
 ## Checkpoint: the prompt
 
-- [ ] `pnpm test`, the typecheck and `pnpm check-plans` pass; 10 of 10 compiles match
-- [ ] The user reads `pnpm try-draft`'s output for every case, and the prompt is changed until they're happy with it
+- [x] `pnpm test`, the typecheck and `pnpm check-plans` pass; 10 of 10 compiles match
+- [x] The user reads `pnpm try-draft`'s output for every case, and the prompt is changed until they're happy with it
 
 ## Task 4: A `draft` log entry, folded into the question's draft
 
 **Description:** Add the `draft` kind to `LogMeta`, the `Draft` type (`text`, `seenUpTo`, `model`) and `draft: Draft` to `LogDataParts`, as the spec has them. In `foldLog()`, keep the latest draft for each question while reading the log. After the loop, a drafted text question's `suggested` becomes the latest draft's text followed by the utterances that count for it after `seenUpTo`, joined by single spaces with empty parts left out, and is left out when empty. Write the spec's seven fold tests first.
 
 **Acceptance criteria:**
-- [ ] With no draft, `suggested` is what `text-dictation` gives today, and the existing fold tests pass unchanged.
-- [ ] With drafts, `suggested` follows the spec's seven cases: draft then unseen utterances; just the draft when it saw the last one; the later of two drafts; not another question's draft; nothing with `dictate: false`; nothing when the draft is empty and nothing follows.
+- [x] With no draft, `suggested` is what `text-dictation` gives today, and the existing fold tests pass unchanged.
+- [x] With drafts, `suggested` follows the spec's seven cases: draft then unseen utterances; just the draft when it saw the last one; the later of two drafts; not another question's draft; nothing with `dictate: false`; nothing when the draft is empty and nothing follows.
 
 **Verification:**
-- [ ] `pnpm test`, including the seven new cases in `src/shared.test.ts`
-- [ ] `pnpm exec tsc --noEmit` passes
+- [x] `pnpm test`, including the seven new cases in `src/shared.test.ts`
+- [x] `pnpm exec tsc --noEmit` passes
 
 **Dependencies:** None (it can be built beside tasks 2 and 3)
 

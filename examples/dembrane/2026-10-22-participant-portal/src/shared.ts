@@ -61,7 +61,8 @@ export type LogMeta =
   | { kind: "trigger"; subjectId: string; at: number }
   | { kind: "status"; subjectId: "session"; at: number }
   | { kind: "shown"; subjectId: string; at: number }
-  | { kind: "assessment"; subjectId: "jev"; at: number };
+  | { kind: "assessment"; subjectId: "jev"; at: number }
+  | { kind: "draft"; subjectId: string; at: number }; // subjectId: the question's id
 
 /**
  * What Jev made of the transcript, for every open question with options.
@@ -80,6 +81,14 @@ export type Assessment = {
       heardOnScreen: string[];
     }
   >;
+};
+
+/** An LLM's rewrite of a text question's draft from what was said. */
+export type Draft = {
+  text: string;
+  /** The last utterance it saw that counts for this question. */
+  seenUpTo: string;
+  model: string;
 };
 
 /**
@@ -110,6 +119,7 @@ export type LogDataParts = {
   /** The question a device put on screen. */
   shown: { questionId: string };
   assessment: Assessment;
+  draft: Draft;
 };
 
 export type LogMessage = UIMessage<LogMeta, LogDataParts>;
@@ -258,6 +268,7 @@ export function foldLog(messages: readonly LogMessage[]): LogView {
     consented: false
   };
   const questions = new Map<string, QuestionView>();
+  const drafts = new Map<string, Draft>();
 
   for (const message of messages) {
     const meta = message.metadata;
@@ -279,6 +290,8 @@ export function foldLog(messages: readonly LogMessage[]): LogView {
         if (!entry) continue;
         entry.answer = part.data;
         entry.answerCount++;
+      } else if (part.type === "data-draft") {
+        drafts.set(meta.subjectId, part.data);
       } else if (part.type === "data-shown") {
         view.onScreen = part.data.questionId;
       } else if (part.type === "data-assessment") {
@@ -306,12 +319,20 @@ export function foldLog(messages: readonly LogMessage[]): LogView {
     }
   }
 
-  // A text question's draft is what was said while it showed.
+  // A text question's draft: the LLM's latest rewrite, then what it hasn't
+  // seen yet. With no rewrite, just what was said while it showed.
   for (const entry of view.questions) {
     const { question } = entry;
     if (question.type !== "text" || question.dictate === false) continue;
     const said = view.utterances.filter((u) => u.onScreen === question.id);
-    if (said.length) entry.suggested = said.map((u) => u.text).join(" ");
+    const draft = drafts.get(question.id);
+    const unseen = draft
+      ? said.slice(said.findIndex((u) => u.id === draft.seenUpTo) + 1)
+      : said;
+    const text = [draft?.text, ...unseen.map((u) => u.text)]
+      .filter(Boolean)
+      .join(" ");
+    if (text) entry.suggested = text;
   }
 
   const consent = view.questions.find((q) => q.question.consent);
