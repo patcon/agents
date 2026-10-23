@@ -2,7 +2,14 @@
 import "./styles.css";
 import "@mantine/core/styles.layer.css";
 import { createRoot } from "react-dom/client";
-import { ActionIcon, Button, MantineProvider, Paper, Text } from "@mantine/core";
+import {
+  ActionIcon,
+  Button,
+  Drawer,
+  MantineProvider,
+  Paper,
+  Text
+} from "@mantine/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAgent } from "agents/react";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
@@ -30,7 +37,6 @@ import { formatClock } from "./format";
 import { cssVariablesResolver, theme } from "./theme/theme";
 import logo from "./assets/dembrane-logo-new.svg";
 import { ConnectionIndicator, type ConnectionStatus } from "./components/ConnectionIndicator";
-import { Drawer } from "./components/Drawer";
 import { ConsentForm } from "./components/ConsentForm";
 import { LiveDot, RecordingSheet, type Snap } from "./components/RecordingSheet";
 import { useLevels, Waveform } from "./components/Waveform";
@@ -271,15 +277,6 @@ function App() {
       {/* h-14 and above the sheet: the sheet tucks in under it. */}
       <header className="sticky top-0 z-20 h-14 bg-app-bg border-b border-app-quiet px-4 flex items-center justify-between gap-2">
         <img src={logo} alt="dembrane" className="h-9" />
-        <div className="flex items-center gap-1">
-          <ConnectionIndicator status={connection} />
-          <ActionIcon
-            onClick={() => setDrawer("debug")}
-            aria-label="Open message log"
-          >
-            <BugIcon size={16} />
-          </ActionIcon>
-        </div>
       </header>
 
       {/* pt-20 clears the tucked sheet's strip and grab band. */}
@@ -435,11 +432,25 @@ function App() {
         </RecordingSheet>
       )}
 
+      {/* For whoever runs the prototype, out of a participant's way. */}
+      <ActionIcon
+        size="sm"
+        onClick={() => setDrawer("debug")}
+        aria-label="Open message log"
+        className="!fixed bottom-3 left-3 z-30 opacity-40 hover:opacity-100"
+      >
+        <BugIcon size={16} />
+      </ActionIcon>
+
       <Drawer
-        open={drawer === "debug"}
+        opened={drawer === "debug"}
         onClose={closeDrawer}
+        position="left"
         title={`Message log · ${messages.length}`}
       >
+        <div className="pb-3 mb-3 border-b border-app-quiet">
+          <ConnectionIndicator status={connection} />
+        </div>
         <div className="flex flex-wrap items-center gap-2 pb-3 mb-3 border-b border-app-quiet">
           <span className="text-xs text-app-muted mr-auto">
             Simulate interaction
