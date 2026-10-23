@@ -1,5 +1,5 @@
 {
-  "name": "@dembrane/2026-10-22-participant-portal",
+  "name": "@dembrane/2026-10-22-voice-drafting",
   "description": "The portal admin setup with Jev and compiled playbooks, its source grouped by concern",
   "private": true,
   "type": "module",

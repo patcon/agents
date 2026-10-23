@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "2026-10-22-participant-portal",
+  "name": "2026-10-22-voice-drafting",
   // Transcription and the agent's question both come from Gemini on Vertex AI.
   // In local dev the secrets come from .env (see .env.example).
   // GOOGLE_SERVICE_ACCOUNT_KEY, when set, is traded for access tokens as they

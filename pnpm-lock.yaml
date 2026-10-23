@@ -1458,7 +1458,7 @@ importers:
         specifier: ^2.9.0
         version: 2.9.0
 
-  examples/dembrane/2026-10-22-participant-portal:
+  examples/dembrane/2026-10-22-playbook-compilation:
     dependencies:
       '@ai-sdk/react':
         specifier: ^4.0.0
@@ -1546,7 +1546,7 @@ importers:
         specifier: ^2.9.0
         version: 2.9.0
 
-  examples/dembrane/2026-10-22-playbook-compilation:
+  examples/dembrane/2026-10-22-voice-drafting:
     dependencies:
       '@ai-sdk/react':
         specifier: ^4.0.0

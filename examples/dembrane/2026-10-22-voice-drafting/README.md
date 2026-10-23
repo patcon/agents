@@ -1,4 +1,4 @@
-# 2026-10-22-participant-portal
+# 2026-10-22-voice-drafting
 
 A continuous voice session that walks a host through setting up their project's portal. The setup questions come from a plan compiled from a playbook (`src/plan/admin-setup.json`); more can come on demand from the host and from an agent. Everything is stored as an append-only `UIMessage` log in one Durable Object.
 
