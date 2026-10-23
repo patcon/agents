@@ -44,6 +44,7 @@ allowBuilds:
   msgpackr-extract: false
   tree-sitter-bash: false
   tree-sitter-powershell: false
+  es5-ext: false
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - "@cloudflare/*"
