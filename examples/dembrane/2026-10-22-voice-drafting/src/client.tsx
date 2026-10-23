@@ -817,7 +817,7 @@ function App() {
           />
           <span className="truncate">
             <Text size="sm" bold>
-              participant-portal
+              voice-drafting
             </Text>
           </span>
           <ConnectionIndicator status={connection} />
