@@ -1,6 +1,6 @@
 # Capability map: hosts plan their participants' session
 
-Status: draft, from the design discussion of 2026-10-22. Each module gets its own `spec-<module id>.md` beside this file before it's built; only `text-dictation` has one so far, and it's built.
+Status: draft, from the design discussion of 2026-10-22. Each module gets its own `spec-<module id>.md` beside this file before it's built; ~~only `text-dictation` has one so far, and it's built.~~ `text-dictation` has one and is built; `voice-drafting` has a draft one.
 
 The goal: portal setup ends with the host describing, out loud, the session they want their participants to have. That becomes the project's participant plan, which anyone who isn't the host gets when they open the project.
 
@@ -44,13 +44,13 @@ Decided so far:
 - **Same model and tally as the agent's question.** `gemini-3.8-flash` through `src/models/gemini.ts` with a JSON schema, at low thinking; calls and tokens go in the log drawer's cost estimate. The prompt is a file beside the compiler's prompts.
 - **If it fails,** the verbatim text stays, so nothing is lost.
 
-To decide in the spec:
+~~To decide in the spec:~~ Decided in [`spec-voice-drafting.md`](spec-voice-drafting.md), 2026-10-23:
 
-- **A no-LLM verbatim path.** Whether a prompt can ask for plain dictation without any LLM call (for cost, or where sending text to a model isn't wanted), e.g. `"draft": "verbatim"`, or whether hints cover it.
-- **Field name:** `draftHints`, or `hints` if cards might use it for more than drafting.
+- ~~**A no-LLM verbatim path.** Whether a prompt can ask for plain dictation without any LLM call (for cost, or where sending text to a model isn't wanted), e.g. `"draft": "verbatim"`, or whether hints cover it.~~ Only `DRAFT_ENABLED="false"`, for the whole Worker; per prompt, hints ask for verbatim.
+- ~~**Field name:** `draftHints`, or `hints` if cards might use it for more than drafting.~~ `draftHints`.
 - ~~**Context:** whether the LLM sees earlier answers in the session, which helps with "same as before" but widens what each call sends.~~ Now `context-carryover`.
-- **Showing the work:** a "Drafting…" sign while a rewrite is in flight, and whether the person can see the verbatim transcript beside the draft, to trust it.
-- **Number questions:** whether drafting can fill them from speech ("about fifty, maybe sixty" → 60), or they stay out of scope.
+- ~~**Showing the work:** a "Drafting…" sign while a rewrite is in flight, and whether the person can see the verbatim transcript beside the draft, to trust it.~~ A "Drafting…" sign only; the transcript stays in its drawer.
+- ~~**Number questions:** whether drafting can fill them from speech ("about fifty, maybe sixty" → 60), or they stay out of scope.~~ Out of scope.
 
 ## `context-carryover`
 
