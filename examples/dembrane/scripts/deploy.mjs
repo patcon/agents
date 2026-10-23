@@ -190,6 +190,7 @@ async function standalone(outDir) {
       '  - "packages/*"',
       "allowBuilds:",
       "  core-js-pure: true",
+      "  es5-ext: false",
       "  esbuild: true",
       "  sharp: true",
       "  workerd: true",
