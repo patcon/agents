@@ -1,0 +1,131 @@
+/* Mantine's styles sit between Tailwind's base and its utilities, so a
+   utility class still wins over a Mantine default. */
+@layer theme, base, mantine, components, utilities;
+
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@import "./theme/dm-sans.css";
+@import "./theme/rules.css";
+
+/* The colour roles (--app-action, --app-quiet, …) are set by the theme's
+   cssVariablesResolver from theme/colors.ts, and the rules by rules.css.
+   What's here is the rest of dembrane-echo's :root, from its index.css. */
+:root {
+  --app-font-family: "DM Sans Variable", sans-serif;
+  --app-font-feature-settings:
+    "ss01" on, "ss02" on, "ss03" on, "ss04" on, "ss05" on, "ss06" on, "ss08" on;
+
+  /* Type ladder: a perfect fourth from 14px. Nothing smaller. */
+  --app-font-size-xs: 0.875rem;
+  --app-font-size-sm: 1rem;
+  --app-font-size-md: 1.16625rem;
+  --app-font-size-lg: 1.555rem;
+  --app-font-size-xl: 2.0731rem;
+  --app-line-height-xs: 1.45;
+  --app-line-height-sm: 1.5;
+  --app-line-height-md: 1.55;
+  --app-line-height-lg: 1.3;
+  --app-line-height-xl: 1.2;
+  --app-heading-font-weight: 320;
+}
+
+/* The roles as Tailwind colours: bg-app-surface, border-app-quiet, … */
+@theme inline {
+  --font-sans: var(--app-font-family);
+  --color-app-bg: var(--app-background);
+  --color-app-surface: var(--app-surface);
+  --color-app-text: var(--app-text);
+  --color-app-muted: var(--app-muted);
+  --color-app-quiet: var(--app-quiet);
+  --color-app-pressed: var(--app-pressed);
+  --color-app-control: var(--app-control-rule);
+  --color-app-action: var(--app-action);
+  --color-app-action-tint: var(--app-action-tint);
+  --color-app-danger: var(--app-danger);
+  --color-app-danger-tint: var(--app-danger-tint);
+  --color-app-danger-on-tint: var(--app-danger-on-tint);
+  --color-app-success: var(--app-success);
+  --color-app-success-tint: var(--app-success-tint);
+  --color-app-warning: var(--app-warning);
+  --color-app-warning-tint: var(--app-warning-tint);
+  --color-app-disabled: var(--app-disabled);
+}
+
+/* Type, weight and corners as dembrane-echo's tailwind.config.js has them:
+   the ladder starts at 14px, one weight (320) with 600 for emphasis, and
+   every corner square (rounded-full still draws a dot or a pill). */
+@theme {
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.45;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1.16625rem;
+  --text-base--line-height: 1.55;
+  --text-lg: 1.555rem;
+  --text-lg--line-height: 1.3;
+  --text-xl: 2.0731rem;
+  --text-xl--line-height: 1.2;
+  --font-weight-light: 240;
+  --font-weight-normal: 320;
+  --font-weight-medium: 320;
+  --font-weight-semibold: 320;
+  --font-weight-bold: 600;
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  --radius-4xl: 0;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--app-background);
+  color: var(--app-text);
+  font-family: var(--app-font-family);
+  font-feature-settings: var(--app-font-feature-settings);
+  font-weight: 320;
+}
+
+/* Markdown, as dembrane-echo's index.css has it: .prose in the app font. */
+.prose,
+.prose * {
+  font-family: var(--app-font-family) !important;
+  font-feature-settings: var(--app-font-feature-settings) !important;
+}
+
+/* Visually hidden, kept for screen readers: the markdown renderer's footnote
+   heading is injected at runtime, so it needs a class defined here. */
+.dembrane-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Prose in the app's ink and its one weight: hierarchy from size. */
+.prose {
+  --tw-prose-body: var(--app-text);
+  --tw-prose-headings: var(--app-text);
+  --tw-prose-bold: var(--app-text);
+  --tw-prose-links: var(--app-action);
+  --tw-prose-bullets: var(--app-muted);
+  --tw-prose-counters: var(--app-muted);
+}
+.prose :is(h1, h2, h3, h4, h5, h6) {
+  font-weight: var(--app-heading-font-weight);
+}
