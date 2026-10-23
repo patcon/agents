@@ -8,6 +8,7 @@ interface __BaseEnv_Env {
   COMPILE_THINKING: "low";
   JEV_MODEL: "jev-1.13.0";
   JEV_ENABLED: "true";
+  DRAFT_MODEL: "gemini-3.5-flash";
   DRAFT_ENABLED: "true";
   GOOGLE_CLOUD_PROJECT: string;
   GOOGLE_SERVICE_ACCOUNT_KEY: string;
@@ -41,6 +42,7 @@ declare namespace NodeJS {
       | "COMPILE_THINKING"
       | "JEV_MODEL"
       | "JEV_ENABLED"
+      | "DRAFT_MODEL"
       | "DRAFT_ENABLED"
       | "GOOGLE_CLOUD_PROJECT"
       | "GOOGLE_SERVICE_ACCOUNT_KEY"

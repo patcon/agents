@@ -1,8 +1,9 @@
-// Runs short rambles past the draft prompt, with AGENT_MODEL at low thinking
+// Runs short rambles past the draft prompt, with DRAFT_MODEL at low thinking
 // as the server does, and prints each draft beside what was said, for
 // reading by eye.
 //
-// Usage: pnpm try-draft [case-name-prefix]
+// Usage: pnpm try-draft [case-name-prefix] [--model name]
+// --model tries another model in place of DRAFT_MODEL.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -81,7 +82,12 @@ const CASES: Case[] = [
   }
 ];
 
-const prefix = process.argv[2];
+const args = process.argv.slice(2);
+const modelAt = args.indexOf("--model");
+const modelFlag = modelAt === -1 ? undefined : args[modelAt + 1];
+const [prefix] = args.filter(
+  (a, i) => !a.startsWith("--") && i !== modelAt + 1
+);
 const cases = prefix ? CASES.filter((c) => c.name.startsWith(prefix)) : CASES;
 if (!cases.length) {
   console.error(
@@ -91,7 +97,7 @@ if (!cases.length) {
 }
 
 const env = loadEnv();
-const generate = generator(env, env.AGENT_MODEL, 90_000, "low");
+const generate = generator(env, modelFlag ?? env.DRAFT_MODEL, 90_000, "low");
 const system = readFileSync(join(root, "src/draft/prompts/draft.md"), "utf8");
 
 const results = await Promise.all(

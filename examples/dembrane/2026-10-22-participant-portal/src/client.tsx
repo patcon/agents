@@ -40,6 +40,7 @@ import {
 import {
   AUDIO_TOKENS_PER_SECOND,
   CHARS_PER_TOKEN,
+  EMPTY_USAGE,
   costOf,
   foldLog,
   formatAnswer,
@@ -524,6 +525,7 @@ function CostEstimate({ usage }: { usage: Usage }) {
     ...priceChangesAfter(today, [
       usage.sttModel,
       usage.agentModel,
+      usage.draftModel,
       usage.jevModel
     ])
   ];
@@ -546,6 +548,19 @@ function CostEstimate({ usage }: { usage: Usage }) {
           usage.agentInputTokens,
           usage.agentOutputTokens
         )
+      )
+    },
+    {
+      label: "Drafting",
+      detail: `${usage.draftCalls} calls · ${usage.draftInputTokens.toLocaleString()} in / ${usage.draftOutputTokens.toLocaleString()} out`,
+      costs: dates.map((d) =>
+        usage.draftCalls
+          ? costOf(
+              rateOn(usage.draftModel, d),
+              usage.draftInputTokens,
+              usage.draftOutputTokens
+            )
+          : 0
       )
     },
     {
@@ -996,7 +1011,8 @@ function App() {
             From agent
           </Button>
         </div>
-        {agent.state && <CostEstimate usage={agent.state} />}
+        {/* A session from before a tally existed lacks it, so it starts at 0. */}
+        {agent.state && <CostEstimate usage={{ ...EMPTY_USAGE, ...agent.state }} />}
         <DebugLog messages={messages} />
       </Drawer>
     </div>

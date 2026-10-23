@@ -33,7 +33,10 @@
     "JEV_MODEL": "jev-1.13.0",
     "JEV_ENABLED": "true",
     // An LLM rewrites a text question's draft after each utterance, with
-    // AGENT_MODEL; DRAFT_ENABLED=false in .env leaves plain dictation.
+    // DRAFT_MODEL; DRAFT_ENABLED=false in .env leaves plain dictation.
+    // 3.5 Flash: ~2 s a draft where 3.8 Flash often stalled 10-60 s, and it
+    // still follows "write exactly what I said" (Flash-Lite didn't).
+    "DRAFT_MODEL": "gemini-3.5-flash",
     "DRAFT_ENABLED": "true"
   },
   "compatibility_date": "2026-06-11",

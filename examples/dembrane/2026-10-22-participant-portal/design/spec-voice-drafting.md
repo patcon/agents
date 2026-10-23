@@ -30,7 +30,7 @@ Drafting runs on the server, in `ConversationAgent`, in the same way as Jev's `#
 - There's one call per question in flight. Whatever is said meanwhile is covered by one more call after it, as with `#assessAgain`. Different questions can be drafted at the same time.
 - A call is skipped if the latest draft for the question has already seen its latest utterance.
 - The call gets the question's prompt, its `draftHints`, every utterance that counts for it in order, and the previous draft if there is one. It returns `{ "draft": string }`.
-- `generateJson()` with `AGENT_MODEL` (`gemini-3.8-flash`) at `thinkingLevel: "low"`. Calls and tokens are added to `agentCalls`, `agentInputTokens` and `agentOutputTokens`, so the log drawer's cost estimate covers them.
+- ~~`generateJson()` with `AGENT_MODEL` (`gemini-3.8-flash`) at `thinkingLevel: "low"`. Calls and tokens are added to `agentCalls`, `agentInputTokens` and `agentOutputTokens`, so the log drawer's cost estimate covers them.~~ `generateJson()` with `DRAFT_MODEL` (`gemini-3.5-flash`) at `thinkingLevel: "low"`. Calls and tokens are added to `draftCalls`, `draftInputTokens` and `draftOutputTokens`, and the log drawer's cost estimate has a "Drafting" line for them (decision 7).
 - If the call fails, it's logged to the console and nothing is appended. The field keeps showing the verbatim text, so nothing is lost.
 
 The system prompt is `src/draft/prompts/draft.md`, imported with `?raw` the way the compiler's prompts are. It says:
@@ -167,7 +167,7 @@ Then a check by hand with `pnpm run start`: on the tags question, speak a ramble
 ## Boundaries
 
 - **Always:** run `pnpm test` and the typecheck before each commit; keep the log append-only; compose the draft in `foldLog()`, so the server and page agree; keep the verbatim text whenever a call fails.
-- **Ask first:** sending the model anything beyond this question's own speech and its previous draft (that's `context-carryover`); changing Jev; ~~editing `src/plan/admin-setup.json` to add hints;~~ editing `src/plan/admin-setup.json` beyond the tags question's hints; using a model other than `AGENT_MODEL`.
+- **Ask first:** sending the model anything beyond this question's own speech and its previous draft (that's `context-carryover`); changing Jev; ~~editing `src/plan/admin-setup.json` to add hints;~~ editing `src/plan/admin-setup.json` beyond the tags question's hints; using a model other than ~~`AGENT_MODEL`~~ `DRAFT_MODEL`.
 - **Never:** submit an answer on the person's behalf; overwrite what they've typed; let the draft add content that wasn't said; amend commits (add new ones).
 
 ## Success criteria
@@ -192,6 +192,8 @@ Then a check by hand with `pnpm run start`: on the tags question, speak a ramble
 4. **Showing the work:** a "Drafting…" sign only. The verbatim transcript stays in the transcript drawer (decided 2026-10-23).
 5. **Number questions:** out of scope, as in `text-dictation`.
 6. **Hints in the admin setup:** the tags question gets `"draftHints": "A comma-separated list of short, lowercase tags, nothing else."` in this slice, so hints can be seen at work (decided 2026-10-23).
+
+7. **Model:** `DRAFT_MODEL`, `gemini-3.5-flash`, not `AGENT_MODEL`. Measured on 2026-10-23, 15 calls each in a row: `gemini-3.8-flash` took a median 22 s (1.5-43 s), and drafts in a live session came 11-23 s late; `gemini-3.5-flash` took a median 1.6 s (1.1-8.2 s); `gemini-3.5-flash-lite` 0.6 s, but it never followed "write exactly what I said" (0 of 10). `gemini-3.5-flash` did 4 of 5 times once the prompt said outright that a spoken request overrides the hints (decided 2026-10-23).
 
 ## Open questions
 

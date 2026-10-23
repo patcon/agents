@@ -3,7 +3,7 @@
     "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json",
     "https://raw.githubusercontent.com/pydantic/genai-prices/main/prices/providers/google.yml"
   ],
-  "fetched": "2026-10-21",
+  "fetched": "2026-10-23",
   "models": {
     "gemini-3.5-transcribe-live-preview": [
       {
@@ -20,6 +20,12 @@
         "from": "2027-01-01",
         "input": 1.5,
         "output": 7.5
+      }
+    ],
+    "gemini-3.5-flash": [
+      {
+        "input": 1.5,
+        "output": 9
       }
     ]
   }

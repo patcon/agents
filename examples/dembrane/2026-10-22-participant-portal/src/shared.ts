@@ -141,6 +141,11 @@ export type Usage = {
   agentInputTokens: number;
   /** Response and thinking tokens, which are both billed as output. */
   agentOutputTokens: number;
+  draftModel: string;
+  draftCalls: number;
+  draftInputTokens: number;
+  /** Response and thinking tokens, as for the agent. */
+  draftOutputTokens: number;
   jevModel: string;
   jevCalls: number;
   /** Jev bills input tokens only. */
@@ -155,6 +160,10 @@ export const EMPTY_USAGE: Usage = {
   agentCalls: 0,
   agentInputTokens: 0,
   agentOutputTokens: 0,
+  draftModel: "",
+  draftCalls: 0,
+  draftInputTokens: 0,
+  draftOutputTokens: 0,
   jevModel: "",
   jevCalls: 0,
   jevInputTokens: 0

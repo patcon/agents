@@ -122,12 +122,17 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
   // --- Usage ---
 
   #addUsage(
-    add: Partial<Omit<Usage, "sttModel" | "agentModel" | "jevModel">>
+    add: Partial<
+      Omit<Usage, "sttModel" | "agentModel" | "draftModel" | "jevModel">
+    >
   ) {
     const next: Usage = {
+      // A session from before a tally existed lacks it, so it starts at 0.
+      ...EMPTY_USAGE,
       ...this.state,
       sttModel: this.env.STT_MODEL,
       agentModel: this.env.AGENT_MODEL,
+      draftModel: this.env.DRAFT_MODEL,
       jevModel: this.env.JEV_MODEL
     };
     for (const [key, value] of Object.entries(add) as [
@@ -431,21 +436,21 @@ export class ConversationAgent extends VoiceChatAgent<Env, Usage> {
 
       const { prompt, schema } = draftRequest(question, said, previous?.text);
       const { json, usage } = await generateJson(this.env, {
-        model: this.env.AGENT_MODEL,
+        model: this.env.DRAFT_MODEL,
         system: draftSystem,
         prompt,
         schema,
         thinkingLevel: "low"
       });
       this.#addUsage({
-        agentCalls: 1,
-        agentInputTokens: usage.inputTokens,
-        agentOutputTokens: usage.outputTokens
+        draftCalls: 1,
+        draftInputTokens: usage.inputTokens,
+        draftOutputTokens: usage.outputTokens
       });
       const draft: Draft = {
         text: readDraft(json),
         seenUpTo: last.id,
-        model: this.env.AGENT_MODEL
+        model: this.env.DRAFT_MODEL
       };
       await this.#append({
         id: newId("draft"),

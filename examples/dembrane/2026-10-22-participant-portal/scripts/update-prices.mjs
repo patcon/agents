@@ -15,6 +15,7 @@ const GENAI_PRICES =
 const MODELS = {
   STT_MODEL: { audio: true },
   AGENT_MODEL: { audio: false },
+  DRAFT_MODEL: { audio: false },
   COMPILE_MODEL: { audio: false }
 };
 
