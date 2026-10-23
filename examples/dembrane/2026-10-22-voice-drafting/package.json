@@ -1,6 +1,6 @@
 {
   "name": "@dembrane/2026-10-22-voice-drafting",
-  "description": "The portal admin setup with Jev and compiled playbooks, its source grouped by concern",
+  "description": "The portal admin setup with Jev and compiled playbooks, where an LLM drafts text answers from what was said, following each field's hints",
   "private": true,
   "type": "module",
   "version": "0.0.0",
