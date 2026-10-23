@@ -113,6 +113,15 @@ const SETTING =
   "have errors.";
 
 /**
+ * What was said, as Jev reads it. A transcriber's "Basic?" is usually an
+ * answer said with a rising voice, but Jev reads it as doubt, so question
+ * marks become periods (and Spanish's opening "¿" goes).
+ */
+function asStatement(text: string) {
+  return text.replaceAll("?", ".").replaceAll("¿", "");
+}
+
+/**
  * One request about all of `questions`. In the state, questions are named
  * q1, q2, ... and each line of the transcript says which one was on screen
  * when it was said.
@@ -132,7 +141,7 @@ export function assessmentRequest(
       ])
     ),
     transcript: transcript.map((u) => ({
-      said: u.text,
+      said: asStatement(u.text),
       on_screen: (u.onScreen && alias.get(u.onScreen)) ?? null
     }))
   };
