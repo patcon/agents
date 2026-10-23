@@ -1,6 +1,6 @@
-// Writes src/plan/plan.schema.json from the Zod schemas in src/plan/plan.ts, and
-// src/plan/plan.llm.schema.json, the same for Gemini's structured output. Then
-// checks every plan in src/plan three ways: against that JSON Schema,
+// Writes src/shared/plan/plan.schema.json from the Zod schemas in src/shared/plan/plan.ts, and
+// src/shared/plan/plan.llm.schema.json, the same for Gemini's structured output. Then
+// checks every plan in src/shared/plan three ways: against that JSON Schema,
 // against the Zod schema, and with lintPlan(). Exits 1 on any error.
 //
 // Usage: pnpm check-plans
@@ -10,22 +10,22 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import { z } from "zod";
-import { PlanSchema, lintPlan, planLlmSchema } from "../src/plan/plan.ts";
+import { PlanSchema, lintPlan, planLlmSchema } from "../src/shared/plan/plan.ts";
 
-const src = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "plan");
+const src = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "shared", "plan");
 
 const schema = z.toJSONSchema(PlanSchema);
 writeFileSync(
   join(src, "plan.schema.json"),
   `${JSON.stringify(schema, null, 2)}\n`
 );
-console.log("wrote src/plan/plan.schema.json");
+console.log("wrote src/shared/plan/plan.schema.json");
 
 writeFileSync(
   join(src, "plan.llm.schema.json"),
   `${JSON.stringify(planLlmSchema(), null, 2)}\n`
 );
-console.log("wrote src/plan/plan.llm.schema.json");
+console.log("wrote src/shared/plan/plan.llm.schema.json");
 
 // Zod writes a `pattern` alongside each `format`, so formats can stay
 // annotations rather than needing ajv-formats.

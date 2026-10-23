@@ -1,10 +1,10 @@
-import type { Question } from "../shared";
+import type { Question } from "../../shared";
 
 // Drafting a text question's answer from what was said while it showed: an
 // LLM rewrites the utterances into what the speaker meant, the way the
 // question's hints ask. Building the request and reading the answer are
 // pure, so the server and `pnpm try-draft` share them. The system prompt is
-// src/draft/prompts/draft.md, which the server imports with `?raw` and the
+// src/server/draft/prompts/draft.md, which the server imports with `?raw` and the
 // script reads.
 
 const SCHEMA = {

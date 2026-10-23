@@ -16,7 +16,7 @@ import {
   useStateValue
 } from "@json-render/react";
 import { Input } from "@cloudflare/kumo";
-import { cardCatalog, defaultCard } from "../../cards/cards";
+import { cardCatalog, defaultCard } from "../../shared/cards/cards";
 import { caretHitAt, draftOffset } from "./caret";
 import { AUTO_SELECT, type AnswerValue, type Question } from "../../shared";
 

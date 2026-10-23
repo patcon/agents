@@ -7,8 +7,8 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { draftRequest, readDraft } from "../src/draft/draft.ts";
-import type { Question } from "../src/shared.ts";
+import { draftRequest, readDraft } from "../src/server/draft/draft.ts";
+import type { Question } from "../src/shared/index.ts";
 import { generator, loadEnv, root } from "./gemini.ts";
 
 type Case = {
@@ -110,7 +110,7 @@ if (!cases.length) {
 
 const env = loadEnv();
 const generate = generator(env, modelFlag ?? env.DRAFT_MODEL, 90_000, "low");
-const system = readFileSync(join(root, "src/draft/prompts/draft.md"), "utf8");
+const system = readFileSync(join(root, "src/server/draft/prompts/draft.md"), "utf8");
 
 const results = await Promise.all(
   cases.map(async (c) => {

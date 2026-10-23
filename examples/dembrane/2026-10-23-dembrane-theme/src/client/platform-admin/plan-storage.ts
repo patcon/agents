@@ -2,7 +2,7 @@
 // platform-admin.tsx so that file exports only a component, which Fast
 // Refresh needs. To be removed with it.
 
-import type { Plan } from "../../plan/plan";
+import type { Plan } from "../../shared/plan/plan";
 
 const STORAGE_KEY = "platform-admin:plan";
 

@@ -1,8 +1,8 @@
 // Compiles a markdown playbook into a plan with COMPILE_MODEL, the way a
-// host UI will: compilePlaybook() from src/compile/compile.ts, with the prompts in
-// src/compile/prompts.
+// host UI will: compilePlaybook() from src/shared/compile/compile.ts, with the prompts in
+// src/shared/compile/prompts.
 //
-// Usage: pnpm compile-playbook src/compile/playbooks/admin-setup.decompiled.md [--runs N] [--thinking level]
+// Usage: pnpm compile-playbook src/shared/compile/playbooks/admin-setup.decompiled.md [--runs N] [--thinking level]
 // --thinking overrides COMPILE_THINKING in wrangler.jsonc.
 // Writes compiled/<the playbook's name>.json, or with --runs, .1.json and
 // on, compiled in parallel. A run that ends with errors writes nothing.
@@ -12,7 +12,7 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, relative } from "node:path";
-import { compilePlaybook } from "../src/compile/compile.ts";
+import { compilePlaybook } from "../src/shared/compile/compile.ts";
 import { formatUsage, generator, loadEnv, root } from "./gemini.ts";
 
 const args = process.argv.slice(2);
@@ -37,7 +37,7 @@ if (!playbookPath || !Number.isInteger(runs) || runs < 1) {
 const name = basename(playbookPath, ".md");
 const markdown = readFileSync(playbookPath, "utf8");
 const prompt = (file: string) =>
-  readFileSync(join(root, "src/compile/prompts", file), "utf8");
+  readFileSync(join(root, "src/shared/compile/prompts", file), "utf8");
 const prompts = {
   system: prompt("compile-playbook.md"),
   retry: prompt("compile-playbook-retry.md")
@@ -99,7 +99,7 @@ for (const outcome of results) {
   mkdirSync(join(root, "compiled"), { recursive: true });
   writeFileSync(
     out,
-    `${JSON.stringify({ $schema: "../src/plan/plan.schema.json", ...plan }, null, 2)}\n`
+    `${JSON.stringify({ $schema: "../src/shared/plan/plan.schema.json", ...plan }, null, 2)}\n`
   );
   console.log(`  wrote ${relative(root, out)}`);
 }

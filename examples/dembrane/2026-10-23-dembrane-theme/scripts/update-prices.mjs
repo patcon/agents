@@ -1,4 +1,4 @@
-// Writes src/models/prices.json for the models set in wrangler.jsonc. Today's
+// Writes src/shared/models/prices.json for the models set in wrangler.jsonc. Today's
 // Vertex AI rate comes from LiteLLM, which lists every model we use;
 // announced changes after today come from pydantic/genai-prices, which
 // dates them. It reads genai-prices' Google YAML rather than their published
@@ -121,7 +121,7 @@ for (const { id, audio } of wanted) {
 }
 
 writeFileSync(
-  "src/models/prices.json",
+  "src/shared/models/prices.json",
   `${JSON.stringify({ sources: [LITELLM, GENAI_PRICES], fetched: today, models }, null, 2)}\n`
 );
-console.log("Wrote src/models/prices.json");
+console.log("Wrote src/shared/models/prices.json");

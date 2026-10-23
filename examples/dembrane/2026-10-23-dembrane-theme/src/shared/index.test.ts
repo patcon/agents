@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { foldLog, isOpen, type LogMessage, type Question } from "./shared";
+import { foldLog, isOpen, type LogMessage, type Question } from ".";
 
 // Log entries as the server appends them.
 

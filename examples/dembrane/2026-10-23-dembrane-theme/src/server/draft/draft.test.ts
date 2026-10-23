@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Question } from "../shared";
+import type { Question } from "../../shared";
 import { draftRequest, readDraft } from "./draft";
 
 const tags: Question = {

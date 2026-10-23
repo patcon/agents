@@ -1,4 +1,4 @@
-import type { TokenUsage, Turn } from "../models/gemini";
+import type { TokenUsage, Turn } from "../../server/models/gemini";
 import {
   PlanSchema,
   lintPlan,
@@ -15,7 +15,7 @@ import { SETTINGS, settingsForPrompt, type Setting } from "../plan/settings";
 //
 // This is what a host UI calls, so it reads no files and calls no API
 // itself. The prompts and the model come in as arguments: the Worker imports
-// src/compile/prompts/*.md with `?raw` and passes generateJson(), and scripts read
+// src/shared/compile/prompts/*.md with `?raw` and passes generateJson(), and scripts read
 // the prompts from disk.
 
 /** Asks the model once. generateJson() with the env and model bound. */
@@ -102,9 +102,9 @@ export async function compilePlaybook(
     /** What `source.playbook` says, e.g. the file's name. */
     name: string;
     prompts: {
-      /** src/compile/prompts/compile-playbook.md: the system prompt, with `{{settings}}`. */
+      /** src/shared/compile/prompts/compile-playbook.md: the system prompt, with `{{settings}}`. */
       system: string;
-      /** src/compile/prompts/compile-playbook-retry.md: asks again, with `{{errors}}`. */
+      /** src/shared/compile/prompts/compile-playbook-retry.md: asks again, with `{{errors}}`. */
       retry: string;
     };
     generate: Generate;

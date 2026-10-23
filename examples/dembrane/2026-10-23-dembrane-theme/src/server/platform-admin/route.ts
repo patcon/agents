@@ -1,9 +1,9 @@
 // /platform-admin's one server route, apart from server.ts so it goes when
 // the page does.
 
-import { compilePlaybook } from "../compile/compile";
-import compileSystem from "../compile/prompts/compile-playbook.md?raw";
-import compileRetry from "../compile/prompts/compile-playbook-retry.md?raw";
+import { compilePlaybook } from "../../shared/compile/compile";
+import compileSystem from "../../shared/compile/prompts/compile-playbook.md?raw";
+import compileRetry from "../../shared/compile/prompts/compile-playbook-retry.md?raw";
 import { generateJson } from "../models/gemini";
 
 /**

@@ -1,19 +1,19 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { compilePlaybook, fillTemplate, type Generate } from "../src/compile/compile";
-import { comparePlans } from "../src/compile/compare-plans";
-import { PlanSchema, type Plan } from "../src/plan/plan";
+import { compilePlaybook, fillTemplate, type Generate } from "../src/shared/compile/compile";
+import { comparePlans } from "../src/shared/compile/compare-plans";
+import { PlanSchema, type Plan } from "../src/shared/plan/plan";
 
 const handMade = PlanSchema.parse(
   JSON.parse(
     readFileSync(
-      new URL("../src/plan/admin-setup.json", import.meta.url),
+      new URL("../src/shared/plan/admin-setup.json", import.meta.url),
       "utf8"
     )
   )
 );
 const prompt = (name: string) =>
-  readFileSync(new URL(`../src/compile/prompts/${name}.md`, import.meta.url), "utf8");
+  readFileSync(new URL(`../src/shared/compile/prompts/${name}.md`, import.meta.url), "utf8");
 const prompts = {
   system: prompt("compile-playbook"),
   retry: prompt("compile-playbook-retry")

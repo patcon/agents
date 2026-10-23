@@ -7,7 +7,7 @@
 //
 // Run as plain TypeScript by `pnpm try-jev` too, so only type imports here.
 
-import type { Question } from "../shared";
+import type { Question } from "..";
 
 const ENDPOINT = "https://api.typesafe.ai/v1/systemone";
 

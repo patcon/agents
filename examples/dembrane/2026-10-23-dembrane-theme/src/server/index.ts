@@ -11,7 +11,7 @@ import {
   createUIMessageStreamResponse,
   type UIMessage
 } from "ai";
-import { checkPlan } from "./compile/compile";
+import { checkPlan } from "../shared/compile/compile";
 import { draftRequest, readDraft } from "./draft/draft";
 import draftSystem from "./draft/prompts/draft.md?raw";
 import { generateJson, googleAccessToken } from "./models/gemini";
@@ -21,7 +21,7 @@ import {
   isAssessable,
   likelihoodOf,
   readAssessment
-} from "./models/jev";
+} from "../shared/models/jev";
 import { VertexLiveSTT } from "@dembrane/voice-google";
 import { platformAdminRoute } from "./platform-admin/route";
 import {
@@ -33,8 +33,8 @@ import {
   questionLlmSchema,
   type Plan,
   type PlanEvent
-} from "./plan/plan";
-import adminSetup from "./plan/admin-setup.json";
+} from "../shared/plan/plan";
+import adminSetup from "../shared/plan/admin-setup.json";
 import {
   EMPTY_USAGE,
   foldLog,
@@ -51,7 +51,7 @@ import {
   type Question,
   type SessionStatus,
   type Usage
-} from "./shared";
+} from "../shared";
 
 /** The portal admin setup, compiled from its playbook. */
 const PLAN = PlanSchema.parse(adminSetup);

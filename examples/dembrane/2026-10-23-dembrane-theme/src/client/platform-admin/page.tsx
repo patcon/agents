@@ -6,12 +6,12 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { Badge, Button, Surface, Text } from "@cloudflare/kumo";
-import type { Compiled } from "../../compile/compile";
-import { comparePlans } from "../../compile/compare-plans";
-import { PlanSchema, type Plan } from "../../plan/plan";
+import type { Compiled } from "../../shared/compile/compile";
+import { comparePlans } from "../../shared/compile/compare-plans";
+import { PlanSchema, type Plan } from "../../shared/plan/plan";
 import { readActive, writeActive, type Active } from "./plan-storage";
-import adminSetup from "../../plan/admin-setup.json";
-import decompiledPlaybook from "../../compile/playbooks/admin-setup.decompiled.md?raw";
+import adminSetup from "../../shared/plan/admin-setup.json";
+import decompiledPlaybook from "../../shared/compile/playbooks/admin-setup.decompiled.md?raw";
 
 const FILE_PLAN = PlanSchema.parse(adminSetup);
 
@@ -167,7 +167,7 @@ export function PlatformAdmin() {
             </>
           ) : (
             <Badge variant="secondary">
-              Sessions use src/plan/admin-setup.json
+              Sessions use src/shared/plan/admin-setup.json
             </Badge>
           )}
           <a href="/" className="text-sm text-kumo-brand">

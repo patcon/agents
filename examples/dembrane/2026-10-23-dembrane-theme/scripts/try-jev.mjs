@@ -8,14 +8,14 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PlanSchema, questionFor } from "../src/plan/plan.ts";
+import { PlanSchema, questionFor } from "../src/shared/plan/plan.ts";
 import {
   askJev,
   assessmentRequest,
   isAssessable,
   likelihoodOf,
   readAssessment
-} from "../src/models/jev.ts";
+} from "../src/shared/models/jev.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const env = Object.fromEntries(
@@ -30,7 +30,7 @@ if (!apiKey) throw new Error("Set TYPESAFE_API_KEY in .env");
 const model = process.env.JEV_MODEL || "jev-1.13.0";
 
 const plan = PlanSchema.parse(
-  JSON.parse(readFileSync(join(root, "src/plan/admin-setup.json"), "utf8"))
+  JSON.parse(readFileSync(join(root, "src/shared/plan/admin-setup.json"), "utf8"))
 );
 const questions = plan.items
   .map(questionFor)
