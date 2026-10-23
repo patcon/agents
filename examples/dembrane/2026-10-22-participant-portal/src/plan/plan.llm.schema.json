@@ -340,45 +340,148 @@
                     "description": "The setting the answer writes, and how conditions refer to it"
                   },
                   "question": {
-                    "type": "object",
-                    "properties": {
-                      "type": {
-                        "type": "string",
-                        "enum": [
-                          "radio",
-                          "checkbox",
-                          "text",
-                          "number"
-                        ]
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "radio"
+                            ]
+                          },
+                          "prompt": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "options": {
+                            "minItems": 1,
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "assess": {
+                            "description": "False keeps Jev from judging which options were said. Judged when absent.",
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "prompt",
+                          "required",
+                          "options"
+                        ],
+                        "additionalProperties": false
                       },
-                      "prompt": {
-                        "type": "string",
-                        "minLength": 1
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "checkbox"
+                            ]
+                          },
+                          "prompt": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "options": {
+                            "minItems": 1,
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "assess": {
+                            "description": "False keeps Jev from judging which options were said. Judged when absent.",
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "prompt",
+                          "required",
+                          "options"
+                        ],
+                        "additionalProperties": false
                       },
-                      "options": {
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "text"
+                            ]
+                          },
+                          "prompt": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "length": {
+                            "description": "short is a single line, as for a title or a name; long is a paragraph. Long when absent.",
+                            "type": "string",
+                            "enum": [
+                              "short",
+                              "long"
+                            ]
+                          },
+                          "dictate": {
+                            "description": "False keeps what's said from filling it in. Filled in when absent.",
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "prompt",
+                          "required"
+                        ],
+                        "additionalProperties": false
                       },
-                      "min": {
-                        "description": "A number question's lowest accepted answer. Only for numbers",
-                        "type": "number"
-                      },
-                      "max": {
-                        "description": "A number question's highest accepted answer. Only for numbers",
-                        "type": "number"
-                      },
-                      "required": {
-                        "type": "boolean"
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "number"
+                            ]
+                          },
+                          "prompt": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "min": {
+                            "description": "The lowest accepted answer",
+                            "type": "number"
+                          },
+                          "max": {
+                            "description": "The highest accepted answer",
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "prompt",
+                          "required"
+                        ],
+                        "additionalProperties": false
                       }
-                    },
-                    "required": [
-                      "type",
-                      "prompt",
-                      "required"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
                   "card": {
                     "description": "How the question is shown, as a json-render spec. A default card for its type when absent.",
@@ -849,14 +952,6 @@
                       "elements"
                     ],
                     "additionalProperties": false
-                  },
-                  "assess": {
-                    "description": "False keeps Jev from judging which options were said. Judged when absent.",
-                    "type": "boolean"
-                  },
-                  "dictate": {
-                    "description": "False keeps what's said from filling in a text question. Filled in when absent.",
-                    "type": "boolean"
                   }
                 },
                 "required": [

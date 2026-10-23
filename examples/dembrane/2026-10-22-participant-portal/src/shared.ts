@@ -21,6 +21,8 @@ export type Question = {
   assess?: boolean;
   /** False keeps what's said from filling in a text question. */
   dictate?: boolean;
+  /** A text question's field: a single line, or a paragraph when absent. */
+  length?: "short" | "long";
   /** The platform's consent card: recording waits for every option ticked. */
   consent?: true;
   /** Once answered, it can't be revised. A skip doesn't count. */

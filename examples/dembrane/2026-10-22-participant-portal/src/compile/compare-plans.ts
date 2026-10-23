@@ -152,12 +152,17 @@ export function comparePlans(expected: Plan, actual: Plan): Difference[] {
       }
     };
     compare("section", sectionOf(expected, a), sectionOf(actual, b));
+    // Each type has its own fields; one another type lacks reads as absent.
+    const field = (q: typeof qa, name: string) =>
+      (q as Record<string, unknown>)[name];
     compare("type", qa.type, qb.type);
-    compare("options", qa.options, qb.options);
-    compare("min", qa.min, qb.min);
-    compare("max", qa.max, qb.max);
+    for (const name of ["options", "min", "max"]) {
+      compare(name, field(qa, name), field(qb, name));
+    }
+    compare("length", field(qa, "length") ?? "long", field(qb, "length") ?? "long");
     compare("required", qa.required, qb.required);
-    compare("assess", a.payload.assess ?? true, b.payload.assess ?? true);
+    compare("assess", field(qa, "assess") ?? true, field(qb, "assess") ?? true);
+    compare("dictate", field(qa, "dictate") ?? true, field(qb, "dictate") ?? true);
     compare("card", cardTree(a.payload.card), cardTree(b.payload.card));
     if (qa.prompt.trim() !== qb.prompt.trim()) {
       differences.push({

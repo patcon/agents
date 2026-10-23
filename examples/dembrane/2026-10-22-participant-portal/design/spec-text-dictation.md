@@ -27,7 +27,7 @@ No new log entries. Everything is derived from what the log already holds:
 | consent                          | No (it's a checkbox) |
 | from the plan, host, or agent    | All the same: it depends only on the question |
 
-Turning it off: a plan prompt can say `"dictate": false`, the same way it can say `"assess": false`. It's carried onto `Question.dictate`. It's on when absent, because a recording session that ignores what you say in a text field would be surprising.
+Turning it off: a plan prompt can say `"dictate": false`, the same way it can say `"assess": false`. (Since 2026-10-23, both go on the question itself, `dictate` on text and `assess` on choices, as questions have a shape per type.) It's carried onto `Question.dictate`. It's on when absent, because a recording session that ignores what you say in a text field would be surprising.
 
 ### Live interim text
 

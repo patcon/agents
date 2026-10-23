@@ -90,17 +90,8 @@
         "question": {
           "type": "text",
           "prompt": "Which tags can participants pick from? Separate them with commas.",
-          "required": false
-        },
-        "card": {
-          "root": "input",
-          "elements": {
-            "input": {
-              "type": "TextInput",
-              "props": { "placeholder": "Type your answer", "length": "short", "value": { "$bindState": "/value" } },
-              "children": []
-            }
-          }
+          "required": false,
+          "length": "short"
         }
       }
     },
@@ -207,17 +198,8 @@
         "question": {
           "type": "text",
           "prompt": "What's the portal page's title?",
-          "required": true
-        },
-        "card": {
-          "root": "input",
-          "elements": {
-            "input": {
-              "type": "TextInput",
-              "props": { "placeholder": "Type your answer", "length": "short", "value": { "$bindState": "/value" } },
-              "children": []
-            }
-          }
+          "required": true,
+          "length": "short"
         }
       }
     },
@@ -261,17 +243,8 @@
         "question": {
           "type": "text",
           "prompt": "Any key terms the transcriber should know? Separate them with commas.",
-          "required": false
-        },
-        "card": {
-          "root": "input",
-          "elements": {
-            "input": {
-              "type": "TextInput",
-              "props": { "placeholder": "Type your answer", "length": "short", "value": { "$bindState": "/value" } },
-              "children": []
-            }
-          }
+          "required": false,
+          "length": "short"
         }
       }
     },

@@ -156,7 +156,7 @@ describe("comparePlans", () => {
   it("reports different options, a missing prompt, and a different release", () => {
     const plan = copy();
     const mode = plan.items.find((i) => i.id === "get_reply_mode")!;
-    if (mode.kind === "prompt")
+    if (mode.kind === "prompt" && "options" in mode.payload.question)
       mode.payload.question.options = ["Summarize", "Custom"];
     plan.items = plan.items.filter((i) => i.id !== "tags");
     plan.triggers = plan.triggers.filter(

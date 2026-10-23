@@ -20,7 +20,7 @@ Verbatim for a single prompt is asked for in its hints ("write exactly what was 
 
 ### Hints
 
-A plan prompt can carry `draftHints`, a string in natural language about style and length: "two or three sentences, plain language"; "a comma-separated list of short tags". It's carried onto `Question.draftHints` by `questionFor()`, as `dictate` is. Its Zod `describe()` tells the compiler what it's for, so a playbook author writes hints as prose and the compiler carries them over. With no hints, the draft is a clean, faithful version of what was said.
+~~A plan prompt~~ A plan's text question can carry `draftHints`, a string in natural language about style and length: "two or three sentences, plain language"; "a comma-separated list of short tags". ~~It's carried onto `Question.draftHints` by `questionFor()`, as `dictate` is.~~ It sits beside `dictate` and `length` in the text question's shape, and `questionFor()` passes it through with the rest (decided 2026-10-23, once questions got a shape per type). Its Zod `describe()` tells the compiler what it's for, so a playbook author writes hints as prose and the compiler carries them over. With no hints, the draft is a clean, faithful version of what was said.
 
 ### A rewrite after each utterance
 
@@ -103,7 +103,7 @@ src/draft/draft.ts         new: draftRequest() builds the call from a question, 
 src/draft/draft.test.ts    new, beside it
 src/draft/prompts/draft.md new: the system prompt
 src/server.ts              #draftSoon()/#draft() per question, takeOver(), the `drafting` broadcast
-src/plan/plan.ts           `draftHints` on the prompt payload; questionFor() carries it over
+src/plan/plan.ts           `draftHints` on ~~the prompt payload; questionFor() carries it over~~ the text question's shape
 src/plan/plan.test.ts      a questionFor() case for draftHints
 src/plan/plan.schema.json, plan.llm.schema.json   regenerated
 src/plan/admin-setup.json  the tags question gains draftHints
@@ -181,7 +181,7 @@ Then a check by hand with `pnpm run start`: on the tags question, speak a ramble
 - [ ] A failed call leaves the verbatim text in place.
 - [ ] Drafts are `draft` log entries; calls and tokens appear in the cost estimate.
 - [ ] `DRAFT_ENABLED=false` gives `text-dictation`'s behaviour, with no draft calls.
-- [ ] `draftHints` parses on a prompt, reaches the question, appears in both plan schemas, and `pnpm check-plans` passes with the tags question's hints.
+- [ ] `draftHints` parses on a text question, and on no other type, reaches the question, appears in both plan schemas, and `pnpm check-plans` passes with the tags question's hints.
 - [ ] The new tests pass, and the existing ones still pass.
 
 ## Decisions

@@ -32,20 +32,53 @@ const AnswerValueSchema = z.union([
   z.null()
 ]);
 
-const QuestionSpecSchema = z.strictObject({
-  type: z.enum(["radio", "checkbox", "text", "number"]),
+// One shape per type, so a field only goes where it means something: options
+// for choices, min and max for numbers.
+
+const QuestionBase = {
   prompt: z.string().min(1),
-  options: z.array(z.string()).optional(),
-  min: z
-    .number()
-    .optional()
-    .describe("A number question's lowest accepted answer. Only for numbers"),
-  max: z
-    .number()
-    .optional()
-    .describe("A number question's highest accepted answer. Only for numbers"),
   required: z.boolean()
-});
+};
+
+const ChoiceSpecSchema = (type: "radio" | "checkbox") =>
+  z.strictObject({
+    type: z.literal(type),
+    ...QuestionBase,
+    options: z.array(z.string()).min(1),
+    assess: z
+      .boolean()
+      .optional()
+      .describe(
+        "False keeps Jev from judging which options were said. Judged when absent."
+      )
+  });
+
+const QuestionSpecSchema = z.discriminatedUnion("type", [
+  ChoiceSpecSchema("radio"),
+  ChoiceSpecSchema("checkbox"),
+  z.strictObject({
+    type: z.literal("text"),
+    ...QuestionBase,
+    length: z
+      .enum(["short", "long"])
+      .optional()
+      .describe(
+        "short is a single line, as for a title or a name; long is a paragraph. Long when absent."
+      ),
+    dictate: z
+      .boolean()
+      .optional()
+      .describe(
+        "False keeps what's said from filling it in. Filled in when absent."
+      )
+  }),
+  z.strictObject({
+    type: z.literal("number"),
+    ...QuestionBase,
+    min: z.number().optional().describe("The lowest accepted answer"),
+    max: z.number().optional().describe("The highest accepted answer")
+  })
+]);
 
 // --- Items ---
 
@@ -106,19 +139,7 @@ export const PlanItemSchema = z.discriminatedUnion("kind", [
       question: QuestionSpecSchema,
       card: CardSpecSchema.optional().describe(
         "How the question is shown, as a json-render spec. A default card for its type when absent."
-      ),
-      assess: z
-        .boolean()
-        .optional()
-        .describe(
-          "False keeps Jev from judging which options were said. Judged when absent."
-        ),
-      dictate: z
-        .boolean()
-        .optional()
-        .describe(
-          "False keeps what's said from filling in a text question. Filled in when absent."
-        )
+      )
     })
   }),
   ItemBase.extend({
@@ -262,9 +283,16 @@ export function planLlmSchema(): object {
 // Fails to compile if the schemas drift from the types in shared.ts.
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
 true satisfies Same<z.infer<typeof AnswerValueSchema>, AnswerValue>;
+// A question's shape for each type is a Question, and every field a plan can
+// set has a place in one of them. The rest the server fills in.
+type QuestionSpec = z.infer<typeof QuestionSpecSchema>;
+type KeysOf<T> = T extends unknown ? keyof T : never;
+true satisfies ([QuestionSpec] extends [Omit<Question, "id" | "source" | "card">]
+  ? true
+  : never);
 true satisfies Same<
-  z.infer<typeof QuestionSpecSchema>,
-  Omit<Question, "id" | "source" | "card">
+  KeysOf<QuestionSpec>,
+  Exclude<keyof Question, "id" | "source" | "card" | "consent" | "final">
 >;
 
 // --- Releasing ---
@@ -366,8 +394,6 @@ export function questionFor(item: PlanItem): Question | undefined {
         ...item.payload.question,
         id: item.id,
         card: item.payload.card,
-        assess: item.payload.assess,
-        dictate: item.payload.dictate,
         source: "plan"
       };
     case "consent":
@@ -519,15 +545,6 @@ export function lintPlan(plan: Plan): LintMessage[] {
       );
     }
     prompts.set(item.payload.key, item);
-    const { type, options } = item.payload.question;
-    if ((type === "radio" || type === "checkbox") && !options?.length) {
-      report(
-        "choices-have-options",
-        "error",
-        `a ${type} prompt needs options`,
-        item.id
-      );
-    }
     if (item.payload.card) {
       for (const issue of cardIssues(item.payload.card)) {
         report("card-valid", "error", issue, item.id);
@@ -621,7 +638,11 @@ export function lintPlan(plan: Plan): LintMessage[] {
         );
         continue;
       }
-      const { type, options } = source.payload.question;
+      const { type } = source.payload.question;
+      const options =
+        "options" in source.payload.question
+          ? source.payload.question.options
+          : undefined;
       const option =
         condition.kind === "includes" ? condition.option : condition.equals;
       if (typeof option === "string" && options && !options.includes(option)) {

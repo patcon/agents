@@ -176,7 +176,7 @@ export function defaultCard(question: Question): CardSpec {
           type: "TextInput",
           props: {
             placeholder: "Type your answer",
-            length: null,
+            length: question.length ?? null,
             value: { $bindState: "/value" }
           }
         };
