@@ -27,7 +27,6 @@ import {
   CheckIcon,
   CheckCircleIcon,
   FlagCheckeredIcon,
-  InfoIcon,
   MicrophoneIcon,
   MoonIcon,
   PauseIcon,
@@ -848,30 +847,6 @@ function App() {
       </header>
 
       <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-4">
-        <Surface className="p-4 rounded-xl ring ring-kumo-line">
-          <div className="flex gap-3">
-            <InfoIcon
-              size={20}
-              weight="bold"
-              className="text-kumo-brand shrink-0 mt-0.5"
-            />
-            <div>
-              <Text size="sm" bold>
-                One conversation, one append-only log
-              </Text>
-              <span className="mt-1 block">
-                <Text size="xs" variant="secondary">
-                  Start talking, and answer the questions as they appear. Every
-                  utterance, question, answer and status change is a new
-                  UIMessage; changing an answer appends a revision. Open the bug
-                  icon to see the raw log.
-                </Text>
-              </span>
-            </div>
-          </div>
-        </Surface>
-
-
         {finished ? (
           <Summary questions={questions} />
         ) : questions.length > 0 ? (
