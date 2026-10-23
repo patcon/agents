@@ -1,9 +1,10 @@
 // Helpers for .github/workflows/dembrane-deploy.yml, which deploys each
 // Dembrane example as a standalone app, outside the monorepo.
 //
-//   node deploy.mjs apps
+//   node deploy.mjs apps [<base-commit>]
 //     Prints a JSON array of the examples that can be deployed: folders
-//     beside this one with a wrangler.jsonc and a "deploy" script.
+//     beside this one with a wrangler.jsonc and a "deploy" script. Given a
+//     base commit, only those that changed since it: see affected().
 //
 //   node deploy.mjs standalone <out-dir>
 //     Copies examples/dembrane into <out-dir> as a workspace of its own.
@@ -16,8 +17,9 @@
 //     secrets.required, taking values from the SECRETS_JSON environment
 //     variable (the workflow's `toJSON(secrets)`), for
 //     `wrangler deploy --secrets-file`.
+import { execFileSync } from "node:child_process";
 import { cp, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { basename, join, relative } from "node:path";
 
 const examplesDir = new URL("..", import.meta.url).pathname;
 const repoDir = join(examplesDir, "..", "..");
@@ -47,7 +49,7 @@ function parseJsonc(text) {
   return JSON.parse(out.replace(/,(\s*[}\]])/g, "$1"));
 }
 
-async function apps() {
+async function apps(base) {
   const found = [];
   for (const entry of await readdir(examplesDir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
@@ -57,7 +59,84 @@ async function apps() {
     if (!(await read(join(dir, "wrangler.jsonc")))) continue;
     found.push(entry.name);
   }
-  console.log(JSON.stringify(found.sort()));
+  const deploy = base ? await affected(found, base) : found;
+  console.log(JSON.stringify(deploy.sort()));
+}
+
+// The apps that changed since <base>: an app changes with its own folder, or
+// with a sibling or packages/* it depends on through "workspace:*". Changes
+// to scripts/ or the workflow change every app. The landing page changes
+// whenever any folder's title, description or Worker name might have, i.e.
+// its index.html, package.json or wrangler.jsonc. If <base> can't be
+// compared against (say, after a force push), every app changes.
+async function affected(found, base) {
+  let changed;
+  try {
+    changed = execFileSync("git", ["diff", "--name-only", base, "HEAD"], {
+      cwd: repoDir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    })
+      .split("\n")
+      .filter(Boolean);
+  } catch {
+    console.error(`Can't diff against ${base}, so deploying every app`);
+    return found;
+  }
+
+  const prefix = `${relative(repoDir, examplesDir)}/`;
+  if (changed.includes(".github/workflows/dembrane-deploy.yml")) return found;
+  const paths = changed
+    .filter((path) => path.startsWith(prefix))
+    .map((path) => path.slice(prefix.length));
+  if (paths.some((path) => path.startsWith("scripts/"))) return found;
+
+  // The folder each path belongs to: a sibling, or packages/<name>
+  const dirOf = (path) =>
+    path
+      .split("/")
+      .slice(0, path.startsWith("packages/") ? 2 : 1)
+      .join("/");
+  const changedDirs = new Set(
+    paths.filter((path) => path.includes("/")).map(dirOf)
+  );
+
+  // Each workspace package's folder, and the workspace packages it depends on
+  const dirByName = {};
+  const depsByDir = {};
+  const dirs = [
+    ...(await readdir(examplesDir)),
+    ...(await readdir(join(examplesDir, "packages"))).map(
+      (n) => `packages/${n}`
+    )
+  ];
+  for (const dir of dirs) {
+    const text = await read(join(examplesDir, dir, "package.json"));
+    if (!text) continue;
+    const pkg = JSON.parse(text);
+    dirByName[pkg.name] = dir;
+    depsByDir[dir] = Object.entries({
+      ...pkg.dependencies,
+      ...pkg.devDependencies
+    })
+      .filter(([, range]) => range.startsWith("workspace:"))
+      .map(([name]) => name);
+  }
+  const dependsOnChange = (dir, seen = new Set()) => {
+    if (changedDirs.has(dir)) return true;
+    if (seen.has(dir)) return false;
+    seen.add(dir);
+    return (depsByDir[dir] ?? []).some(
+      (name) => dirByName[name] && dependsOnChange(dirByName[name], seen)
+    );
+  };
+
+  const landingInputs = /^[^/]+\/(index\.html|package\.json|wrangler\.jsonc)$/;
+  return found.filter((app) =>
+    app === "landing"
+      ? changedDirs.has(app) || paths.some((path) => landingInputs.test(path))
+      : dependsOnChange(app)
+  );
 }
 
 async function standalone(outDir) {
@@ -140,12 +219,12 @@ async function secrets(appDir, outFile) {
 }
 
 const [command, ...args] = process.argv.slice(2);
-if (command === "apps") await apps();
+if (command === "apps") await apps(args[0]);
 else if (command === "standalone") await standalone(args[0]);
 else if (command === "secrets") await secrets(args[0], args[1]);
 else {
   console.error(
-    "Usage: deploy.mjs apps | standalone <out-dir> | secrets <app-dir> <out-file>"
+    "Usage: deploy.mjs apps [<base-commit>] | standalone <out-dir> | secrets <app-dir> <out-file>"
   );
   process.exit(1);
 }

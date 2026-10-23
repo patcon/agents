@@ -5,6 +5,9 @@ name: Deploy Dembrane examples
 # monorepo, against the npm releases of agents and @cloudflare/ai-chat; see
 # examples/dembrane/scripts/deploy.mjs.
 #
+# A push only deploys the apps that changed since the commit before it (see
+# affected() in deploy.mjs); running the workflow by hand deploys them all.
+#
 # Needs these repository secrets:
 #   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
 #   plus every secret an app lists under secrets.required in its wrangler.jsonc
@@ -33,11 +36,24 @@ jobs:
       apps: ${{ steps.apps.outputs.apps }}
     steps:
       - uses: actions/checkout@v6
+      # Only the pushed commit is checked out, so fetch the one before it to
+      # diff against. A new branch has no commit before it (all zeros), and a
+      # failed fetch, e.g. after a force push, leaves deploy.mjs to deploy all.
       - id: apps
-        run: echo "apps=$(node examples/dembrane/scripts/deploy.mjs apps)" >> "$GITHUB_OUTPUT"
+        env:
+          BEFORE: ${{ github.event_name == 'push' && github.event.before || '' }}
+        run: |
+          base=""
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            git fetch --depth=1 origin "$BEFORE" || true
+            base="$BEFORE"
+          fi
+          echo "apps=$(node examples/dembrane/scripts/deploy.mjs apps $base)" >> "$GITHUB_OUTPUT"
 
   deploy:
     needs: apps
+    # A matrix can't be empty, e.g. when a push only touched docs
+    if: needs.apps.outputs.apps != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
