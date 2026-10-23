@@ -5,7 +5,7 @@ import type { Question } from "../shared";
 
 // A card is a json-render spec: what goes between a question's prompt and
 // its Submit button. The client renders it with the registry in
-// card-registry.tsx; the server and `pnpm check-plans` validate it here.
+// src/client/cards/registry.tsx; the server and `pnpm check-plans` validate it here.
 //
 // A card sees one state model, seeded by the client:
 //   /question  the question being asked (read with `$state`)

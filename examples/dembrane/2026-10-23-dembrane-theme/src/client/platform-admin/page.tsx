@@ -6,12 +6,12 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { Badge, Button, Surface, Text } from "@cloudflare/kumo";
-import type { Compiled } from "../compile/compile";
-import { comparePlans } from "../compile/compare-plans";
-import { PlanSchema, type Plan } from "../plan/plan";
+import type { Compiled } from "../../compile/compile";
+import { comparePlans } from "../../compile/compare-plans";
+import { PlanSchema, type Plan } from "../../plan/plan";
 import { readActive, writeActive, type Active } from "./plan-storage";
-import adminSetup from "../plan/admin-setup.json";
-import decompiledPlaybook from "../compile/playbooks/admin-setup.decompiled.md?raw";
+import adminSetup from "../../plan/admin-setup.json";
+import decompiledPlaybook from "../../compile/playbooks/admin-setup.decompiled.md?raw";
 
 const FILE_PLAN = PlanSchema.parse(adminSetup);
 

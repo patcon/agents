@@ -55,7 +55,7 @@ import {
   type Question,
   type QuestionView,
   type Usage
-} from "./shared";
+} from "../shared";
 
 // --- Session id (one Durable Object per conversation) ---
 

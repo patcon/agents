@@ -2,7 +2,7 @@
 
 A continuous voice session that walks a host through setting up their project's portal. The setup questions come from a plan compiled from a playbook (`src/plan/admin-setup.json`); more can come on demand from the host and from an agent. Everything is stored as an append-only `UIMessage` log in one Durable Object.
 
-A copy of [`2026-10-22-voice-drafting`](../2026-10-22-voice-drafting), to give it Dembrane's theme. Like that one, it compiles its plan from a markdown playbook with Gemini, and checks the result against the hand-made plan (see [Playbooks](#playbooks-srccompilecompilets)). The running session still uses the hand-made plan. Like `2026-10-22-jev`, it has [Jev](https://docs.typesafe.ai), TypeSafe's System One model, listen along: every card with options shows how likely each option is to be what the speaker chose, and fills in the likely ones. Text questions are filled in by [dictation](#dictation-srccardsregistrytsx): what's said while one is showing becomes its draft, and an LLM [rewrites that draft](#drafting-srcdraftdraftts) into what was meant, the way the field asks for.
+A copy of [`2026-10-22-voice-drafting`](../2026-10-22-voice-drafting), to give it Dembrane's theme. Like that one, it compiles its plan from a markdown playbook with Gemini, and checks the result against the hand-made plan (see [Playbooks](#playbooks-srccompilecompilets)). The running session still uses the hand-made plan. Like `2026-10-22-jev`, it has [Jev](https://docs.typesafe.ai), TypeSafe's System One model, listen along: every card with options shows how likely each option is to be what the speaker chose, and fills in the likely ones. Text questions are filled in by [dictation](#dictation-srcclientcardsregistrytsx): what's said while one is showing becomes its draft, and an LLM [rewrites that draft](#drafting-srcdraftdraftts) into what was meant, the way the field asks for.
 
 ## Run it
 
@@ -53,9 +53,9 @@ await this.saveMessages((messages) => [...messages, triggerEntry]);
 
 Consent comes before recording. The page calls `open()` as soon as it connects, which starts the plan and puts up the consent card, while nothing is recorded yet. `foldLog()` derives `consented` from the card's latest answer: true only when every option is ticked. There's no separate entry for it. Start stays disabled, and `begin()` and `setPaused(false)` refuse, until it's true. The plan's sections wait on it too, with a `consented` trigger condition. The card is required, so the only answer it takes is the tick, and it's `final`: once answered, `answer()` won't revise it and the page shows it read-only. Consent isn't taken back; that would mean deleting the session's data, which isn't built. The consent card is never assessed by Jev, since it has to be ticked by hand.
 
-### Client (`src/client.tsx`)
+### Client (`src/client/`)
 
-`useAgentChat` keeps the log in sync; `useVoiceInput` streams the microphone to the same agent instance. The page shows one question at a time with Back / Next. Each question's input is a [json-render](https://github.com/vercel-labs/json-render) card: a plan can give a prompt its own `card` (the language question lays its options out in two columns), and any question without one gets a default for its type. `src/cards/cards.ts` holds the catalog of components a card can use and the platform's own cards, like consent, which a plan can place but not change; `src/cards/registry.tsx` draws them. New questions stack behind the current one and show as a count on Next. The transcript and the raw message log live in drawers. The log drawer also estimates what the session has cost so far, at today's prices and at any announced change, from the audio seconds streamed and the tokens Gemini reports. The tally lives in the agent's state, not the log. `pnpm update-prices` rewrites `src/models/prices.json` for the models in `wrangler.jsonc`, taking today's Vertex AI rate from [LiteLLM](https://models.litellm.ai) and announced changes from [pydantic/genai-prices](https://github.com/pydantic/genai-prices).
+`useAgentChat` keeps the log in sync; `useVoiceInput` streams the microphone to the same agent instance. The page shows one question at a time with Back / Next. Each question's input is a [json-render](https://github.com/vercel-labs/json-render) card: a plan can give a prompt its own `card` (the language question lays its options out in two columns), and any question without one gets a default for its type. `src/cards/cards.ts` holds the catalog of components a card can use and the platform's own cards, like consent, which a plan can place but not change; `src/client/cards/registry.tsx` draws them. New questions stack behind the current one and show as a count on Next. The transcript and the raw message log live in drawers. The log drawer also estimates what the session has cost so far, at today's prices and at any announced change, from the audio seconds streamed and the tokens Gemini reports. The tally lives in the agent's state, not the log. `pnpm update-prices` rewrites `src/models/prices.json` for the models in `wrangler.jsonc`, taking today's Vertex AI rate from [LiteLLM](https://models.litellm.ai) and announced changes from [pydantic/genai-prices](https://github.com/pydantic/genai-prices).
 
 ### Jev (`src/models/jev.ts`)
 
@@ -80,7 +80,7 @@ The model is pinned in `wrangler.jsonc` (`jev-1.13.0`), and Jev's input tokens s
 
 `pnpm try-jev` runs short Dutch and English transcripts past Jev with every option question in the admin setup plan, and prints the likelihoods: `pnpm try-jev nl` for just the Dutch ones, `JEV_MODEL=jev-1.14.0 pnpm try-jev` to try another model.
 
-### Dictation (`src/cards/registry.tsx`)
+### Dictation (`src/client/cards/registry.tsx`)
 
 What's said while a text question is on screen is written into its field as a draft. It's never submitted for the person: they edit it, and press Submit. Spec: [`2026-10-22-voice-drafting/design/spec-text-dictation.md`](../2026-10-22-voice-drafting/design/spec-text-dictation.md).
 
@@ -88,7 +88,7 @@ The draft is built in `foldLog()`: a text question's `suggested` is every uttera
 
 An utterance counts for the question on screen when it was started, not when it was finished. The server notes the question at its first interim text, and saves it on the utterance's log entry as `onScreen`. So pressing Submit or Skip mid-sentence doesn't hand the end of the sentence to the next question.
 
-On the page, `TextInput` draws the field in two layers in one box. While dictation fills it, a display layer shows the draft with the transcriber's interim text greyed inline after it, and follows new text down unless the person has scrolled up. Pressing it swaps in the real textarea underneath within the same event, with the caret where they pressed (`src/cards/caret.ts`, using `document.caretPositionFromPoint`) and the scroll position kept. Both layers lay text out identically (`FIELD_TEXT`), so nothing moves. Fields are a fixed height, so they don't jump as text arrives: eight lines for long text, the default. A text question with `"length": "short"`, like the portal title, gets a single-line input instead, where the display follows new text sideways. A plan's question has one shape per type (`QuestionSpecSchema` in `src/plan/plan.ts`), so `options` and `assess` only go on choices, `length`, `dictate` and `draftHints` on text, and `min` and `max` on numbers.
+On the page, `TextInput` draws the field in two layers in one box. While dictation fills it, a display layer shows the draft with the transcriber's interim text greyed inline after it, and follows new text down unless the person has scrolled up. Pressing it swaps in the real textarea underneath within the same event, with the caret where they pressed (`src/client/cards/caret.ts`, using `document.caretPositionFromPoint`) and the scroll position kept. Both layers lay text out identically (`FIELD_TEXT`), so nothing moves. Fields are a fixed height, so they don't jump as text arrives: eight lines for long text, the default. A text question with `"length": "short"`, like the portal title, gets a single-line input instead, where the display follows new text sideways. A plan's question has one shape per type (`QuestionSpecSchema` in `src/plan/plan.ts`), so `options` and `assess` only go on choices, `length`, `dictate` and `draftHints` on text, and `min` and `max` on numbers.
 
 | While the textarea has focus | |
 | --- | --- |
@@ -109,7 +109,7 @@ People ramble, correct themselves and circle back, so after each utterance an LL
 
 `pnpm try-draft [case] [--model name]` runs sample rambles past the prompt and prints each draft beside what was said, for reading by eye. `gemini-3.5-flash` drafts in about 2 s, where `gemini-3.8-flash` often took 10–60 s, and unlike `gemini-3.5-flash-lite` it follows "write exactly what I said".
 
-Tests sit beside what they test (`src/shared.test.ts`, `src/plan/plan.test.ts`, `src/draft/draft.test.ts`, `src/cards/caret.test.ts`); `pnpm test` runs them along with `tests/compile.test.ts`.
+Tests sit beside what they test (`src/shared.test.ts`, `src/plan/plan.test.ts`, `src/draft/draft.test.ts`, `src/client/cards/caret.test.ts`); `pnpm test` runs them along with `tests/compile.test.ts`.
 
 ### Playbooks (`src/compile/compile.ts`)
 
