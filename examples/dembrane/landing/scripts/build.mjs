@@ -124,11 +124,23 @@ const page = `<!doctype html>
         margin: 0.25rem 0 0;
         color: var(--muted);
       }
+      .intro {
+        margin: 0 0 1.5rem;
+      }
+      .intro a {
+        font-weight: normal;
+      }
     </style>
   </head>
   <body>
     <main>
       <h1>Dembrane examples</h1>
+      <p class="intro">
+        Source:
+        <a href="https://github.com/patcon/dembrane-prototypes/tree/dembrane-examples/examples/dembrane">patcon/dembrane-prototypes</a>.
+        The password is written on the bottom-left corner of the office
+        whiteboard, or ask <a href="https://github.com/patcon">@patcon</a>.
+      </p>
       <ul>
 ${items}
       </ul>
