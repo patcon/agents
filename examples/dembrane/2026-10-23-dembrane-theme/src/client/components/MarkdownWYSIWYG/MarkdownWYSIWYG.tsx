@@ -1,3 +1,7 @@
+// Before MDXEditor: @lexical/code's Prism language files expect a global
+// Prism, but bundled, prismjs (CommonJS) only runs when first required,
+// after those files have already run.
+import "prismjs";
 import {
   BlockTypeSelect,
   BoldItalicUnderlineToggles,
