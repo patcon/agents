@@ -1,5 +1,6 @@
-import "@mantine/core/styles.layer.css";
+// styles.css first: its @layer order has to come before Mantine's layer.
 import "./styles.css";
+import "@mantine/core/styles.layer.css";
 import { createRoot } from "react-dom/client";
 import { ActionIcon, Button, MantineProvider, Paper, Text } from "@mantine/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -11,12 +12,11 @@ import { activePlanArgs } from "./platform-admin/plan-storage";
 import {
   BugIcon,
   CheckCircleIcon,
-  FlagCheckeredIcon,
+  CheckIcon,
   InfoIcon,
   MicrophoneIcon,
   PauseIcon,
-  PlayIcon,
-  TextAlignLeftIcon
+  PlayIcon
 } from "@phosphor-icons/react";
 import {
   EMPTY_USAGE,
@@ -32,6 +32,9 @@ import { cssVariablesResolver, theme } from "./theme/theme";
 import { ModeToggle } from "./components/ModeToggle";
 import { ConnectionIndicator, type ConnectionStatus } from "./components/ConnectionIndicator";
 import { Drawer } from "./components/Drawer";
+import { ConsentForm } from "./components/ConsentForm";
+import { LiveDot, RecordingSheet, type Snap } from "./components/RecordingSheet";
+import { useLevels, Waveform } from "./components/Waveform";
 import { QuestionStage } from "./components/QuestionStage";
 import { Summary } from "./components/Summary";
 import { DebugLog } from "./components/DebugLog";
@@ -87,7 +90,7 @@ function App() {
   // A preview's likelihoods stand in for the logged ones until an
   // assessment sees past it. They only move the bars: what's filled in
   // still comes from the log.
-  const questions = useMemo(
+  const all = useMemo(
     () =>
       preview && isCurrent(view, preview)
         ? view.questions.map((q) =>
@@ -97,6 +100,12 @@ function App() {
           )
         : view.questions,
     [view, preview]
+  );
+  // The consent card lives in the recording sheet; the stage shows the rest.
+  const consent = all.find((q) => q.question.consent);
+  const questions = useMemo(
+    () => all.filter((q) => !q.question.consent),
+    [all]
   );
   const activeIndex = Math.max(
     0,
@@ -209,22 +218,59 @@ function App() {
     });
   const finish = () => run(() => agent.call("finish"));
 
+  const agree = async (value: AnswerValue) => {
+    if (consent) await agent.call("answer", [consent.question.id, value, false]);
+  };
+
   const finished = view.status === "finished";
   const canFinish = view.status === "paused" && !voice.isListening;
 
+  // The recording sheet opens on arrival. Once listening, it stays open a
+  // moment so they see it took, then tucks away; trouble opens it again.
+  const [snap, setSnap] = useState<Snap>("open");
+  useEffect(() => {
+    if (!voice.isListening) return;
+    const id = setTimeout(() => setSnap("tucked"), 1800);
+    return () => clearTimeout(id);
+  }, [voice.isListening]);
+  useEffect(() => {
+    if (voice.error) setSnap("open");
+  }, [voice.error]);
+  // The meter's samples, shared by its large and small forms. A microphone
+  // gone flat is trouble too.
+  const { levels, silent } = useLevels(voice.audioLevel, voice.isListening, () =>
+    setSnap("open")
+  );
+  // Time listened on this page, across pauses.
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    if (!voice.isListening) return;
+    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [voice.isListening]);
+
+  const sheetTitle = voice.error
+    ? "We can't hear you."
+    : silent
+      ? "We haven't heard anything for a while."
+      : voice.isListening
+        ? "Listening"
+        : view.status === "paused"
+          ? "Paused"
+          : "Ready when you are";
+
   // Drawers.
-  const [drawer, setDrawer] = useState<"transcript" | "debug" | null>(null);
+  const [drawer, setDrawer] = useState<"debug" | null>(null);
   const closeDrawer = useCallback(() => setDrawer(null), []);
   const transcriptEnd = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (drawer === "transcript") {
-      transcriptEnd.current?.scrollIntoView({ block: "end" });
-    }
-  }, [drawer, view.utterances.length, voice.interimTranscript]);
+    transcriptEnd.current?.scrollIntoView({ block: "end" });
+  }, [view.utterances.length, voice.interimTranscript]);
 
   return (
     <div className="min-h-dvh bg-app-bg flex flex-col">
-      <header className="sticky top-0 z-30 bg-app-bg border-b border-app-quiet px-4 py-2.5 flex items-center justify-between gap-2">
+      {/* h-14 and above the sheet: the sheet tucks in under it. */}
+      <header className="sticky top-0 z-20 h-14 bg-app-bg border-b border-app-quiet px-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <MicrophoneIcon
             size={20}
@@ -237,17 +283,6 @@ function App() {
           <ConnectionIndicator status={connection} />
         </div>
         <div className="flex items-center gap-1">
-          <Button
-            size="xs"
-            onClick={() => setDrawer("transcript")}
-            leftSection={<TextAlignLeftIcon size={16} />}
-            aria-label="Open transcript"
-          >
-            <span className="hidden sm:inline">Transcript</span>
-            <span className="tabular-nums text-app-muted">
-              {view.utterances.length}
-            </span>
-          </Button>
           <ActionIcon
             onClick={() => setDrawer("debug")}
             aria-label="Open message log"
@@ -258,7 +293,8 @@ function App() {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-4">
+      {/* pt-20 clears the tucked sheet's strip and grab band. */}
+      <main className="flex-1 w-full max-w-2xl mx-auto px-4 pt-20 pb-4 flex flex-col gap-4">
         <Paper className="p-4">
           <div className="flex gap-3">
             <InfoIcon
@@ -314,110 +350,123 @@ function App() {
           </Paper>
         )}
 
-        {voice.error && (
-          <Paper className="p-3 bg-app-danger-tint" style={{ "--app-rule-color": "var(--app-danger)" } as React.CSSProperties}>
-            <Text size="xs">{voice.error}</Text>
-          </Paper>
-        )}
       </main>
 
-      {/* Recording controls, pinned to the bottom for thumbs */}
       {!finished && (
-        <div className="sticky bottom-0 z-30 bg-app-bg border-t border-app-quiet px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div className="max-w-2xl mx-auto flex items-center gap-3">
-            <div className="flex-1 min-w-0 flex flex-col gap-1">
-              <span className="text-xs text-app-muted truncate">
-                {voice.isListening
-                  ? voice.interimTranscript || "Listening…"
-                  : !view.consented
-                    ? "Agree to recording to start"
-                    : view.status === "idle"
-                      ? "Not recording"
-                      : "Paused"}
+        <RecordingSheet
+          snap={snap}
+          onSnapChange={setSnap}
+          strip={
+            <>
+              <span className="flex items-center gap-2 tabular-nums">
+                <LiveDot live={voice.isListening} />
+                {formatClock(seconds)}
               </span>
-              <div className="h-1.5 w-full rounded-full bg-app-action-tint overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-app-action transition-all duration-75"
-                  style={{
-                    width: `${voice.isListening ? Math.min(voice.audioLevel * 500, 100) : 0}%`
-                  }}
+              {snap === "tucked" ? (
+                <Waveform
+                  levels={levels}
+                  silent={silent}
+                  size="sm"
+                  className="flex-1 min-w-0"
                 />
+              ) : (
+                <span className="flex-1" />
+              )}
+              {view.status === "idle" ? (
+                <Button
+                  variant="filled"
+                  onClick={begin}
+                  disabled={busy || connection !== "connected" || !view.consented}
+                  leftSection={<MicrophoneIcon size={16} />}
+                >
+                  Start
+                </Button>
+              ) : voice.isListening ? (
+                <Button
+                  onClick={pause}
+                  disabled={busy}
+                  leftSection={<PauseIcon size={16} />}
+                >
+                  Pause
+                </Button>
+              ) : (
+                <Button
+                  variant="filled"
+                  onClick={resume}
+                  disabled={busy || connection !== "connected" || !view.consented}
+                  leftSection={<PlayIcon size={16} />}
+                >
+                  Resume
+                </Button>
+              )}
+              {/* Only once there's audio, and usable only while paused. */}
+              {view.status !== "idle" && (
+                <Button
+                  onClick={finish}
+                  disabled={busy || !canFinish}
+                  title={canFinish ? undefined : "Pause recording to finish"}
+                  leftSection={<CheckIcon size={16} />}
+                >
+                  Finish
+                </Button>
+              )}
+            </>
+          }
+        >
+          {/* Consent first; once given, the transcript takes its place. */}
+          {!view.consented && consent ? (
+            <ConsentForm
+              key={consent.question.id}
+              entry={consent}
+              disabled={connection !== "connected"}
+              onAgree={agree}
+            />
+          ) : (
+            <>
+              <p className="m-0 text-lg">{sheetTitle}</p>
+              {(voice.error || silent) && (
+                <Text c={voice.error ? "red" : "dimmed"}>
+                  {voice.error ??
+                    "Is the microphone muted, or is another one selected?"}
+                </Text>
+              )}
+              <div className="flex-1 min-h-0 overflow-y-auto mt-4 pb-2">
+                {view.utterances.length === 0 && !voice.interimTranscript ? (
+                  <Text size="sm" c="dimmed">
+                    What you say shows up here.
+                  </Text>
+                ) : (
+                  <ol className="m-0 p-0 list-none flex flex-col gap-3">
+                    {view.utterances.map((u) => (
+                      <li key={u.id} className="flex gap-3">
+                        <span className="text-xs tabular-nums text-app-muted w-10 shrink-0 pt-0.5">
+                          {view.startedAt
+                            ? formatClock((u.at - view.startedAt) / 1000)
+                            : ""}
+                        </span>
+                        <span className="text-sm text-app-text">{u.text}</span>
+                      </li>
+                    ))}
+                    {voice.interimTranscript && (
+                      <li className="flex gap-3">
+                        <span className="w-10 shrink-0" />
+                        <span className="text-sm text-app-muted italic">
+                          {voice.interimTranscript}
+                        </span>
+                      </li>
+                    )}
+                  </ol>
+                )}
+                <div ref={transcriptEnd} />
               </div>
-            </div>
-            {view.status === "idle" ? (
-              <Button
-                variant="filled"
-                onClick={begin}
-                disabled={busy || connection !== "connected" || !view.consented}
-                leftSection={<MicrophoneIcon size={16} weight="bold" />}
-              >
-                Start
-              </Button>
-            ) : voice.isListening ? (
-              <Button
-                onClick={pause}
-                disabled={busy}
-                leftSection={<PauseIcon size={16} weight="bold" />}
-              >
-                Pause
-              </Button>
-            ) : (
-              <Button
-                variant="filled"
-                onClick={resume}
-                disabled={busy || connection !== "connected" || !view.consented}
-                leftSection={<PlayIcon size={16} weight="bold" />}
-              >
-                Resume
-              </Button>
-            )}
-            <Button
-              onClick={finish}
-              disabled={busy || !canFinish}
-              title={canFinish ? undefined : "Pause recording to finish"}
-              leftSection={<FlagCheckeredIcon size={16} weight="bold" />}
-            >
-              Finish
-            </Button>
-          </div>
-        </div>
+              {/* Open, the meter is large and sits just above the controls. */}
+              <div className="pt-4 shrink-0">
+                <Waveform levels={levels} silent={silent} />
+              </div>
+            </>
+          )}
+        </RecordingSheet>
       )}
-
-      <Drawer
-        open={drawer === "transcript"}
-        onClose={closeDrawer}
-        title="Transcript"
-      >
-        {view.utterances.length === 0 && !voice.interimTranscript ? (
-          <Text size="xs" c="dimmed">
-            Nothing transcribed yet.
-          </Text>
-        ) : (
-          <ol className="flex flex-col gap-3">
-            {view.utterances.map((u) => (
-              <li key={u.id} className="flex gap-3">
-                <span className="text-xs tabular-nums text-app-muted w-10 shrink-0 pt-0.5">
-                  {view.startedAt
-                    ? formatClock((u.at - view.startedAt) / 1000)
-                    : ""}
-                </span>
-                <span className="text-sm text-app-text leading-relaxed">
-                  {u.text}
-                </span>
-              </li>
-            ))}
-            {voice.interimTranscript && (
-              <li className="flex gap-3">
-                <span className="w-10 shrink-0" />
-                <span className="text-sm text-app-muted italic">
-                  {voice.interimTranscript}
-                </span>
-              </li>
-            )}
-          </ol>
-        )}
-        <div ref={transcriptEnd} />
-      </Drawer>
 
       <Drawer
         open={drawer === "debug"}
