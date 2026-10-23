@@ -1,5 +1,7 @@
+import "@mantine/core/styles.layer.css";
 import "./styles.css";
 import { createRoot } from "react-dom/client";
+import { MantineProvider } from "@mantine/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAgent } from "agents/react";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
@@ -27,6 +29,7 @@ import {
   type Usage
 } from "../shared";
 import { formatClock } from "./format";
+import { cssVariablesResolver, theme } from "./theme/theme";
 import { ModeToggle } from "./components/ModeToggle";
 import { ConnectionIndicator, type ConnectionStatus } from "./components/ConnectionIndicator";
 import { Drawer } from "./components/Drawer";
@@ -461,5 +464,11 @@ function App() {
 }
 
 createRoot(document.getElementById("root")!).render(
-  location.pathname === "/platform-admin" ? <PlatformAdmin /> : <App />
+  <MantineProvider
+    theme={theme}
+    cssVariablesResolver={cssVariablesResolver}
+    forceColorScheme="light"
+  >
+    {location.pathname === "/platform-admin" ? <PlatformAdmin /> : <App />}
+  </MantineProvider>
 );

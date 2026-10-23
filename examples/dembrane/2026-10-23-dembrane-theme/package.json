@@ -27,11 +27,14 @@
     "@dembrane/voice-google": "workspace:*",
     "@json-render/core": "^0.21.1",
     "@json-render/react": "^0.21.1",
+    "@mantine/core": "^7.17.8",
+    "@mantine/hooks": "^7.17.8",
     "@phosphor-icons/react": "^2.1.10",
     "agents": "*",
     "ai": "^7.0.18",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "vaul": "^1.1.2",
     "zod": "^4.5.4"
   },
   "devDependencies": {
