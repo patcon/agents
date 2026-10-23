@@ -5,7 +5,8 @@
 // to open(), so nothing is shared between browsers.
 
 import { useMemo, useState, type ReactNode } from "react";
-import { Badge, Button, Paper, Text } from "@mantine/core";
+import { Badge, Button, Paper, SegmentedControl, Text } from "@mantine/core";
+import { Markdown } from "../components/Markdown";
 import type { Compiled } from "../../shared/compile/compile";
 import { comparePlans } from "../../shared/compile/compare-plans";
 import { PlanSchema, type Plan } from "../../shared/plan/plan";
@@ -112,6 +113,7 @@ type Result = (Compiled & { ms: number }) | { error: string };
 
 export function PlatformAdmin() {
   const [active, setActive] = useState(readActive);
+  const [view, setView] = useState<"write" | "preview">("write");
   const [markdown, setMarkdown] = useState(
     () => active?.playbook ?? decompiledPlaybook
   );
@@ -176,16 +178,31 @@ export function PlatformAdmin() {
         </header>
 
         <Paper className="p-4 flex flex-col gap-3">
-          <Text size="sm" c="dimmed">
-            Playbook
-          </Text>
-          <textarea
-            value={markdown}
-            onChange={(e) => setMarkdown(e.target.value)}
-            spellCheck={false}
-            rows={20}
-            className="w-full font-mono text-xs leading-5 border-x border-app-control bg-app-surface p-3"
-          />
+          <div className="flex items-center justify-between gap-2">
+            <Text size="sm" c="dimmed">
+              Playbook
+            </Text>
+            <SegmentedControl
+              size="xs"
+              value={view}
+              onChange={(v) => setView(v as "write" | "preview")}
+              data={[
+                { label: "Write", value: "write" },
+                { label: "Preview", value: "preview" }
+              ]}
+            />
+          </div>
+          {view === "write" ? (
+            <textarea
+              value={markdown}
+              onChange={(e) => setMarkdown(e.target.value)}
+              spellCheck={false}
+              rows={20}
+              className="w-full font-mono text-xs leading-5 border-x border-app-control bg-app-surface p-3"
+            />
+          ) : (
+            <Markdown content={markdown} className="max-w-none" />
+          )}
           <div className="flex flex-wrap gap-2">
             <Button
               variant="filled"

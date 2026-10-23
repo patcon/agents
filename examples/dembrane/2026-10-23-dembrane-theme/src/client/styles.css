@@ -3,6 +3,7 @@
 @layer theme, base, mantine, components, utilities;
 
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 @import "./theme/dm-sans.css";
 @import "./theme/rules.css";
 
@@ -93,4 +94,38 @@ body {
   font-family: var(--app-font-family);
   font-feature-settings: var(--app-font-feature-settings);
   font-weight: 320;
+}
+
+/* Markdown, as dembrane-echo's index.css has it: .prose in the app font. */
+.prose,
+.prose * {
+  font-family: var(--app-font-family) !important;
+  font-feature-settings: var(--app-font-feature-settings) !important;
+}
+
+/* Visually hidden, kept for screen readers: the markdown renderer's footnote
+   heading is injected at runtime, so it needs a class defined here. */
+.dembrane-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Prose in the app's ink and its one weight: hierarchy from size. */
+.prose {
+  --tw-prose-body: var(--app-text);
+  --tw-prose-headings: var(--app-text);
+  --tw-prose-bold: var(--app-text);
+  --tw-prose-links: var(--app-action);
+  --tw-prose-bullets: var(--app-muted);
+  --tw-prose-counters: var(--app-muted);
+}
+.prose :is(h1, h2, h3, h4, h5, h6) {
+  font-weight: var(--app-heading-font-weight);
 }
