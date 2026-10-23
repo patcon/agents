@@ -4,6 +4,7 @@ Prototypes built on Cloudflare Agents, each deployed as its own Worker. The land
 
 | Folder                                                                           | What it is                                                                  |
 | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| [`2026-10-23-dembrane-theme`](2026-10-23-dembrane-theme)                         | A copy of `2026-10-22-voice-drafting` to give it Dembrane's theme |
 | [`2026-10-22-voice-drafting`](2026-10-22-voice-drafting)                         | A copy of `2026-10-22-playbook-compilation`, with `src/` grouped by concern, where an LLM drafts text answers from speech |
 | [`2026-10-22-playbook-compilation`](2026-10-22-playbook-compilation)             | A copy of `2026-10-22-jev` to compile its plan from a markdown playbook     |
 | [`2026-10-22-jev`](2026-10-22-jev)                                               | A copy of `2026-10-21-portal-admin-setup` to try Jev on the options of cards |

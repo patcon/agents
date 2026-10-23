@@ -1,0 +1,64 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "2026-10-23-dembrane-theme",
+  // Transcription and the agent's question both come from Gemini on Vertex AI.
+  // In local dev the secrets come from .env (see .env.example).
+  // GOOGLE_SERVICE_ACCOUNT_KEY, when set, is traded for access tokens as they
+  // expire (`pnpm google-key <key.json>` puts one in .env). Otherwise
+  // GOOGLE_ACCESS_TOKEN is used as is; `pnpm google-token` refreshes it, and it
+  // lasts an hour. Leave whichever you don't use empty.
+  // BASIC_AUTH_PASSWORD puts the app behind a password
+  // (see @dembrane/examples-shared/basic-auth). It has to be listed here for
+  // local dev to load it from .env, which also makes deploys refuse to go out
+  // without one. Leave it empty in .env to keep local dev open.
+  // TYPESAFE_API_KEY lets Jev judge which options of a card have been said.
+  // Jev is on whenever it's set; JEV_ENABLED=false in .env turns it off.
+  "secrets": {
+    "required": [
+      "GOOGLE_CLOUD_PROJECT",
+      "GOOGLE_SERVICE_ACCOUNT_KEY",
+      "GOOGLE_ACCESS_TOKEN",
+      "BASIC_AUTH_PASSWORD",
+      "TYPESAFE_API_KEY"
+    ]
+  },
+  "vars": {
+    "STT_MODEL": "gemini-3.5-transcribe-live-preview",
+    "AGENT_MODEL": "gemini-3.8-flash",
+    // Compiles playbooks into plans; separate so it can move to Pro alone.
+    "COMPILE_MODEL": "gemini-3.8-flash",
+    // Low is as close as Gemini's own level and steadier: ~21 s, not 44-180+.
+    "COMPILE_THINKING": "low",
+    // Pinned, not jev-latest, so thresholds mean the same from run to run.
+    "JEV_MODEL": "jev-1.13.0",
+    "JEV_ENABLED": "true",
+    // An LLM rewrites a text question's draft after each utterance, with
+    // DRAFT_MODEL; DRAFT_ENABLED=false in .env leaves plain dictation.
+    // 3.5 Flash: ~2 s a draft where 3.8 Flash often stalled 10-60 s, and it
+    // still follows "write exactly what I said" (Flash-Lite didn't).
+    "DRAFT_MODEL": "gemini-3.5-flash",
+    "DRAFT_ENABLED": "true"
+  },
+  "compatibility_date": "2026-06-11",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "class_name": "ConversationAgent",
+        "name": "ConversationAgent"
+      }
+    ]
+  },
+  "main": "src/server.ts",
+  "migrations": [
+    {
+      "new_sqlite_classes": ["ConversationAgent"],
+      "tag": "v1"
+    }
+  ]
+}
