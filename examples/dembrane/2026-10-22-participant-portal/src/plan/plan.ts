@@ -36,8 +36,14 @@ const QuestionSpecSchema = z.strictObject({
   type: z.enum(["radio", "checkbox", "text", "number"]),
   prompt: z.string().min(1),
   options: z.array(z.string()).optional(),
-  min: z.number().optional(),
-  max: z.number().optional(),
+  min: z
+    .number()
+    .optional()
+    .describe("A number question's lowest accepted answer. Only for numbers"),
+  max: z
+    .number()
+    .optional()
+    .describe("A number question's highest accepted answer. Only for numbers"),
   required: z.boolean()
 });
 

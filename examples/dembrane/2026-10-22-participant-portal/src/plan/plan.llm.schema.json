@@ -362,9 +362,11 @@
                         }
                       },
                       "min": {
+                        "description": "A number question's lowest accepted answer. Only for numbers",
                         "type": "number"
                       },
                       "max": {
+                        "description": "A number question's highest accepted answer. Only for numbers",
                         "type": "number"
                       },
                       "required": {
