@@ -40,12 +40,6 @@ function isAnswerable(question: Question, value: AnswerValue) {
   }
 }
 
-const SOURCE_LABEL: Record<Question["source"], string> = {
-  plan: "Setup",
-  host: "From host",
-  agent: "From agent"
-};
-
 export function QuestionStage({
   questions,
   activeIndex,
@@ -167,7 +161,6 @@ export function QuestionStage({
           <Badge color={question.required ? "primary" : "gray"}>
             {question.required ? "Required" : "Optional"}
           </Badge>
-          <Badge color="gray">{SOURCE_LABEL[question.source]}</Badge>
           <AnswerStatusBadge entry={entry} />
           {filled && <Badge color="primary">Filled in from what was said</Badge>}
           {dictating && drafting && <Badge color="gray">Drafting…</Badge>}

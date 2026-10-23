@@ -13,7 +13,6 @@ import {
   BugIcon,
   CheckCircleIcon,
   CheckIcon,
-  InfoIcon,
   MicrophoneIcon,
   PauseIcon,
   PlayIcon
@@ -29,7 +28,7 @@ import {
 } from "../shared";
 import { formatClock } from "./format";
 import { cssVariablesResolver, theme } from "./theme/theme";
-import { ModeToggle } from "./components/ModeToggle";
+import logo from "./assets/dembrane-logo-new.svg";
 import { ConnectionIndicator, type ConnectionStatus } from "./components/ConnectionIndicator";
 import { Drawer } from "./components/Drawer";
 import { ConsentForm } from "./components/ConsentForm";
@@ -271,52 +270,20 @@ function App() {
     <div className="min-h-dvh bg-app-bg flex flex-col">
       {/* h-14 and above the sheet: the sheet tucks in under it. */}
       <header className="sticky top-0 z-20 h-14 bg-app-bg border-b border-app-quiet px-4 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <MicrophoneIcon
-            size={20}
-            weight="bold"
-            className="text-app-action shrink-0"
-          />
-          <Text size="sm" truncate>
-            dembrane-theme
-          </Text>
-          <ConnectionIndicator status={connection} />
-        </div>
+        <img src={logo} alt="dembrane" className="h-9" />
         <div className="flex items-center gap-1">
+          <ConnectionIndicator status={connection} />
           <ActionIcon
             onClick={() => setDrawer("debug")}
             aria-label="Open message log"
           >
             <BugIcon size={16} />
           </ActionIcon>
-          <ModeToggle />
         </div>
       </header>
 
       {/* pt-20 clears the tucked sheet's strip and grab band. */}
       <main className="flex-1 w-full max-w-2xl mx-auto px-4 pt-20 pb-4 flex flex-col gap-4">
-        <Paper className="p-4">
-          <div className="flex gap-3">
-            <InfoIcon
-              size={20}
-              weight="bold"
-              className="text-app-action shrink-0 mt-0.5"
-            />
-            <div>
-              <Text size="sm">One conversation, one append-only log</Text>
-              <span className="mt-1 block">
-                <Text size="xs" c="dimmed">
-                  Start talking, and answer the questions as they appear. Every
-                  utterance, question, answer and status change is a new
-                  UIMessage; changing an answer appends a revision. Open the bug
-                  icon to see the raw log.
-                </Text>
-              </span>
-            </div>
-          </div>
-        </Paper>
-
-
         {finished ? (
           <Summary questions={questions} />
         ) : questions.length > 0 ? (
